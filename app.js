@@ -132,6 +132,7 @@ function render() {
 
 [search, gender, category, sort].forEach(el => {
   if (el) el.addEventListener('input', render);
+  if (el) el.addEventListener('change', render);
 });
 
 if (grid) {
@@ -189,7 +190,11 @@ async function loadThree() {
 async function openViewer(path, title) {
   if (!modal) return;
 
-  document.getElementById('modalTitle').textContent = title || 'Visualização 3D';
+  const modalTitle = document.getElementById('modalTitle');
+  if (modalTitle) {
+    modalTitle.textContent = title || 'Visualização 3D';
+  }
+
   modal.classList.add('open');
 
   try {
@@ -212,9 +217,9 @@ async function openViewer(path, title) {
         obj.traverse(child => {
           if (child.isMesh) {
             child.material = new THREE.MeshStandardMaterial({
-              color: 0xffffff,
-              roughness: 0.38,
-              metalness: 0.02,
+              color: 0xe8e5ee,
+              roughness: 0.72,
+              metalness: 0.0,
               side: THREE.DoubleSide
             });
 
@@ -258,7 +263,7 @@ function initViewer() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.35;
+  renderer.toneMappingExposure = 0.85;
   renderer.shadowMap.enabled = false;
 
   scene = new THREE.Scene();
@@ -271,26 +276,34 @@ function initViewer() {
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a88, 2.2));
-  scene.add(new THREE.AmbientLight(0xffffff, 1.55));
+  // Luz base uniforme sem estourar
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a88, 1.15));
 
-  const frontLight = new THREE.DirectionalLight(0xffffff, 1.9);
+  // Luz ambiente suave
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+
+  // Luz frontal principal
+  const frontLight = new THREE.DirectionalLight(0xffffff, 1.05);
   frontLight.position.set(0, 3, 6);
   scene.add(frontLight);
 
-  const backLight = new THREE.DirectionalLight(0xffffff, 1.75);
+  // Luz traseira
+  const backLight = new THREE.DirectionalLight(0xffffff, 0.85);
   backLight.position.set(0, 3, -6);
   scene.add(backLight);
 
-  const leftLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  // Luz lateral esquerda
+  const leftLight = new THREE.DirectionalLight(0xffffff, 0.55);
   leftLight.position.set(-5, 2.5, 0);
   scene.add(leftLight);
 
-  const rightLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  // Luz lateral direita
+  const rightLight = new THREE.DirectionalLight(0xffffff, 0.55);
   rightLight.position.set(5, 2.5, 0);
   scene.add(rightLight);
 
-  const topLight = new THREE.DirectionalLight(0xffffff, 1.25);
+  // Luz superior suave
+  const topLight = new THREE.DirectionalLight(0xffffff, 0.65);
   topLight.position.set(0, 7, 0);
   scene.add(topLight);
 
@@ -314,5 +327,7 @@ function resizeViewer() {
 function animate() {
   requestAnimationFrame(animate);
   if (controls) controls.update();
-  if (renderer && scene && camera) renderer.render(scene, camera);
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
