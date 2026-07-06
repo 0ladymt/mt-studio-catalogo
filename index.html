@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catálogo MT Studio</title>
+  <meta name="description" content="Catálogo de peças disponíveis para texturização na MT Studio." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="top">
+      <div class="brand">
+        <div class="logo">MT</div>
+        <div><h1>MT Studio Catálogo</h1><div class="subtitle">Peças disponíveis para texturização • preview • arquivos base</div></div>
+      </div>
+      <div class="pill">💜 Onde sua ideia vira estilo</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-card">
+      <h2>Escolha o modelo ideal para sua criação</h2>
+      <p>Filtre por gênero e categoria, visualize o modelo e envie o código da peça no ticket da MT Studio. Catálogo gerado automaticamente a partir das pastas do pack.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="totalItems">0</b><span>modelos no catálogo</span></div>
+      <div class="stat"><b id="totalCats">0</b><span>categorias</span></div>
+      <div class="stat"><b id="totalFem">0</b><span>femininos</span></div>
+      <div class="stat"><b id="totalMasc">0</b><span>masculinos</span></div>
+    </div>
+  </section>
+
+  <section class="controls">
+    <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
+    <select id="gender"><option value="">Todos os gêneros</option></select>
+    <select id="category"><option value="">Todas categorias</option></select>
+    <select id="sort"><option value="az">Ordenar A-Z</option><option value="category">Categoria</option><option value="gender">Gênero</option></select>
+  </section>
+
+  <main>
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty">Nenhum modelo encontrado com esse filtro.</div>
+  </main>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head"><strong id="modalTitle">Visualização 3D</strong><button class="close" id="closeModal">Fechar</button></div>
+      <div class="viewer"><canvas id="viewer3d"></canvas><div class="viewer-note">Arraste para girar • Scroll para aproximar</div></div>
+    </div>
+  </div>
+
+  <footer>MT Studio © Catálogo estático. Para atualizar: adicione novos itens, gere novamente o catálogo e publique a pasta.</footer>
+  <script src="catalogo-data.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
