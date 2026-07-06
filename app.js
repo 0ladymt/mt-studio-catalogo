@@ -213,10 +213,13 @@ async function openViewer(path, title) {
           if (child.isMesh) {
             child.material = new THREE.MeshStandardMaterial({
               color: 0xffffff,
-              roughness: 0.45,
-              metalness: 0.02
+              roughness: 0.38,
+              metalness: 0.02,
               side: THREE.DoubleSide
             });
+
+            child.castShadow = false;
+            child.receiveShadow = false;
           }
         });
 
@@ -252,6 +255,12 @@ function initViewer() {
     alpha: true
   });
 
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.35;
+  renderer.shadowMap.enabled = false;
+
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
@@ -259,33 +268,30 @@ function initViewer() {
 
   controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = false;
 
-  // Iluminação geral mais clara
-  scene.add(new THREE.AmbientLight(0xffffff, 2.2));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a88, 2.2));
+  scene.add(new THREE.AmbientLight(0xffffff, 1.55));
 
-  // Luz frontal
-  const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
-  frontLight.position.set(0, 2, 5);
+  const frontLight = new THREE.DirectionalLight(0xffffff, 1.9);
+  frontLight.position.set(0, 3, 6);
   scene.add(frontLight);
 
-  // Luz traseira para não escurecer quando girar
-  const backLight = new THREE.DirectionalLight(0xffffff, 1.4);
-  backLight.position.set(0, 2, -5);
+  const backLight = new THREE.DirectionalLight(0xffffff, 1.75);
+  backLight.position.set(0, 3, -6);
   scene.add(backLight);
 
-  // Luz lateral esquerda
-  const leftLight = new THREE.DirectionalLight(0xffffff, 1.0);
-  leftLight.position.set(-4, 2, 0);
+  const leftLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  leftLight.position.set(-5, 2.5, 0);
   scene.add(leftLight);
 
-  // Luz lateral direita
-  const rightLight = new THREE.DirectionalLight(0xffffff, 1.0);
-  rightLight.position.set(4, 2, 0);
+  const rightLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  rightLight.position.set(5, 2.5, 0);
   scene.add(rightLight);
 
-  // Luz de cima para destacar detalhes
-  const topLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  topLight.position.set(0, 6, 0);
+  const topLight = new THREE.DirectionalLight(0xffffff, 1.25);
+  topLight.position.set(0, 7, 0);
   scene.add(topLight);
 
   window.addEventListener('resize', resizeViewer);
