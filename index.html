@@ -14,7 +14,7 @@
         <div class="logo">MT</div>
         <div><h1>MT Studio Catálogo</h1><div class="subtitle">Peças disponíveis para texturização • preview • arquivos base</div></div>
       </div>
-      <div class="pill">💜 Onde sua ideia vira estilo</div>
+      <div class="pill">💜 Onde ideias viram identidade</div>
     </div>
   </header>
 
@@ -51,7 +51,15 @@
   </div>
 
   <footer>MT Studio © Catálogo estático. Para atualizar: adicione novos itens, gere novamente o catálogo e publique a pasta.</footer>
-  <script src="catalogo-data.js"></script>
-  <script type="module" src="app.js"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script src="catalogo-data.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
