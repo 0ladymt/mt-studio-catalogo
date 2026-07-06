@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 const LINKS_MT = {
   discord: 'https://discord.gg/eUtDc9KStc',
@@ -28,7 +29,7 @@ const gender = $('gender');
 const category = $('category');
 
 function fixPath(path){
-  return String(path || '').replaceAll('\\', '/').replace(/^\.?\//, '');
+  return String(path || '').replaceAll('\\', '/').replace(/^\.?\//, '').split('/').map(encodeURIComponent).join('/');
 }
 
 function setupLinks(){
@@ -100,9 +101,8 @@ function renderProjects(){
     card.innerHTML = `
       <img src="${capa}" alt="${p.titulo || 'Projeto'}" loading="lazy">
       <div>
-        <small>${p.categoria || 'Projeto MT Studio'}</small>
         <h3>${p.titulo || 'Projeto MT Studio'}</h3>
-        <p>${fotos.length} foto${fotos.length === 1 ? '' : 's'} • ${p.descricao || 'Projeto produzido pela MT Studio.'}</p>
+        <p>${fotos.length} foto${fotos.length === 1 ? '' : 's'} • projeto produzido pela MT Studio.</p>
       </div>
     `;
     card.addEventListener('click', () => openProject(index));
@@ -110,15 +110,28 @@ function renderProjects(){
   });
 }
 
+
+function setProjectImage(src){
+  const img = $('projectMainImage');
+  const loading = $('projectImageLoading');
+  if(loading){
+    loading.textContent = 'Carregando imagem...';
+    loading.classList.remove('hidden');
+  }
+  img.onload = () => loading?.classList.add('hidden');
+  img.onerror = () => {
+    if(loading) loading.textContent = 'Não foi possível carregar esta imagem.';
+  };
+  img.src = src;
+}
+
 function openProject(index){
   const p = projetos[index];
   const fotos = (Array.isArray(p.fotos) ? p.fotos : (p.imagem ? [p.imagem] : [])).map(fixPath);
   if(!fotos.length) return;
-
-  $('projectCategory').textContent = p.categoria || 'Projeto MT Studio';
   $('projectTitle').textContent = p.titulo || 'Projeto MT Studio';
   $('projectDescription').textContent = p.descricao || 'Projeto produzido pela MT Studio.';
-  $('projectMainImage').src = fotos[0];
+  setProjectImage(fotos[0]);
 
   const thumbs = $('projectThumbs');
   thumbs.innerHTML = '';
@@ -128,7 +141,7 @@ function openProject(index){
     btn.type = 'button';
     btn.innerHTML = `<img src="${foto}" alt="">`;
     btn.addEventListener('click', () => {
-      $('projectMainImage').src = foto;
+      setProjectImage(foto);
       document.querySelectorAll('.project-thumb').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
     });
@@ -137,11 +150,14 @@ function openProject(index){
 
   $('projectModal').classList.add('open');
   $('projectModal').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeProject(){
   $('projectModal').classList.remove('open');
   $('projectModal').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  $('projectMainImage').src = '';
 }
 
 $('closeProjectModal').addEventListener('click', closeProject);
@@ -247,6 +263,7 @@ function openViewer(item){
   $('modalSubtitle').textContent = `${item.genero || ''}, ${item.categoria || ''}`;
   $('modal').classList.add('open');
   $('modal').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
   setupPalette();
   requestAnimationFrame(() => initViewer(item));
 }
@@ -261,6 +278,7 @@ $('resetViewer').addEventListener('click', resetViewerSettings);
 function closeViewer(){
   $('modal').classList.remove('open');
   $('modal').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
   disposeViewer();
 }
 
@@ -281,13 +299,13 @@ function initViewer(item){
   renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false, powerPreference:'high-performance' });
   renderer.setClearColor(0x21002d, 1);
   renderer.setSize(width, height, true);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.045;
-  controls.rotateSpeed = 1.05;
+  controls.enableDamping = false;
+  controls.dampingFactor = 0.0;
+  controls.rotateSpeed = 1.55;
   controls.zoomSpeed = 0.95;
   controls.panSpeed = 0.45;
   controls.enablePan = true;
@@ -320,8 +338,14 @@ function initViewer(item){
   loader.load(objUrl, obj => {
     obj.traverse(child => {
       if(child.isMesh){
+        try {
+          child.geometry = BufferGeometryUtils.mergeVertices(child.geometry, 0.001);
+          child.geometry.computeVertexNormals();
+        } catch(e) {
+          child.geometry.computeVertexNormals();
+        }
         child.material = currentMaterial;
-        child.geometry.computeVertexNormals();
+        child.frustumCulled = true;
       }
     });
     centerAndFit(obj);

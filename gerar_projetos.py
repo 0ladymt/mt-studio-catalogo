@@ -31,7 +31,7 @@ for sub in subpastas:
         "categoria": "Projeto MT Studio",
         "capa": f"assets/projetos/{sub.name}/{imagens[0].name}",
         "fotos": [f"assets/projetos/{sub.name}/{img.name}" for img in imagens],
-        "descricao": "Projeto produzido pela MT Studio."
+        "descricao": "projeto produzido pela MT Studio."
     })
 
 # Se tiver imagens soltas em assets/projetos, agrupa tudo em um único projeto.
@@ -43,7 +43,7 @@ if soltas:
         "categoria": "Projetos",
         "capa": f"assets/projetos/{soltas[0].name}",
         "fotos": [f"assets/projetos/{img.name}" for img in soltas],
-        "descricao": "Galeria com projetos produzidos pela MT Studio."
+        "descricao": "projeto produzido pela MT Studio."
     })
 
 conteudo = "window.PROJETOS_MT = " + json.dumps(projetos, ensure_ascii=False, indent=2) + ";\n"

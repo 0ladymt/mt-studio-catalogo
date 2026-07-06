@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MT Studio Catálogo</title>
+  <title>MT Studio</title>
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,8 +12,8 @@
     <a class="brand" data-page-link="catalogo" href="#catalogo">
       <img class="brand-logo" src="assets/logo-borboleta.png" alt="MT Studio">
       <div>
-        <h1>MT Studio Catálogo</h1>
-        <p>Peças disponíveis para texturização • preview 3D</p>
+        <h1>MT Studio</h1>
+        <p>Onde ideias viram identidade</p>
       </div>
     </a>
 
@@ -35,7 +35,6 @@
   <section id="page-catalogo" class="page active">
     <section class="hero">
       <div class="hero-card">
-        <span class="eyebrow">Onde ideias viram identidade</span>
         <h2>Escolha o modelo ideal para sua criação</h2>
         <p>Filtre por gênero e categoria, visualize o modelo e envie o código da peça no ticket da MT Studio.</p>
       </div>
@@ -144,7 +143,7 @@
         </div>
         <div>
           <span>Discord</span>
-          <strong>MT Studio Oficial</strong>
+          <strong>MT Studio Criativo</strong>
         </div>
       </a>
 
@@ -157,7 +156,11 @@
       </a>
 
       <a class="social-row tiktok" id="socialTikTok" href="#" target="_blank" rel="noreferrer">
-        <div class="social-icon">♪</div>
+        <div class="social-icon tiktok-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M16.7 2.6c.4 2.7 2 4.3 4.7 4.5v3.1c-1.6.1-3.1-.4-4.6-1.3v6.4c0 8.1-8.8 10.7-12.4 4.9-2.3-3.7-.9-10.2 6.5-10.5V13c-.5.1-1.1.2-1.6.4-1.5.5-2.4 1.9-2 3.4.7 2.9 5.8 3.8 5.8-1.9V2.6h3.6Z"/>
+          </svg>
+        </div>
         <div>
           <span>TikTok</span>
           <strong>@mt_studiocriativo</strong>
@@ -173,10 +176,6 @@
     </section>
 
     <div id="projectsGrid" class="projects-grid"></div>
-
-    <div class="projects-help">
-      Para organizar melhor: crie uma pasta para cada projeto dentro de <code>assets/projetos</code> e rode <code>python gerar_projetos.py</code>.
-    </div>
   </section>
 
   <div id="projectModal" class="project-modal" aria-hidden="true">
@@ -184,9 +183,9 @@
       <button id="closeProjectModal" class="project-close">×</button>
       <div class="project-large">
         <img id="projectMainImage" src="" alt="">
+        <div id="projectImageLoading" class="project-image-loading">Carregando imagem...</div>
       </div>
       <aside class="project-side">
-        <span id="projectCategory" class="project-category"></span>
         <h3 id="projectTitle"></h3>
         <p id="projectDescription"></p>
         <div id="projectThumbs" class="project-thumbs"></div>
