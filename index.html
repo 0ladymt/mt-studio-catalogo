@@ -1,82 +1,174 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catálogo MT Studio</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MT Studio Catálogo</title>
+  <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <div class="logo logo-image">
-        <img src="assets/logo-borboleta.png" alt="MT Studio" />
-      </div>
+      <img class="brand-logo" src="assets/logo-borboleta.png" alt="MT Studio" onerror="this.src='assets/logo-borboleta.png'">
       <div>
         <h1>MT Studio Catálogo</h1>
         <p>Peças disponíveis para texturização • preview 3D</p>
       </div>
     </div>
 
-    <span class="badge">💜 Onde ideias viram identidade</span>
+    <nav class="nav-tabs" aria-label="Navegação principal">
+      <button class="nav-tab active" data-page="catalogo">Catálogo</button>
+      <button class="nav-tab" data-page="sobre">Sobre</button>
+      <button class="nav-tab" data-page="redes">Redes Sociais</button>
+      <button class="nav-tab" data-page="projetos">Projetos</button>
+    </nav>
+
+    <a class="discord-btn" id="discordTop" href="#" target="_blank" rel="noreferrer">
+      <span>💬</span> Entrar no Discord
+    </a>
   </header>
 
-  <section class="hero">
-    <div class="hero-card">
-      <h2>Escolha o modelo ideal para sua criação</h2>
-      <p>Filtre por gênero e categoria, visualize o modelo e envie o código da peça no ticket da MT Studio.</p>
+  <section id="page-catalogo" class="page active">
+    <section class="hero">
+      <div class="hero-card">
+        <span class="eyebrow">💜 Onde ideias viram identidade</span>
+        <h2>Escolha o modelo ideal para sua criação</h2>
+        <p>Filtre por gênero e categoria, visualize o modelo e envie o código da peça no ticket da MT Studio.</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><strong id="statTotal">0</strong><span>modelos no catálogo</span></div>
+        <div class="stat"><strong id="statCategorias">0</strong><span>categorias</span></div>
+        <div class="stat"><strong id="statFeminino">0</strong><span>femininos</span></div>
+        <div class="stat"><strong id="statMasculino">0</strong><span>masculinos</span></div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
+      <select id="gender">
+        <option value="">Todos os gêneros</option>
+      </select>
+      <select id="category">
+        <option value="">Todas categorias</option>
+      </select>
+    </section>
+
+    <main>
+      <div id="grid" class="grid"></div>
+      <div id="empty" class="empty">Nenhum modelo encontrado com esse filtro.</div>
+    </main>
+  </section>
+
+  <section id="page-sobre" class="page info-page">
+    <div class="info-hero">
+      <span class="eyebrow">Sobre a MT Studio</span>
+      <h2>Personalização, identidade e estilo para FiveM</h2>
+      <p>A MT Studio nasceu para transformar ideias em peças visuais marcantes. Aqui, o cliente escolhe o modelo base, envia a referência e acompanha a criação através do atendimento.</p>
     </div>
 
-    <div class="stats">
-      <div><strong id="countTotal">0</strong><span>modelos no catálogo</span></div>
-      <div><strong id="countCategories">0</strong><span>categorias</span></div>
-      <div><strong id="countFeminino">0</strong><span>femininos</span></div>
-      <div><strong id="countMasculino">0</strong><span>masculinos</span></div>
+    <div class="info-grid">
+      <article class="info-card">
+        <h3>O que fazemos</h3>
+        <p>Trabalhamos com peças personalizadas para FiveM, incluindo roupas, acessórios, cordões, armas, veículos e projetos visuais sob encomenda.</p>
+      </article>
+      <article class="info-card">
+        <h3>Como funciona</h3>
+        <p>Você escolhe o modelo no catálogo, copia o código da peça e envia no ticket com suas referências, cores, logos e ideias.</p>
+      </article>
+      <article class="info-card">
+        <h3>Identidade MT</h3>
+        <p>Nosso foco é criar peças com presença, acabamento e identidade visual para destacar sua cidade, facção, equipe ou projeto.</p>
+      </article>
     </div>
   </section>
 
-  <section class="controls">
-    <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
+  <section id="page-redes" class="page info-page">
+    <div class="info-hero">
+      <span class="eyebrow">Redes Sociais</span>
+      <h2>Acompanhe a MT Studio</h2>
+      <p>Use os links abaixo para entrar em contato, acompanhar novidades e ver atualizações da loja.</p>
+    </div>
 
-    <select id="gender">
-      <option value="">Todos os gêneros</option>
-    </select>
-
-    <select id="category">
-      <option value="">Todas categorias</option>
-    </select>
+    <div class="social-grid">
+      <a class="social-card" id="socialDiscord" href="#" target="_blank" rel="noreferrer">
+        <strong>Discord</strong>
+        <span>Entrar no servidor e abrir ticket</span>
+      </a>
+      <a class="social-card" id="socialInstagram" href="#" target="_blank" rel="noreferrer">
+        <strong>Instagram</strong>
+        <span>Ver posts, novidades e portfólio</span>
+      </a>
+      <a class="social-card" id="socialTikTok" href="#" target="_blank" rel="noreferrer">
+        <strong>TikTok</strong>
+        <span>Acompanhar vídeos e bastidores</span>
+      </a>
+      <a class="social-card" id="socialWhatsapp" href="#" target="_blank" rel="noreferrer">
+        <strong>WhatsApp</strong>
+        <span>Contato direto, se disponível</span>
+      </a>
+    </div>
   </section>
 
-  <main>
-    <div id="grid" class="grid"></div>
-    <div id="empty" class="empty">Nenhum modelo encontrado com esse filtro.</div>
-  </main>
+  <section id="page-projetos" class="page info-page">
+    <div class="info-hero">
+      <span class="eyebrow">Projetos</span>
+      <h2>Alguns trabalhos da MT Studio</h2>
+      <p>Adicione imagens na pasta <code>assets/projetos</code> e cadastre no app.js para montar sua galeria de projetos.</p>
+    </div>
+
+    <div id="projectsGrid" class="projects-grid"></div>
+  </section>
 
   <div id="modal" class="modal" aria-hidden="true">
     <div class="modal-box">
       <div class="modal-head">
-        <strong id="modalTitle">Visualização 3D</strong>
-        <button class="close" id="closeModal" type="button">Fechar</button>
+        <div>
+          <strong id="modalTitle">Visualização 3D</strong>
+          <small id="modalSubtitle"></small>
+        </div>
+        <button class="close" id="closeModal">Fechar</button>
       </div>
-      <div class="viewer">
-        <canvas id="viewer3d"></canvas>
-        <div class="viewer-note">Arraste para girar • Scroll para aproximar</div>
+
+      <div class="modal-content">
+        <div class="viewer-wrap">
+          <canvas id="viewer3d"></canvas>
+          <div class="viewer-note">Arraste para girar • Scroll para aproximar</div>
+        </div>
+
+        <aside class="viewer-panel">
+          <div class="panel-block">
+            <label>Cor do modelo</label>
+            <div id="colorPalette" class="color-palette"></div>
+          </div>
+
+          <div class="panel-block">
+            <label for="brightnessRange">Brilho</label>
+            <input id="brightnessRange" type="range" min="0.2" max="2.2" step="0.05" value="1" />
+          </div>
+
+          <button id="resetViewer" class="reset-btn">↻ Voltar ao padrão</button>
+
+          <div class="panel-help">
+            <strong>Como encomendar</strong>
+            <p>Copie o código da peça e envie no ticket da MT Studio com suas referências.</p>
+          </div>
+        </aside>
       </div>
     </div>
   </div>
 
-  <footer>
-    MT Studio © Catálogo oficial de peças disponíveis para texturização.
-  </footer>
+  <footer>MT Studio © Catálogo estático. Atualize os arquivos e publique pelo GitHub/Netlify.</footer>
 
   <script type="importmap">
   {
     "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
     }
   }
   </script>
-
   <script src="catalogo-data.js"></script>
   <script type="module" src="app.js"></script>
 </body>

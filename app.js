@@ -1,314 +1,393 @@
-const items = window.CATALOGO_MT || [];
+import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const grid = document.getElementById('grid');
-const empty = document.getElementById('empty');
-const search = document.getElementById('search');
-const gender = document.getElementById('gender');
-const category = document.getElementById('category');
+const LINKS_MT = {
+  discord: 'https://discord.gg/eUtDc9KStc',
+  instagram: 'https://instagram.com/mtstudio_',
+  tiktok: 'https://www.tiktok.com/@mt_studiocriativo?_r=1&_t=ZS-95TIQCHu8N5'
+};
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
-}
-
-setText('countTotal', items.length);
-setText('countCategories', new Set(items.map(i => i.categoria).filter(Boolean)).size);
-setText('countFeminino', items.filter(i => i.genero === 'FEMININO').length);
-setText('countMasculino', items.filter(i => i.genero === 'MASCULINO').length);
-
-function fillSelect(el, values) {
-  if (!el) return;
-
-  values
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }))
-    .forEach(value => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = value;
-      el.appendChild(option);
-    });
-}
-
-fillSelect(gender, [...new Set(items.map(i => i.genero))]);
-fillSelect(category, [...new Set(items.map(i => i.categoria))]);
-
-function copyToClipboard(text) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text);
-  } else {
-    const temp = document.createElement('textarea');
-    temp.value = text;
-    document.body.appendChild(temp);
-    temp.select();
-    document.execCommand('copy');
-    temp.remove();
+const PROJETOS_MT = [
+  {
+    titulo: 'Projeto MT Studio',
+    categoria: 'Personalizado',
+    imagem: 'assets/projetos/projeto-01.png',
+    descricao: 'Adicione suas imagens em assets/projetos e edite esta lista no app.js.'
   }
+];
+
+const DEFAULT_VIEWER = {
+  color: 0xd4d4d6,
+  brightness: 1
+};
+
+const COLORS = [
+  ['Branco', 0xd4d4d6],
+  ['Preto', 0x111111],
+  ['Cinza', 0x777777],
+  ['Marrom', 0x9a5a24],
+  ['Roxo', 0x6f35d6],
+  ['Azul', 0x336dff],
+  ['Verde', 0x2dbd63],
+  ['Vermelho', 0xe53935],
+  ['Rosa', 0xff4aa2],
+  ['Lilás', 0xb13cff],
+  ['Amarelo', 0xffb832],
+  ['Dourado', 0x9a6425]
+];
+
+const catalogo = Array.isArray(window.CATALOGO_MT) ? window.CATALOGO_MT : [];
+
+const $ = (id) => document.getElementById(id);
+const grid = $('grid');
+const empty = $('empty');
+const search = $('search');
+const gender = $('gender');
+const category = $('category');
+
+let currentItems = [...catalogo];
+
+function setupLinks(){
+  $('discordTop').href = LINKS_MT.discord;
+  $('socialDiscord').href = LINKS_MT.discord;
+  $('socialInstagram').href = LINKS_MT.instagram;
+  $('socialTikTok').href = LINKS_MT.tiktok;
+  $('socialWhatsapp').href = LINKS_MT.whatsapp;
 }
 
-function safeText(value, fallback = '—') {
-  return value || fallback;
+function setupPages(){
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $(`page-${btn.dataset.page}`).classList.add('active');
+    });
+  });
 }
 
-function render() {
-  if (!grid) return;
+function unique(arr){
+  return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
 
-  const q = (search?.value || '').trim().toLowerCase();
-
-  let list = items.filter(item => {
-    const matchGender = !gender?.value || item.genero === gender.value;
-    const matchCategory = !category?.value || item.categoria === category.value;
-    return matchGender && matchCategory;
+function fillFilters(){
+  unique(catalogo.map(i => i.genero)).forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g;
+    opt.textContent = g;
+    gender.appendChild(opt);
   });
 
-  if (q) {
-    list = list.filter(item => {
-      return [
-        item.id,
-        item.nome,
-        item.genero,
-        item.categoria,
-        item.ydd,
-        item.ytd,
-        item.pasta_original
-      ].join(' ').toLowerCase().includes(q);
-    });
-  }
+  unique(catalogo.map(i => i.categoria)).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    category.appendChild(opt);
+  });
+}
 
-  list.sort((a, b) =>
-    `${a.categoria} ${a.nome}`.localeCompare(`${b.categoria} ${b.nome}`, 'pt-BR', { numeric: true })
-  );
+function updateStats(){
+  $('statTotal').textContent = catalogo.length;
+  $('statCategorias').textContent = unique(catalogo.map(i => i.categoria)).length;
+  $('statFeminino').textContent = catalogo.filter(i => i.genero === 'FEMININO').length;
+  $('statMasculino').textContent = catalogo.filter(i => i.genero === 'MASCULINO').length;
+}
 
-  grid.innerHTML = list.map(item => {
-    const preview = item.preview || '';
-    const obj = item.obj || '';
-    const code = `${safeText(item.nome)} | ${safeText(item.genero)} | ${safeText(item.categoria)} | ${safeText(item.ydd)}`;
-
-    return `
-      <article class="card">
-        <div class="thumb">
-          ${preview ? `<img loading="lazy" src="${preview}" alt="${safeText(item.nome)}">` : `<div class="no-preview">Sem preview</div>`}
-        </div>
-
-        <div class="body">
-          <div class="meta">
-            <span class="tag">${safeText(item.genero)}</span>
-            <span class="tag">${safeText(item.categoria)}</span>
-          </div>
-
-          <h3>${safeText(item.nome)}</h3>
-
-          <div class="file" title="${safeText(item.ydd)}">YDD: ${safeText(item.ydd)}</div>
-          <div class="file" title="${safeText(item.ytd)}">YTD: ${safeText(item.ytd)}</div>
-
-          <div class="actions">
-            <button class="btn" type="button" data-view="${obj}" data-title="${safeText(item.nome)} • ${safeText(item.categoria)}" ${obj ? '' : 'disabled'}>
-              Ver 3D
-            </button>
-            <button class="btn secondary" type="button" data-copy="${code}">
-              Copiar código
-            </button>
-          </div>
-        </div>
-      </article>
+function renderProjects(){
+  const box = $('projectsGrid');
+  box.innerHTML = '';
+  PROJETOS_MT.forEach(p => {
+    const card = document.createElement('article');
+    card.className = 'project-card';
+    card.innerHTML = `
+      <img src="${p.imagem}" alt="${p.titulo}" onerror="this.style.display='none'">
+      <h3>${p.titulo}</h3>
+      <p><strong>${p.categoria}</strong> • ${p.descricao}</p>
     `;
-  }).join('');
-
-  if (empty) {
-    empty.style.display = list.length ? 'none' : 'block';
-  }
+    box.appendChild(card);
+  });
 }
 
-[search, gender, category].forEach(el => {
-  if (el) el.addEventListener('input', render);
-  if (el) el.addEventListener('change', render);
+function itemMatches(item){
+  const q = search.value.trim().toLowerCase();
+  const g = gender.value;
+  const c = category.value;
+
+  const hay = [
+    item.id,
+    item.nome,
+    item.genero,
+    item.categoria,
+    item.ydd,
+    item.ytd,
+    item.pasta_original
+  ].join(' ').toLowerCase();
+
+  return (!q || hay.includes(q)) && (!g || item.genero === g) && (!c || item.categoria === c);
+}
+
+function renderGrid(){
+  currentItems = catalogo.filter(itemMatches);
+  grid.innerHTML = '';
+  empty.style.display = currentItems.length ? 'none' : 'block';
+
+  currentItems.forEach(item => {
+    const card = document.createElement('article');
+    card.className = 'card';
+
+    card.innerHTML = `
+      <img class="thumb" src="${item.preview || ''}" alt="${item.nome}" loading="lazy">
+      <div class="card-body">
+        <div class="tags">
+          <span class="tag">${item.genero || '-'}</span>
+          <span class="tag">${item.categoria || '-'}</span>
+        </div>
+        <h3>${item.nome || item.id}</h3>
+        <div class="meta">
+          <div>YDD: ${item.ydd || '-'}</div>
+          <div>YTD: ${item.ytd || '-'}</div>
+        </div>
+        <div class="actions">
+          <button class="btn-3d" type="button">Ver 3D</button>
+          <button class="btn-copy" type="button">Copiar código</button>
+        </div>
+      </div>
+    `;
+
+    card.querySelector('.btn-3d').addEventListener('click', () => openViewer(item));
+    card.querySelector('.btn-copy').addEventListener('click', async () => {
+      const code = `${item.nome} | ${item.genero} | ${item.categoria} | ${item.ydd}`;
+      await navigator.clipboard.writeText(code);
+      card.querySelector('.btn-copy').textContent = 'Copiado!';
+      setTimeout(() => card.querySelector('.btn-copy').textContent = 'Copiar código', 1200);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+search.addEventListener('input', renderGrid);
+gender.addEventListener('change', renderGrid);
+category.addEventListener('change', renderGrid);
+
+let scene, camera, renderer, controls, modelGroup, currentMaterial, currentItem;
+let animationId;
+let keyLight, fillLight, topLight, rimLight;
+
+function disposeViewer(){
+  if(animationId) cancelAnimationFrame(animationId);
+  animationId = null;
+
+  if(renderer){
+    renderer.dispose();
+    renderer.forceContextLoss?.();
+  }
+
+  const canvas = $('viewer3d');
+  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+  gl?.getExtension('WEBGL_lose_context')?.loseContext();
+
+  scene = camera = renderer = controls = modelGroup = currentMaterial = null;
+}
+
+function setupPalette(){
+  const palette = $('colorPalette');
+  palette.innerHTML = '';
+
+  COLORS.forEach(([name, color]) => {
+    const dot = document.createElement('button');
+    dot.className = 'color-dot';
+    dot.type = 'button';
+    dot.title = name;
+    dot.style.background = `#${color.toString(16).padStart(6,'0')}`;
+    dot.dataset.color = color;
+    dot.addEventListener('click', () => {
+      setModelColor(Number(dot.dataset.color));
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+    });
+    palette.appendChild(dot);
+  });
+
+  palette.querySelector('.color-dot')?.classList.add('active');
+}
+
+function setModelColor(color){
+  if(!currentMaterial) return;
+  currentMaterial.color.setHex(color);
+  currentMaterial.needsUpdate = true;
+}
+
+function setBrightness(value){
+  const b = Number(value);
+  if(keyLight) keyLight.intensity = 2.3 * b;
+  if(fillLight) fillLight.intensity = 1.15 * b;
+  if(topLight) topLight.intensity = 1.05 * b;
+  if(rimLight) rimLight.intensity = 0.75 * b;
+}
+
+function resetViewerSettings(){
+  $('brightnessRange').value = DEFAULT_VIEWER.brightness;
+  setModelColor(DEFAULT_VIEWER.color);
+  setBrightness(DEFAULT_VIEWER.brightness);
+
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+  document.querySelector('.color-dot')?.classList.add('active');
+}
+
+function openViewer(item){
+  currentItem = item;
+  $('modalTitle').textContent = `${item.nome || item.id}`;
+  $('modalSubtitle').textContent = `${item.genero || ''}, ${item.categoria || ''}`;
+  $('modal').classList.add('open');
+  $('modal').setAttribute('aria-hidden', 'false');
+
+  setupPalette();
+  initViewer(item);
+}
+
+$('closeModal').addEventListener('click', closeViewer);
+$('modal').addEventListener('click', (e) => {
+  if(e.target.id === 'modal') closeViewer();
 });
+$('brightnessRange').addEventListener('input', (e) => setBrightness(e.target.value));
+$('resetViewer').addEventListener('click', resetViewerSettings);
 
-if (grid) {
-  grid.addEventListener('click', event => {
-    const copyBtn = event.target.closest('[data-copy]');
-    if (copyBtn) {
-      copyToClipboard(copyBtn.dataset.copy);
-      copyBtn.textContent = 'Copiado!';
-      setTimeout(() => {
-        copyBtn.textContent = 'Copiar código';
-      }, 900);
-      return;
-    }
-
-    const viewBtn = event.target.closest('[data-view]');
-    if (viewBtn && viewBtn.dataset.view) {
-      openViewer(viewBtn.dataset.view, viewBtn.dataset.title);
-    }
-  });
+function closeViewer(){
+  $('modal').classList.remove('open');
+  $('modal').setAttribute('aria-hidden', 'true');
+  disposeViewer();
 }
 
-render();
+function initViewer(item){
+  disposeViewer();
 
-const modal = document.getElementById('modal');
-const closeModal = document.getElementById('closeModal');
+  const canvas = $('viewer3d');
+  const wrap = canvas.parentElement;
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
 
-if (closeModal && modal) {
-  closeModal.addEventListener('click', () => modal.classList.remove('open'));
-  modal.addEventListener('click', event => {
-    if (event.target === modal) modal.classList.remove('open');
-  });
-}
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x22002f);
 
-let THREE = null;
-let OrbitControls = null;
-let OBJLoader = null;
-let renderer = null;
-let scene = null;
-let camera = null;
-let controls = null;
-let currentObj = null;
-
-async function loadThree() {
-  if (THREE && OrbitControls && OBJLoader) return;
-
-  const threeModule = await import('https://unpkg.com/three@0.160.0/build/three.module.js');
-  const controlsModule = await import('https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js');
-  const loaderModule = await import('https://unpkg.com/three@0.160.0/examples/jsm/loaders/OBJLoader.js');
-
-  THREE = threeModule;
-  OrbitControls = controlsModule.OrbitControls;
-  OBJLoader = loaderModule.OBJLoader;
-}
-
-async function openViewer(path, title) {
-  if (!modal) return;
-
-  const modalTitle = document.getElementById('modalTitle');
-  if (modalTitle) {
-    modalTitle.textContent = title || 'Visualização 3D';
-  }
-
-  modal.classList.add('open');
-
-  try {
-    await loadThree();
-
-    if (!renderer) initViewer();
-    resizeViewer();
-
-    if (currentObj) {
-      scene.remove(currentObj);
-      currentObj = null;
-    }
-
-    const loader = new OBJLoader();
-    loader.load(
-      path,
-      obj => {
-        currentObj = obj;
-
-        obj.traverse(child => {
-          if (child.isMesh) {
-            child.material = new THREE.MeshStandardMaterial({
-              color: 0xe8e5ee,
-              roughness: 0.72,
-              metalness: 0.0,
-              side: THREE.DoubleSide
-            });
-
-            child.castShadow = false;
-            child.receiveShadow = false;
-          }
-        });
-
-        const box = new THREE.Box3().setFromObject(obj);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3()).length();
-
-        obj.position.sub(center);
-
-        const scale = size ? 2.4 / size : 1;
-        obj.scale.setScalar(scale);
-
-        scene.add(obj);
-      },
-      undefined,
-      error => {
-        console.error('Erro ao carregar OBJ:', error);
-        alert('Não consegui carregar o modelo 3D deste item. O card e a imagem continuam funcionando.');
-      }
-    );
-  } catch (error) {
-    console.error('Erro ao iniciar visualizador 3D:', error);
-    alert('Não consegui iniciar o visualizador 3D agora. O catálogo continua funcionando normalmente.');
-  }
-}
-
-function initViewer() {
-  const canvas = document.getElementById('viewer3d');
+  camera = new THREE.PerspectiveCamera(36, width / height, 0.01, 1000);
+  camera.position.set(0, 1.1, 4.2);
 
   renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
-    alpha: true
+    alpha: false,
+    powerPreference: 'high-performance'
   });
-
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(width, height, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.85;
-  renderer.shadowMap.enabled = false;
 
-  scene = new THREE.Scene();
-
-  camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
-  camera.position.set(0, 1.2, 4);
-
-  controls = new OrbitControls(camera, canvas);
+  controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.enablePan = false;
+  controls.dampingFactor = 0.055;
+  controls.rotateSpeed = 0.82;
+  controls.zoomSpeed = 0.9;
+  controls.panSpeed = 0.45;
+  controls.enablePan = true;
+  controls.minDistance = 0.7;
+  controls.maxDistance = 8;
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a88, 1.15));
-  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  keyLight = new THREE.DirectionalLight(0xffffff, 2.3);
+  keyLight.position.set(2.5, 3.5, 4);
+  scene.add(keyLight);
 
-  const frontLight = new THREE.DirectionalLight(0xffffff, 1.05);
-  frontLight.position.set(0, 3, 6);
-  scene.add(frontLight);
+  fillLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  fillLight.position.set(-3, 1.7, 2.4);
+  scene.add(fillLight);
 
-  const backLight = new THREE.DirectionalLight(0xffffff, 0.85);
-  backLight.position.set(0, 3, -6);
-  scene.add(backLight);
-
-  const leftLight = new THREE.DirectionalLight(0xffffff, 0.55);
-  leftLight.position.set(-5, 2.5, 0);
-  scene.add(leftLight);
-
-  const rightLight = new THREE.DirectionalLight(0xffffff, 0.55);
-  rightLight.position.set(5, 2.5, 0);
-  scene.add(rightLight);
-
-  const topLight = new THREE.DirectionalLight(0xffffff, 0.65);
-  topLight.position.set(0, 7, 0);
+  topLight = new THREE.DirectionalLight(0xffffff, 1.05);
+  topLight.position.set(0, 5, 1.5);
   scene.add(topLight);
 
-  window.addEventListener('resize', resizeViewer);
-  animate();
-}
+  rimLight = new THREE.DirectionalLight(0xffffff, 0.75);
+  rimLight.position.set(0, 2.2, -4);
+  scene.add(rimLight);
 
-function resizeViewer() {
-  if (!renderer || !camera) return;
+  scene.add(new THREE.AmbientLight(0xffffff, 1.35));
 
-  const viewer = document.querySelector('.viewer');
-  if (!viewer) return;
+  modelGroup = new THREE.Group();
+  scene.add(modelGroup);
 
-  const box = viewer.getBoundingClientRect();
-  renderer.setSize(box.width, box.height, false);
+  currentMaterial = new THREE.MeshStandardMaterial({
+    color: DEFAULT_VIEWER.color,
+    roughness: 0.72,
+    metalness: 0.02
+  });
 
-  camera.aspect = box.width / box.height;
-  camera.updateProjectionMatrix();
-}
+  const loader = new OBJLoader();
+  loader.load(
+    item.obj,
+    (obj) => {
+      obj.traverse(child => {
+        if(child.isMesh){
+          child.material = currentMaterial;
+          child.geometry.computeVertexNormals();
+        }
+      });
 
-function animate() {
-  requestAnimationFrame(animate);
-  if (controls) controls.update();
-  if (renderer && scene && camera) {
+      centerAndFit(obj);
+      modelGroup.add(obj);
+      resetViewerSettings();
+    },
+    undefined,
+    (err) => {
+      console.error('Erro ao carregar OBJ:', err);
+    }
+  );
+
+  function animate(){
+    animationId = requestAnimationFrame(animate);
+    controls.update();
     renderer.render(scene, camera);
   }
+  animate();
+
+  window.addEventListener('resize', resizeViewer, { passive:true });
 }
+
+function centerAndFit(obj){
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  box.getSize(size);
+  box.getCenter(center);
+
+  obj.position.sub(center);
+
+  const maxDim = Math.max(size.x, size.y, size.z) || 1;
+  const scale = 2.45 / maxDim;
+  obj.scale.setScalar(scale);
+
+  const box2 = new THREE.Box3().setFromObject(obj);
+  const center2 = new THREE.Vector3();
+  box2.getCenter(center2);
+  controls.target.copy(center2);
+  camera.position.set(0, Math.max(size.y * scale * 0.15, .2), 4.2);
+  camera.lookAt(center2);
+  controls.update();
+}
+
+function resizeViewer(){
+  if(!renderer || !camera) return;
+  const canvas = $('viewer3d');
+  const wrap = canvas.parentElement;
+  const width = wrap.clientWidth;
+  const height = wrap.clientHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height, false);
+}
+
+setupLinks();
+setupPages();
+fillFilters();
+updateStats();
+renderProjects();
+renderGrid();
