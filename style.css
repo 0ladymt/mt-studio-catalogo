@@ -348,3 +348,26 @@ footer strong{display:block;color:#fff;font-size:20px;text-transform:uppercase;l
     max-height:260px;
   }
 }
+
+
+/* ===== V6 ajustes finais ===== */
+
+/* Frase do topo mais fina para destacar mais o nome MT STUDIO */
+.brand p{
+  font-weight:600 !important;
+  letter-spacing:.16em !important;
+  opacity:.92;
+}
+
+/* TikTok no mesmo padrão visual do Discord e Instagram */
+.tiktok-mark{
+  background:linear-gradient(135deg,var(--purple),#3c005f) !important;
+  border:1px solid rgba(255,255,255,.14) !important;
+}
+
+.tiktok-mark svg{
+  width:30px;
+  height:30px;
+  color:#fff;
+  filter:none !important;
+}
