@@ -212,9 +212,10 @@ async function openViewer(path, title) {
         obj.traverse(child => {
           if (child.isMesh) {
             child.material = new THREE.MeshStandardMaterial({
-              color: 0xf2eef8,
-              roughness: 0.65,
-              metalness: 0.05
+              color: 0xffffff,
+              roughness: 0.45,
+              metalness: 0.02
+              side: THREE.DoubleSide
             });
           }
         });
@@ -259,11 +260,33 @@ function initViewer() {
   controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
 
-  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  // Iluminação geral mais clara
+  scene.add(new THREE.AmbientLight(0xffffff, 2.2));
 
-  const light = new THREE.DirectionalLight(0xffffff, 1.8);
-  light.position.set(3, 4, 5);
-  scene.add(light);
+  // Luz frontal
+  const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
+  frontLight.position.set(0, 2, 5);
+  scene.add(frontLight);
+
+  // Luz traseira para não escurecer quando girar
+  const backLight = new THREE.DirectionalLight(0xffffff, 1.4);
+  backLight.position.set(0, 2, -5);
+  scene.add(backLight);
+
+  // Luz lateral esquerda
+  const leftLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  leftLight.position.set(-4, 2, 0);
+  scene.add(leftLight);
+
+  // Luz lateral direita
+  const rightLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  rightLight.position.set(4, 2, 0);
+  scene.add(rightLight);
+
+  // Luz de cima para destacar detalhes
+  const topLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  topLight.position.set(0, 6, 0);
+  scene.add(topLight);
 
   window.addEventListener('resize', resizeViewer);
   animate();
