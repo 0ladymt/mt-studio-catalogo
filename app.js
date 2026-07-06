@@ -5,7 +5,6 @@ const empty = document.getElementById('empty');
 const search = document.getElementById('search');
 const gender = document.getElementById('gender');
 const category = document.getElementById('category');
-const sort = document.getElementById('sort');
 
 function setText(id, value) {
   const el = document.getElementById(id);
@@ -76,19 +75,9 @@ function render() {
     });
   }
 
-  if (sort?.value === 'category') {
-    list.sort((a, b) =>
-      `${a.categoria} ${a.nome}`.localeCompare(`${b.categoria} ${b.nome}`, 'pt-BR', { numeric: true })
-    );
-  } else if (sort?.value === 'gender') {
-    list.sort((a, b) =>
-      `${a.genero} ${a.categoria} ${a.nome}`.localeCompare(`${b.genero} ${b.categoria} ${b.nome}`, 'pt-BR', { numeric: true })
-    );
-  } else {
-    list.sort((a, b) =>
-      `${a.categoria} ${a.nome}`.localeCompare(`${b.categoria} ${b.nome}`, 'pt-BR', { numeric: true })
-    );
-  }
+  list.sort((a, b) =>
+    `${a.categoria} ${a.nome}`.localeCompare(`${b.categoria} ${b.nome}`, 'pt-BR', { numeric: true })
+  );
 
   grid.innerHTML = list.map(item => {
     const preview = item.preview || '';
@@ -130,7 +119,7 @@ function render() {
   }
 }
 
-[search, gender, category, sort].forEach(el => {
+[search, gender, category].forEach(el => {
   if (el) el.addEventListener('input', render);
   if (el) el.addEventListener('change', render);
 });
@@ -276,33 +265,25 @@ function initViewer() {
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
 
-  // Luz base uniforme sem estourar
   scene.add(new THREE.HemisphereLight(0xffffff, 0x6b4a88, 1.15));
-
-  // Luz ambiente suave
   scene.add(new THREE.AmbientLight(0xffffff, 0.65));
 
-  // Luz frontal principal
   const frontLight = new THREE.DirectionalLight(0xffffff, 1.05);
   frontLight.position.set(0, 3, 6);
   scene.add(frontLight);
 
-  // Luz traseira
   const backLight = new THREE.DirectionalLight(0xffffff, 0.85);
   backLight.position.set(0, 3, -6);
   scene.add(backLight);
 
-  // Luz lateral esquerda
   const leftLight = new THREE.DirectionalLight(0xffffff, 0.55);
   leftLight.position.set(-5, 2.5, 0);
   scene.add(leftLight);
 
-  // Luz lateral direita
   const rightLight = new THREE.DirectionalLight(0xffffff, 0.55);
   rightLight.position.set(5, 2.5, 0);
   scene.add(rightLight);
 
-  // Luz superior suave
   const topLight = new THREE.DirectionalLight(0xffffff, 0.65);
   topLight.position.set(0, 7, 0);
   scene.add(topLight);
