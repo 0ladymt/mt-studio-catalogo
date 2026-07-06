@@ -9,13 +9,13 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <img class="brand-logo" src="assets/logo-borboleta.png" alt="MT Studio" onerror="this.src='assets/logo-borboleta.png'">
+    <a class="brand" data-page-link="catalogo" href="#catalogo">
+      <img class="brand-logo" src="assets/logo-borboleta.png" alt="MT Studio">
       <div>
         <h1>MT Studio Catálogo</h1>
         <p>Peças disponíveis para texturização • preview 3D</p>
       </div>
-    </div>
+    </a>
 
     <nav class="nav-tabs" aria-label="Navegação principal">
       <button class="nav-tab active" data-page="catalogo">Catálogo</button>
@@ -25,14 +25,17 @@
     </nav>
 
     <a class="discord-btn" id="discordTop" href="#" target="_blank" rel="noreferrer">
-      <span>💬</span> Entrar no Discord
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M20.32 4.37A19.8 19.8 0 0 0 15.36 2.8a.08.08 0 0 0-.09.04c-.21.38-.45.88-.62 1.27a18.3 18.3 0 0 0-5.3 0 12.6 12.6 0 0 0-.63-1.27.08.08 0 0 0-.09-.04 19.7 19.7 0 0 0-4.96 1.57.07.07 0 0 0-.03.03C.5 9.07-.32 13.62.1 18.12c0 .02.02.05.04.06a19.9 19.9 0 0 0 6.08 3.02.08.08 0 0 0 .09-.03c.47-.63.89-1.3 1.25-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.9-.9.08.08 0 0 1 0-.13l.37-.29a.08.08 0 0 1 .08-.01c3.9 1.78 8.12 1.78 11.97 0a.08.08 0 0 1 .08.01l.37.29a.08.08 0 0 1 0 .13c-.6.35-1.23.65-1.9.9a.08.08 0 0 0-.04.1c.37.71.78 1.38 1.25 2.01a.08.08 0 0 0 .09.03 19.8 19.8 0 0 0 6.08-3.02.08.08 0 0 0 .03-.06c.5-5.2-.84-9.7-3.63-13.72a.06.06 0 0 0-.04-.03ZM8.02 15.38c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.95 2.42-2.16 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.95 2.42-2.16 2.42Z"/>
+      </svg>
+      Entrar no Discord
     </a>
   </header>
 
   <section id="page-catalogo" class="page active">
     <section class="hero">
       <div class="hero-card">
-        <span class="eyebrow">💜 Onde ideias viram identidade</span>
+        <span class="eyebrow">♥ Onde ideias viram identidade</span>
         <h2>Escolha o modelo ideal para sua criação</h2>
         <p>Filtre por gênero e categoria, visualize o modelo e envie o código da peça no ticket da MT Studio.</p>
       </div>
@@ -47,12 +50,8 @@
 
     <section class="controls">
       <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
-      <select id="gender">
-        <option value="">Todos os gêneros</option>
-      </select>
-      <select id="category">
-        <option value="">Todas categorias</option>
-      </select>
+      <select id="gender"><option value="">Todos os gêneros</option></select>
+      <select id="category"><option value="">Todas categorias</option></select>
     </section>
 
     <main>
@@ -62,63 +61,121 @@
   </section>
 
   <section id="page-sobre" class="page info-page">
-    <div class="info-hero">
-      <span class="eyebrow">Sobre a MT Studio</span>
-      <h2>Personalização, identidade e estilo para FiveM</h2>
-      <p>A MT Studio nasceu para transformar ideias em peças visuais marcantes. Aqui, o cliente escolhe o modelo base, envia a referência e acompanha a criação através do atendimento.</p>
+    <section class="about-hero">
+      <span class="section-kicker">Quem somos</span>
+      <div class="about-title">
+        <img src="assets/logo-borboleta.png" alt="MT Studio">
+        <h2>MT <span>Studio</span></h2>
+      </div>
+      <p>
+        A MT Studio é um estúdio criativo especializado em personalização para o universo FiveM.
+        Criamos peças, identidades visuais e projetos sob demanda para transformar ideias em estilo,
+        presença e identidade dentro do jogo.
+      </p>
+    </section>
+
+    <section class="section-line">
+      <span>O que fazemos</span>
+    </section>
+
+    <div class="service-grid">
+      <article class="service-card">
+        <h3>FiveM & In-game</h3>
+        <ul>
+          <li>Roupas, uniformes e peças personalizadas</li>
+          <li>Retexturização, conversão e otimização</li>
+          <li>Acessórios 3D, cordões e itens visuais</li>
+          <li>Armas, veículos e projetos especiais</li>
+        </ul>
+      </article>
+
+      <article class="service-card">
+        <h3>Design & Identidade</h3>
+        <ul>
+          <li>Criação visual para cidades e equipes</li>
+          <li>Banners, capas e artes promocionais</li>
+          <li>Identidade para facções, lojas e marcas</li>
+          <li>Layouts e materiais personalizados</li>
+        </ul>
+      </article>
+
+      <article class="service-card">
+        <h3>Atendimento Criativo</h3>
+        <ul>
+          <li>Briefing via ticket</li>
+          <li>Referências e direcionamento visual</li>
+          <li>Ajustes dentro do escopo combinado</li>
+          <li>Entrega organizada para uso no servidor</li>
+        </ul>
+      </article>
     </div>
 
-    <div class="info-grid">
-      <article class="info-card">
-        <h3>O que fazemos</h3>
-        <p>Trabalhamos com peças personalizadas para FiveM, incluindo roupas, acessórios, cordões, armas, veículos e projetos visuais sob encomenda.</p>
-      </article>
-      <article class="info-card">
-        <h3>Como funciona</h3>
-        <p>Você escolhe o modelo no catálogo, copia o código da peça e envia no ticket com suas referências, cores, logos e ideias.</p>
-      </article>
-      <article class="info-card">
-        <h3>Identidade MT</h3>
-        <p>Nosso foco é criar peças com presença, acabamento e identidade visual para destacar sua cidade, facção, equipe ou projeto.</p>
-      </article>
+    <section class="section-line">
+      <span>Como trabalhamos</span>
+    </section>
+
+    <div class="workflow-grid">
+      <div><b>✓</b> Atendimento via Discord</div>
+      <div><b>✓</b> Briefing detalhado antes do projeto</div>
+      <div><b>✓</b> Criação alinhada com sua identidade</div>
+      <div><b>✓</b> Organização dos arquivos de entrega</div>
+      <div><b>✓</b> Catálogo com preview para escolha</div>
+      <div><b>✓</b> Projetos sob demanda</div>
+    </div>
+
+    <div class="mission-card">
+      <strong>Nossa missão:</strong>
+      criar peças e projetos visuais fortes, organizados e profissionais, ajudando sua cidade, equipe ou marca a se destacar.
+      <a id="aboutDiscord" href="#" target="_blank" rel="noreferrer">Abra seu ticket</a> e fale com a gente!
     </div>
   </section>
 
-  <section id="page-redes" class="page info-page">
-    <div class="info-hero">
-      <span class="eyebrow">Redes Sociais</span>
-      <h2>Acompanhe a MT Studio</h2>
-      <p>Use os links abaixo para entrar em contato, acompanhar novidades e ver atualizações da loja.</p>
-    </div>
+  <section id="page-redes" class="page socials-page">
+    <section class="center-title">
+      <h2>Nossas <span>Redes</span></h2>
+      <p>Siga a MT Studio para novidades, lançamentos, bastidores e promoções.</p>
+    </section>
 
-    <div class="social-grid">
-      <a class="social-card" id="socialDiscord" href="#" target="_blank" rel="noreferrer">
-        <strong>Discord</strong>
-        <span>Entrar no servidor e abrir ticket</span>
+    <div class="social-list">
+      <a class="social-row discord" id="socialDiscord" href="#" target="_blank" rel="noreferrer">
+        <div class="social-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.32 4.37A19.8 19.8 0 0 0 15.36 2.8a.08.08 0 0 0-.09.04c-.21.38-.45.88-.62 1.27a18.3 18.3 0 0 0-5.3 0 12.6 12.6 0 0 0-.63-1.27.08.08 0 0 0-.09-.04 19.7 19.7 0 0 0-4.96 1.57.07.07 0 0 0-.03.03C.5 9.07-.32 13.62.1 18.12c0 .02.02.05.04.06a19.9 19.9 0 0 0 6.08 3.02.08.08 0 0 0 .09-.03c.47-.63.89-1.3 1.25-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.9-.9.08.08 0 0 1 0-.13l.37-.29a.08.08 0 0 1 .08-.01c3.9 1.78 8.12 1.78 11.97 0a.08.08 0 0 1 .08.01l.37.29a.08.08 0 0 1 0 .13c-.6.35-1.23.65-1.9.9a.08.08 0 0 0-.04.1c.37.71.78 1.38 1.25 2.01a.08.08 0 0 0 .09.03 19.8 19.8 0 0 0 6.08-3.02.08.08 0 0 0 .03-.06c.5-5.2-.84-9.7-3.63-13.72a.06.06 0 0 0-.04-.03Z"/></svg>
+        </div>
+        <div>
+          <span>Discord</span>
+          <strong>MT Studio Oficial</strong>
+        </div>
       </a>
-      <a class="social-card" id="socialInstagram" href="#" target="_blank" rel="noreferrer">
-        <strong>Instagram</strong>
-        <span>Ver posts, novidades e portfólio</span>
+
+      <a class="social-row instagram" id="socialInstagram" href="#" target="_blank" rel="noreferrer">
+        <div class="social-icon">◎</div>
+        <div>
+          <span>Instagram</span>
+          <strong>@mt_studiocriativo</strong>
+        </div>
       </a>
-      <a class="social-card" id="socialTikTok" href="#" target="_blank" rel="noreferrer">
-        <strong>TikTok</strong>
-        <span>Acompanhar vídeos e bastidores</span>
-      </a>
-      <a class="social-card" id="socialWhatsapp" href="#" target="_blank" rel="noreferrer">
-        <strong>WhatsApp</strong>
-        <span>Contato direto, se disponível</span>
+
+      <a class="social-row tiktok" id="socialTikTok" href="#" target="_blank" rel="noreferrer">
+        <div class="social-icon">♪</div>
+        <div>
+          <span>TikTok</span>
+          <strong>@mt_studiocriativo</strong>
+        </div>
       </a>
     </div>
   </section>
 
-  <section id="page-projetos" class="page info-page">
-    <div class="info-hero">
-      <span class="eyebrow">Projetos</span>
-      <h2>Alguns trabalhos da MT Studio</h2>
-      <p>Adicione imagens na pasta <code>assets/projetos</code> e cadastre no app.js para montar sua galeria de projetos.</p>
-    </div>
+  <section id="page-projetos" class="page projects-page">
+    <section class="center-title">
+      <h2>Nossos <span>Projetos</span></h2>
+      <p>Galeria com trabalhos e criações já produzidas pela MT Studio.</p>
+    </section>
 
     <div id="projectsGrid" class="projects-grid"></div>
+
+    <div class="projects-help">
+      Para adicionar projetos: coloque as imagens em <code>assets/projetos</code> e rode <code>python gerar_projetos.py</code>.
+    </div>
   </section>
 
   <div id="modal" class="modal" aria-hidden="true">
@@ -134,6 +191,7 @@
       <div class="modal-content">
         <div class="viewer-wrap">
           <canvas id="viewer3d"></canvas>
+          <div id="viewerLoading" class="viewer-loading">Carregando modelo 3D...</div>
           <div class="viewer-note">Arraste para girar • Scroll para aproximar</div>
         </div>
 
@@ -145,7 +203,7 @@
 
           <div class="panel-block">
             <label for="brightnessRange">Brilho</label>
-            <input id="brightnessRange" type="range" min="0.2" max="2.2" step="0.05" value="1" />
+            <input id="brightnessRange" type="range" min="0.35" max="2.25" step="0.05" value="1" />
           </div>
 
           <button id="resetViewer" class="reset-btn">↻ Voltar ao padrão</button>
@@ -159,7 +217,11 @@
     </div>
   </div>
 
-  <footer>MT Studio © Catálogo estático. Atualize os arquivos e publique pelo GitHub/Netlify.</footer>
+  <footer>
+    <img src="assets/logo-borboleta.png" alt="MT Studio">
+    <strong>MT Studio</strong>
+    <p>© 2026 MT Studio • Todos os assets são propriedade intelectual do estúdio • <a id="footerDiscord" href="#" target="_blank" rel="noreferrer">Discord</a></p>
+  </footer>
 
   <script type="importmap">
   {
@@ -170,6 +232,7 @@
   }
   </script>
   <script src="catalogo-data.js"></script>
+  <script src="projetos-data.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
