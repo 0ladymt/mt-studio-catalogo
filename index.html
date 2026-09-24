@@ -52,8 +52,8 @@
     </div>
   </section>
   <section class="mt-shell mt-section"><div class="mt-page-head"><div><span class="mt-overline">Portfólio</span><h2>PROJETOS DA MT.</h2></div><a class="mt-button mt-button--outline" data-page-link="projetos" href="#projetos">Ver todos ↗</a></div><div class="mt-projects" id="mtHomeProjects"></div></section>
-  <section class="mt-editorial"><div class="mt-editorial__visual"><img id="mtCatalogPhoto" src="assets/logo-borboleta.png" alt="Modelo do catálogo 3D" loading="lazy"></div>
-    <div class="mt-editorial__copy"><span class="mt-overline">Catálogo 3D</span><h2>ESCOLHA A BASE.<br>CRIE O SEU ESTILO.</h2><p>Visualize modelos em 3D, confira os detalhes e envie o código da peça no seu atendimento.</p><a class="mt-button" data-page-link="catalogo" href="#catalogo">Abrir catálogo ↗</a></div>
+  <section class="mt-editorial mt-editorial--carousel"><div class="mt-editorial__visual"><div class="mt-model-carousel" id="homeModelCarousel" aria-label="Modelos do catálogo em destaque"><button class="mt-model-prev" type="button" aria-label="Modelos anteriores">‹</button><div class="mt-model-track" id="homeModelTrack"></div><button class="mt-model-next" type="button" aria-label="Próximos modelos">›</button></div></div>
+    <div class="mt-editorial__copy"><span class="mt-overline">Catálogo 3D</span><h2>ESCOLHA A BASE.<br>CRIE O SEU ESTILO.</h2><p>Explore diferentes modelos, veja as peças girando e abra o visualizador para conferir os detalhes em 3D.</p><a class="mt-button" data-page-link="catalogo" href="#catalogo">Abrir catálogo ↗</a></div>
   </section>
   <section class="mt-human" id="mtHuman" hidden><div class="mt-human__photo"><img id="mtRafaJoy" src="assets/rafa-joy-foto.jpg" alt="Rafa com Joy no colo" loading="lazy"></div><div class="mt-human__copy"><span class="mt-overline">Quem está por trás da MT</span><h2>RAFA & JOY.</h2><p>Rafa é a criadora da MT Studio. Joy faz parte da história e da identidade da marca.</p><a class="mt-button mt-button--outline" data-page-link="sobre" href="#sobre">Conheça a MT ↗</a></div></section>
   <section class="mt-cta"><span class="mt-overline">Projetos personalizados</span><h2>VAMOS CRIAR<br>O SEU PROJETO?</h2><p>Orçamento, alinhamento e entrega de encomendas pelo Discord da MT Studio.</p><a class="mt-button" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Abrir ticket ↗</a></section>
@@ -74,6 +74,8 @@
       </div>
     </section>
 
+    <section class="mt-catalog-showcase mt-shell" aria-label="Modelos 3D em rotação"><div class="mt-catalog-showcase__top"><div><span class="mt-overline">Vitrine de modelos</span><h3>CONFIRA EM 3D.</h3></div><p>Gire, explore e escolha a peça que combina com seu projeto.</p></div><div class="mt-model-carousel mt-model-carousel--catalog" id="catalogModelCarousel"><button class="mt-model-prev" type="button" aria-label="Modelos anteriores">‹</button><div class="mt-model-track" id="catalogModelTrack"></div><button class="mt-model-next" type="button" aria-label="Próximos modelos">›</button></div></section>
+
     <section class="controls">
       <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
       <select id="gender"><option value="">Todos os gêneros</option></select>
@@ -88,18 +90,19 @@
 
 
   <section id="page-sobre" class="page">
-    <div class="mt-shell mt-about">
-      <div class="mt-about__visual">
-        <img src="assets/mt-borboleta-street.svg" alt="Borboleta street da MT Studio">
-        <span class="mt-about__stamp">MT STUDIO CRIATIVO</span>
+    <div class="mt-shell mt-about mt-about--complete">
+      <div class="mt-about__visual"><img src="assets/mt-borboleta-street.svg" alt="Borboleta street da MT Studio"><span class="mt-about__stamp">MT STUDIO CRIATIVO</span></div>
+      <div class="mt-about__copy"><span class="mt-overline">Quem somos</span><h2>IDEIAS QUE<br>VIRAM <em>IDENTIDADE.</em></h2>
+        <p>A MT Studio é um estúdio criativo potiguar voltado para roupas e projetos visuais no universo FiveM. Nossa proposta é transformar referências em criações que expressem a personalidade de cada cidade, equipe ou marca.</p>
+        <p>Trabalhamos com peças e projetos personalizados, combinando estética street, organização e acabamento visual. Rafa é a criadora da MT Studio, e Joy faz parte da identidade e da história da marca.</p>
+        <a id="aboutDiscord" class="mt-button" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Fale com a MT no Discord ↗</a>
       </div>
-      <div class="mt-about__copy">
-        <span class="mt-overline">Sobre a MT Studio</span>
-        <h2>IDEIAS QUE<br>VIRAM <em>IDENTIDADE.</em></h2>
-        <p>A MT Studio é um estúdio criativo potiguar dedicado a roupas e projetos visuais para FiveM. Criamos peças e personalizações para dar identidade à sua cidade, equipe ou marca.</p>
-        <div class="mt-about__services"><span>Roupas e uniformes</span><span>Projetos personalizados</span><span>Design e identidade visual</span></div>
-        <a id="aboutDiscord" class="mt-button" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Fale com a MT pelo Discord ↗</a>
-      </div>
+    </div>
+    <div class="mt-shell mt-about-detail"><div class="mt-page-head"><div><span class="mt-overline">Nossos serviços</span><h2>O QUE FAZEMOS.</h2></div></div>
+      <div class="mt-about-grid"><article><h3>ROUPAS & FIVE M</h3><p>Roupas, uniformes, texturização e projetos especiais para personagens, equipes e cidades.</p></article><article><h3>DESIGN & IDENTIDADE</h3><p>Artes e materiais visuais para apresentar projetos, produtos e marcas com personalidade.</p></article><article><h3>ATENDIMENTO CRIATIVO</h3><p>Alinhamento de referências e necessidades pelo Discord, com escopo e entrega combinados.</p></article></div>
+      <div class="mt-page-head"><div><span class="mt-overline">Nosso processo</span><h2>COMO TRABALHAMOS.</h2></div></div>
+      <div class="mt-about-steps"><span>01 / Escolha um modelo no catálogo ou apresente sua referência.</span><span>02 / Abra seu ticket no Discord para alinhar os detalhes.</span><span>03 / Desenvolvemos o projeto dentro do escopo combinado.</span><span>04 / A entrega das encomendas personalizadas acontece pelo Discord.</span></div>
+      <div class="mt-about-mission"><strong>Nossa missão.</strong> Transformar ideias em estilo e criar peças e projetos que carreguem identidade, presença e acabamento visual.</div>
     </div>
   </section>
 
