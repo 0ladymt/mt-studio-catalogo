@@ -118,3 +118,24 @@ body::before{display:none}button,a{touch-action:manipulation}a:focus-visible,but
 .mt-about__copy p{color:#d6c9de;line-height:1.85;max-width:570px;font-size:15px}.mt-about__services{display:flex;gap:10px;flex-wrap:wrap;margin:30px 0}
 .mt-about__services span{padding:10px 14px;color:#f4ebfa;background:#28122f;border:1px solid #623475;font:700 11px Montserrat,sans-serif}
 @media(max-width:800px){.mt-about{grid-template-columns:1fr;padding-block:30px}.mt-about__visual{min-height:330px;order:2}.mt-about__visual img{max-height:300px}.mt-about__copy h2{font-size:clamp(65px,13vw,95px)}}
+
+
+/* V5: vitrine 3D e página institucional completas */
+.mt-model-carousel{position:relative;display:flex;align-items:center;min-width:0;width:100%;gap:8px;padding:26px 40px;background:radial-gradient(ellipse at 50% 30%,#461662 0%,#230b33 45%,#130b19 100%);border:1px solid rgba(210,170,240,.25);overflow:hidden}
+.mt-model-track{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:1;min-width:0}
+.mt-model-card{min-width:0;position:relative;background:rgba(15,9,19,.72);border:1px solid rgba(216,199,255,.22);padding:8px 8px 13px;transition:transform .25s,border-color .25s}
+.mt-model-card:hover{transform:translateY(-4px);border-color:#ad36ee}
+.mt-model-stage{height:190px;aspect-ratio:1;position:relative;margin:auto;max-width:100%;background:radial-gradient(circle at 50% 38%,#4c2066,#1a0d25 70%);overflow:hidden}
+.mt-model-stage img,.mt-model-canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.mt-model-stage img.mt-thumb-backup{opacity:0}.mt-model-canvas{z-index:2}
+.mt-model-caption{padding:10px 3px 6px}.mt-model-caption small{display:block;color:#d8c7ff;font:800 10px Montserrat,sans-serif;letter-spacing:.08em}.mt-model-caption strong{display:block;font:400 24px "Bebas Neue",Impact,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px}
+.mt-model-card button{background:none;color:#fff;border:0;border-bottom:1px solid #a565c6;padding:5px 0;cursor:pointer;font:700 10px Montserrat,sans-serif;text-transform:uppercase}
+.mt-model-prev,.mt-model-next{z-index:3;position:absolute;top:50%;transform:translateY(-50%);background:#210e2f;color:white;border:1px solid #9b55c2;width:32px;height:52px;cursor:pointer;font-size:31px}.mt-model-prev{left:5px}.mt-model-next{right:5px}
+.mt-editorial--carousel .mt-editorial__visual{display:flex;min-width:0;overflow:hidden;padding:24px;background:radial-gradient(circle at 48% 30%,#411455,#180d20 72%)}
+.mt-catalog-showcase{margin:22px auto 38px}.mt-catalog-showcase__top{display:flex;align-items:end;justify-content:space-between;gap:25px;margin-bottom:16px}.mt-catalog-showcase__top h3{font:400 clamp(38px,5vw,62px)/.9 "Bebas Neue",Impact,sans-serif;margin:6px 0}.mt-catalog-showcase__top p{font-size:13px;color:#d8c7ff;max-width:340px}
+.mt-model-carousel--catalog .mt-model-stage{height:225px}.mt-model-carousel--catalog{padding-block:21px}
+.mt-about--complete .mt-about__copy p+p{margin-top:14px}.mt-about-detail{padding-bottom:80px}.mt-about-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.mt-about-grid article{padding:27px 25px;position:relative;background:linear-gradient(145deg,#24102f,#130e18);border:1px solid #643476;min-height:180px}.mt-about-grid h3{font:400 32px "Bebas Neue",Impact,sans-serif;margin:0 0 14px}.mt-about-grid p{font-size:13px;color:#ddcfe4;line-height:1.75}.mt-about-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.mt-about-steps span{display:block;border-left:3px solid #ae35e1;background:#21132a;padding:18px;color:#eee5f4;line-height:1.6;font-size:13px}.mt-about-mission{padding:30px;margin-top:40px;background:#2b0f3d;color:#f7f0fc;line-height:1.8}.mt-about-mission strong{font-size:16px}
+.mt-home-hero__image{opacity:.9}.mt-home-hero::before{background:linear-gradient(90deg,rgba(5,4,6,.94),rgba(5,4,6,.48) 59%,rgba(5,4,6,.15)),linear-gradient(0deg,rgba(5,4,6,.55),transparent 35%)}
+.mt-human[hidden]{display:none!important}
+@media(max-width:900px){.mt-editorial--carousel{grid-template-columns:1fr}.mt-model-stage{height:160px}.mt-about-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.mt-model-carousel{padding:20px 28px}.mt-model-track{gap:5px}.mt-model-stage{height:110px}.mt-model-caption strong{font-size:18px}.mt-model-caption small{font-size:8px}.mt-model-card button{font-size:9px}.mt-model-prev,.mt-model-next{width:24px;height:42px}.mt-about-steps{grid-template-columns:1fr}.mt-catalog-showcase__top{display:block}}
