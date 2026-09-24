@@ -25,15 +25,17 @@ const $ = (id) => document.getElementById(id);
 
 const IMAGE_FALLBACK_BASE = 'https://raw.githubusercontent.com/0ladymt/mt-studio-catalogo/desenvolvimento-loja-mt/';
 function recoverImage(image, localPath){
-  if(!image || !localPath) return;
+  if(!image || !localPath || image.dataset.mtFallbackBound === '1') return;
+  image.dataset.mtFallbackBound = '1';
   image.addEventListener('error', () => {
     if(image.dataset.remoteFallback === '1'){
       image.classList.add('mt-image-missing');
       image.removeAttribute('src');
       return;
     }
+    const current = image.getAttribute('src') || '';
     image.dataset.remoteFallback = '1';
-    image.src = IMAGE_FALLBACK_BASE + localPath.replace(/^\/+/, '');
+    image.src = IMAGE_FALLBACK_BASE + current.replace(/^\/+/, '');
   });
 }
 
