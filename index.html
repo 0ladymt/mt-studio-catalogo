@@ -6,11 +6,11 @@
   <title>MT Studio Criativo ™</title>
   <link rel="icon" type="image/png" href="assets/logo-borboleta.png?v=2">
   <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="mt-v5.css" /><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" data-page-link="catalogo" href="#catalogo">
+    <a class="brand" data-page-link="home" href="#home">
       <img class="brand-logo" src="assets/logo-borboleta.png" alt="MT Studio">
       <div>
         <h1>MT Studio</h1>
@@ -19,7 +19,7 @@
     </a>
 
     <nav class="nav-tabs" aria-label="Navegação principal">
-      <button class="nav-tab active" data-page="catalogo">Catálogo</button>
+      <button class="nav-tab active" data-page="home">Início</button><button class="nav-tab" data-page="loja">Loja</button><button class="nav-tab" data-page="catalogo">Catálogo 3D</button>
       <button class="nav-tab" data-page="sobre">Sobre</button>
       <button class="nav-tab" data-page="redes">Redes Sociais</button>
       <button class="nav-tab" data-page="projetos">Projetos</button>
@@ -33,7 +33,7 @@
     </a>
   </header>
 
-  <section id="page-catalogo" class="page active">
+  <section id="page-catalogo" class="page">
     <section class="hero">
       <div class="hero-card">
         <h2>Escolha o modelo ideal para sua criação</h2>
@@ -249,6 +249,6 @@
   </script>
   <script src="catalogo-data.js"></script>
   <script src="projetos-data.js"></script>
-  <script type="module" src="app.js"></script>
+  <script src="mt-v5.js" defer></script><script type="module" src="app.js"></script>
 </body>
 </html>
