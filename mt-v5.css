@@ -106,3 +106,15 @@ body::before{display:none}button,a{touch-action:manipulation}a:focus-visible,but
 .mt-image-missing{opacity:0!important}
 .mt-project__image:has(.mt-image-missing),.mt-feature:has(.mt-image-missing){background:radial-gradient(circle at 70% 30%,#4f1767,transparent 45%),#1b1122}
 @media(max-width:700px){.mt-hero-mark{top:15px;right:7px;width:110px;opacity:.55}.mt-home-hero__copy::before{left:-16px;top:36px;width:45px;height:45px}.mt-feature__content{padding:28px}.mt-intro__art{height:310px}.mt-section:has(#mtHomeProjects)::before{width:63px;height:55px;right:3%}}
+
+
+/* Página Sobre usa o mesmo sistema gráfico da home */
+.mt-about{min-height:calc(100svh - 170px);display:grid;grid-template-columns:.92fr 1.08fr;align-items:center;gap:clamp(25px,6vw,90px);padding-block:70px}
+.mt-about__visual{position:relative;min-height:510px;background:radial-gradient(ellipse at 50% 44%,#4c1764 0%,#230e2d 40%,#140d17 73%);border:1px solid rgba(216,199,255,.16);display:grid;place-items:center;isolation:isolate;overflow:hidden}
+.mt-about__visual::before{content:"";position:absolute;inset:5%;background:url('assets/mt-pincelada.svg') center/100% auto no-repeat;opacity:.23;transform:rotate(-29deg);z-index:-1}
+.mt-about__visual img{width:min(90%,490px);max-height:455px;object-fit:contain;filter:drop-shadow(0 4px 18px rgba(194,44,255,.22))}
+.mt-about__stamp{position:absolute;bottom:22px;left:24px;font:800 11px Montserrat,sans-serif;letter-spacing:.18em;border:1px solid #dfc2ee;padding:10px 14px;transform:rotate(-3deg);background:#1d1024}
+.mt-about__copy h2{font:400 clamp(72px,8vw,126px)/.85 "Bebas Neue",Impact,sans-serif;margin:24px 0}.mt-about__copy h2 em{font-style:normal;color:#d8c7ff}
+.mt-about__copy p{color:#d6c9de;line-height:1.85;max-width:570px;font-size:15px}.mt-about__services{display:flex;gap:10px;flex-wrap:wrap;margin:30px 0}
+.mt-about__services span{padding:10px 14px;color:#f4ebfa;background:#28122f;border:1px solid #623475;font:700 11px Montserrat,sans-serif}
+@media(max-width:800px){.mt-about{grid-template-columns:1fr;padding-block:30px}.mt-about__visual{min-height:330px;order:2}.mt-about__visual img{max-height:300px}.mt-about__copy h2{font-size:clamp(65px,13vw,95px)}}
