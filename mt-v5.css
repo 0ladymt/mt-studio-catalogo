@@ -33,3 +33,18 @@ body::before{display:none}button,a{touch-action:manipulation}a:focus-visible,but
 @media(max-width:1050px){.topbar{flex-wrap:wrap;padding:12px 20px}.topbar .brand{min-width:0}.nav-tabs{order:3;flex-basis:100%;overflow-x:auto;justify-content:flex-start}.mt-home-hero__copy{padding:90px 0}.mt-projects{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.mt-shell,.mt-page-shell{width:calc(100% - 30px)}.mt-home-hero h2{font-size:clamp(64px,16vw,100px)}.mt-home-hero__copy{padding:75px 0}.mt-hero-mark{width:78px;top:20px}.mt-split,.mt-editorial,.mt-human,.mt-projects{grid-template-columns:1fr}.mt-feature{min-height:350px}.mt-editorial__visual{min-height:280px}.mt-editorial__copy{padding:38px 23px}.mt-product-empty{grid-template-columns:1fr}.mt-project__image{height:270px}.mt-human__photo{min-height:310px}.mt-page-head{display:block}.mt-page-head p{margin-top:18px}.mt-strip{font-size:9px;letter-spacing:.1em}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* Consistência entre páginas internas */
+.mt-human[hidden]{display:none!important}
+#page-catalogo,#page-sobre,#page-projetos,#page-redes,#page-loja{padding-bottom:65px}
+#page-catalogo .hero,#page-catalogo .controls,#page-catalogo main,#page-projetos .center-title,#page-projetos .projects-grid,#page-sobre .about-hero,#page-sobre .section-line,#page-sobre .service-grid,#page-sobre .workflow-grid,#page-sobre .mission-card,#page-redes .center-title,#page-redes .social-list{max-width:1260px;margin-left:auto;margin-right:auto}
+#page-catalogo .hero-card,#page-sobre .about-hero{background:#1b1122;border-color:var(--mt-line);border-radius:6px}
+#page-catalogo .stat,#page-catalogo .card,#page-sobre .service-card,#page-sobre .mission-card,#page-projetos .project-card,#page-redes .social-row{border-radius:5px;background:#161119;border-color:var(--mt-line);box-shadow:none}
+#page-catalogo .card .thumb{object-fit:contain;background:#280d3a}
+#page-catalogo .controls{border-radius:5px;background:#161119;border:1px solid var(--mt-line)}
+#page-projetos .project-card img{object-fit:contain;background:#1b1220}
+#page-sobre h2,#page-projetos h2,#page-redes h2{font-family:"Bebas Neue",Impact,sans-serif;font-size:clamp(42px,6vw,72px);font-weight:400;letter-spacing:.01em}
+#page-sobre .about-hero p,#page-projetos .center-title p,#page-redes .center-title p{font-size:14px;line-height:1.75}
+#page-catalogo .btn-3d,#page-catalogo .btn-copy{border-radius:3px}
+@media(max-width:700px){#page-catalogo .hero,#page-catalogo .controls,#page-catalogo main,#page-sobre .about-hero,#page-sobre .service-grid,#page-sobre .workflow-grid,#page-sobre .mission-card,#page-projetos .center-title,#page-projetos .projects-grid{max-width:calc(100% - 30px)}}
