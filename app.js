@@ -419,12 +419,92 @@ function resizeViewer(){
   renderer.setSize(width, height, true);
 }
 
+
+/* Carrossel 3D: três modelos OBJ reais em rotação; miniaturas apenas como fallback. */
+const mtCarousels = [];
+function mountModelCarousel(trackId, wrapId, start=0) {
+  const track = $(trackId), wrap = $(wrapId);
+  if (!track || !wrap || !catalogo.length) return;
+  const total = catalogo.length;
+  let offset=start, generation=0;
+  let instances=[];
+  const dispose=()=>{
+    for(const inst of instances){
+      inst.disposed=true;
+      if(inst.renderer){ inst.renderer.dispose(); inst.renderer.forceContextLoss(); }
+      if(inst.object) inst.object.traverse(child=>{if(child.isMesh) child.geometry.dispose();});
+    }
+    instances=[];
+  };
+  const render=()=>{
+    dispose();
+    const current=++generation;
+    track.replaceChildren();
+    for(let n=0;n<3;n++){
+      const item=catalogo[(offset+n)%total];
+      const card=document.createElement('article');card.className='mt-model-card';
+      const stage=document.createElement('div');stage.className='mt-model-stage';
+      const thumb=document.createElement('img'); thumb.src=fixPath(item.preview);thumb.alt='Prévia de '+item.nome;thumb.loading='lazy';
+      stage.append(thumb);
+      const label=document.createElement('div');label.className='mt-model-caption';
+      const small=document.createElement('small');small.textContent=item.genero+' / '+item.categoria;
+      const strong=document.createElement('strong');strong.textContent=item.nome;
+      label.append(small,strong);
+      const open=document.createElement('button');open.type='button';open.textContent='Ver modelo ↗';open.addEventListener('click',()=>openViewer(item));
+      card.append(stage,label,open);track.append(card);
+      const instance={renderer:null,object:null,disposed:false};instances.push(instance);
+      if (!window.WebGLRenderingContext) continue;
+      try {
+        const canvas=document.createElement('canvas');canvas.className='mt-model-canvas';canvas.setAttribute('aria-label',item.nome+' girando em 3D');
+        const renderer3=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
+        renderer3.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+        renderer3.setSize(240,240,false);
+        renderer3.outputColorSpace=THREE.SRGBColorSpace;
+        instance.renderer=renderer3;
+        const scene3=new THREE.Scene();
+        const camera3=new THREE.PerspectiveCamera(35,1,.1,200);camera3.position.set(0,.15,4.4);
+        scene3.add(new THREE.HemisphereLight(0xffffff,0x504260,2.0));
+        const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(3,4,5);scene3.add(key);
+        const rim=new THREE.DirectionalLight(0xc68aff,1.2);rim.position.set(-3,1,-2);scene3.add(rim);
+        new OBJLoader().load(fixPath(item.obj), obj=>{
+          if(instance.disposed||generation!==current){obj.traverse(x=>{if(x.isMesh)x.geometry.dispose()});return;}
+          obj.traverse(x=>{if(x.isMesh)x.material=new THREE.MeshStandardMaterial({color:0xeae4ef,metalness:.08,roughness:.7,side:THREE.DoubleSide})});
+          const bounds=new THREE.Box3().setFromObject(obj);
+          const size=bounds.getSize(new THREE.Vector3());
+          const center=bounds.getCenter(new THREE.Vector3());
+          obj.position.sub(center);obj.scale.setScalar(2.35/(Math.max(size.x,size.y,size.z)||1));
+          scene3.add(obj);instance.object=obj;stage.append(canvas);thumb.classList.add('mt-thumb-backup');
+          instance.draw=()=>{obj.rotation.y+=.006;renderer3.render(scene3,camera3)};
+        },undefined,()=>{renderer3.dispose();renderer3.forceContextLoss();instance.renderer=null;});
+      }catch(err){if(instance.renderer){instance.renderer.dispose();instance.renderer=null;}}
+    }
+  };
+  const prev=wrap.querySelector('.mt-model-prev'),next=wrap.querySelector('.mt-model-next');
+  prev?.addEventListener('click',()=>{offset=(offset-1+total)%total;render()});
+  next?.addEventListener('click',()=>{offset=(offset+1)%total;render()});
+  render();
+  mtCarousels.push({wrap,instances:()=>instances});
+}
+function animateModelCarousels(){
+  requestAnimationFrame(animateModelCarousels);
+  if(document.hidden)return;
+  for(const carousel of mtCarousels){
+    if(!carousel.wrap.getBoundingClientRect().width)continue;
+    const rect=carousel.wrap.getBoundingClientRect();
+    if(rect.bottom<0||rect.top>innerHeight)return;
+    carousel.instances().forEach(inst=>{if(!inst.disposed&&inst.draw)inst.draw()});
+  }
+}
+
 setupLinks();
 setupPages();
 fillFilters();
 updateStats();
 renderProjects();
 renderGrid();
+mountModelCarousel('homeModelTrack','homeModelCarousel',0);
+mountModelCarousel('catalogModelTrack','catalogModelCarousel',8);
+animateModelCarousels();
 
 const initialHash = location.hash.replace('#','');
 if(['home','loja','catalogo','sobre','redes','projetos'].includes(initialHash)) openPage(initialHash); else openPage('home');
