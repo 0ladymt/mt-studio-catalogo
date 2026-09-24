@@ -56,6 +56,7 @@ function openPage(page){
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   $(`page-${page}`)?.classList.add('active');
   history.replaceState(null, '', `#${page}`);
+  window.scrollTo({top:0,behavior:'instant'});
 }
 
 function unique(arr){
@@ -405,4 +406,4 @@ renderProjects();
 renderGrid();
 
 const initialHash = location.hash.replace('#','');
-if(['catalogo','sobre','redes','projetos'].includes(initialHash)) openPage(initialHash);
+if(['home','loja','catalogo','sobre','redes','projetos'].includes(initialHash)) openPage(initialHash); else openPage('home');
