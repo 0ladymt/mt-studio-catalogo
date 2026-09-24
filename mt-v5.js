@@ -25,30 +25,30 @@
   }
   const projects = Array.isArray(window.PROJETOS_MT) ? window.PROJETOS_MT : [];
   const items = Array.isArray(window.CATALOGO_MT) ? window.CATALOGO_MT : [];
-  const path = value => String(value || '').replaceAll('\\','/').replace(/^\.?\//,'').split('/').map(encodeURIComponent).join('/');
-  const cover = p => path(p?.capa || p?.fotos?.[0] || p?.imagem);
+  const path = value => String(value || '').replaceAll('\\','/').replace(/^\.?\//,'').split('/').map(segment => encodeURIComponent(decodeURIComponent(segment))).join('/');
   const RAW = 'https://raw.githubusercontent.com/0ladymt/mt-studio-catalogo/desenvolvimento-loja-mt/';
+  const cover = p => path(p?.capa || p?.fotos?.[0] || p?.imagem);
   const fallback = img => {
     if (!img) return;
     img.addEventListener('error', () => {
-      if (img.dataset.mtRemote) { img.classList.add('mt-image-missing'); img.removeAttribute('src'); return; }
-      const source = img.getAttribute('src') || '';
-      if (!source || /^(?:https?:|data:)/i.test(source)) { img.classList.add('mt-image-missing'); img.removeAttribute('src'); return; }
-      img.dataset.mtRemote = 'true';
-      img.src = RAW + source.replace(/^\//,'');
+      if (img.dataset.mtLocalFallback === '1') { img.classList.add('mt-image-missing'); return; }
+      img.dataset.mtLocalFallback='1';
+      const url=img.getAttribute('src')||'';
+      if(url.startsWith(RAW)) img.src=url.slice(RAW.length);
+      else if(url && !/^https?:/i.test(url)) img.src=RAW+url.replace(/^\//,'');
+      else img.classList.add('mt-image-missing');
     });
   };
-  const use = (id,src) => { const img=document.getElementById(id); if(img && src) { fallback(img); img.src=src; } };
+  const use = (id,src) => { const img=document.getElementById(id); if(img && src) { fallback(img); img.src=RAW+src; } };
   use('mtHeroPhoto',cover(projects.find(p=>/kings/i.test(p.titulo)) || projects[0]));
   use('mtReadyPhoto',cover(projects.find(p=>/shadows/i.test(p.titulo)) || projects[1] || projects[0]));
   use('mtCustomPhoto',cover(projects.find(p=>/shelby/i.test(p.titulo)) || projects[2] || projects[0]));
-  use('mtCatalogPhoto',path(items.find(i=>i.preview)?.preview));
   const gallery=document.getElementById('mtHomeProjects');
   if(gallery) {
     projects.slice(0,3).forEach((p,i) => {
       const a=document.createElement('a'); a.href='#projetos'; a.className='mt-project'; a.dataset.pageLink='projetos';
       const frame=document.createElement('div'); frame.className='mt-project__image';
-      const img=document.createElement('img'); fallback(img); img.src=cover(p); img.alt=p.titulo || 'Projeto MT Studio'; img.loading='lazy'; frame.append(img);
+      const img=document.createElement('img'); fallback(img); img.src=RAW+cover(p); img.alt=p.titulo || 'Projeto MT Studio'; img.loading='lazy'; frame.append(img);
       const meta=document.createElement('div'); meta.className='mt-project__meta';
       const title=document.createElement('h3'); title.textContent=p.titulo || 'Projeto MT Studio';
       const arrow=document.createElement('span'); arrow.textContent='↗';meta.append(title,arrow);a.append(frame,meta);gallery.append(a);
