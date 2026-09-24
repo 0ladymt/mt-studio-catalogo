@@ -22,6 +22,21 @@ const catalogo = Array.isArray(window.CATALOGO_MT) ? window.CATALOGO_MT : [];
 const projetos = Array.isArray(window.PROJETOS_MT) ? window.PROJETOS_MT : [];
 
 const $ = (id) => document.getElementById(id);
+
+const IMAGE_FALLBACK_BASE = 'https://raw.githubusercontent.com/0ladymt/mt-studio-catalogo/desenvolvimento-loja-mt/';
+function recoverImage(image, localPath){
+  if(!image || !localPath) return;
+  image.addEventListener('error', () => {
+    if(image.dataset.remoteFallback === '1'){
+      image.classList.add('mt-image-missing');
+      image.removeAttribute('src');
+      return;
+    }
+    image.dataset.remoteFallback = '1';
+    image.src = IMAGE_FALLBACK_BASE + localPath.replace(/^\/+/, '');
+  });
+}
+
 const grid = $('grid');
 const empty = $('empty');
 const search = $('search');
@@ -106,6 +121,7 @@ function renderProjects(){
         <p>${fotos.length} foto${fotos.length === 1 ? '' : 's'} • projeto produzido pela MT Studio.</p>
       </div>
     `;
+    recoverImage(card.querySelector('img'), capa);
     card.addEventListener('click', () => openProject(index));
     box.appendChild(card);
   });
@@ -123,6 +139,8 @@ function setProjectImage(src){
   img.onerror = () => {
     if(loading) loading.textContent = 'Não foi possível carregar esta imagem.';
   };
+  recoverImage(img, src);
+  delete img.dataset.remoteFallback;
   img.src = src;
 }
 
@@ -141,6 +159,7 @@ function openProject(index){
     btn.className = 'project-thumb' + (i === 0 ? ' active' : '');
     btn.type = 'button';
     btn.innerHTML = `<img src="${foto}" alt="">`;
+    recoverImage(btn.querySelector('img'), foto);
     btn.addEventListener('click', () => {
       setProjectImage(foto);
       document.querySelectorAll('.project-thumb').forEach(t => t.classList.remove('active'));
