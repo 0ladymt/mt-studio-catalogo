@@ -491,7 +491,7 @@ function animateModelCarousels(){
   for(const carousel of mtCarousels){
     if(!carousel.wrap.getBoundingClientRect().width)continue;
     const rect=carousel.wrap.getBoundingClientRect();
-    if(rect.bottom<0||rect.top>innerHeight)return;
+    if(rect.bottom<0||rect.top>innerHeight)continue;
     carousel.instances().forEach(inst=>{if(!inst.disposed&&inst.draw)inst.draw()});
   }
 }
