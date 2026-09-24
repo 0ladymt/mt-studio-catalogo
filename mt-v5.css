@@ -48,3 +48,61 @@ body::before{display:none}button,a{touch-action:manipulation}a:focus-visible,but
 #page-sobre .about-hero p,#page-projetos .center-title p,#page-redes .center-title p{font-size:14px;line-height:1.75}
 #page-catalogo .btn-3d,#page-catalogo .btn-copy{border-radius:3px}
 @media(max-width:700px){#page-catalogo .hero,#page-catalogo .controls,#page-catalogo main,#page-sobre .about-hero,#page-sobre .service-grid,#page-sobre .workflow-grid,#page-sobre .mission-card,#page-projetos .center-title,#page-projetos .projects-grid{max-width:calc(100% - 30px)}}
+
+
+/* MT street kit: grafismos aplicados com função, não como adesivos aleatórios */
+.mt-intro__center{width:min(650px,88vw)}
+.mt-intro__art{height:min(52vh,410px);position:relative;isolation:isolate;display:grid;place-items:center}
+.mt-intro__art::before{content:"";position:absolute;inset:8% 4%;background:radial-gradient(ellipse,rgba(157,35,205,.2),transparent 63%);filter:blur(24px)}
+.mt-intro__graffiti{position:relative;width:min(560px,95%);height:100%;object-fit:contain;clip-path:inset(0 100% 0 0);animation:mt-graffiti-paint 1.95s steps(32,end) .08s forwards;filter:drop-shadow(0 4px 8px rgba(162,41,222,.36))}
+.mt-intro__spray{position:absolute;top:10%;left:-7%;width:115px;height:78%;background-image:radial-gradient(#dca0f6 1.3px,transparent 2px),radial-gradient(#a42bda .7px,transparent 1.3px),radial-gradient(#c437ef 2.2px,transparent 3px);background-size:17px 19px,11px 13px,43px 39px;mask-image:radial-gradient(ellipse at center,#000 10%,transparent 71%);transform:rotate(-12deg);mix-blend-mode:screen;pointer-events:none;opacity:0;animation:mt-spray-pass 1.9s cubic-bezier(.22,.62,.3,1) .07s forwards}
+.mt-intro__spray--two{height:39%;width:170px;top:32%;animation-delay:.48s;animation-duration:1.5s;opacity:.4}
+.mt-intro__logo{font:italic 900 clamp(48px,8vw,83px)/1 Montserrat,Arial,sans-serif;letter-spacing:-.085em;color:white;text-shadow:4px 4px 0 #7d239c;animation:mt-logo .45s ease-out 1.6s forwards}
+.mt-intro__tag{font-size:10px;color:#e3d2f1;animation:mt-logo .4s ease-out 1.9s forwards}
+@keyframes mt-graffiti-paint{0%{clip-path:inset(0 100% 0 0)}20%{clip-path:polygon(0 0,22% 0,14% 100%,0 100%)}45%{clip-path:polygon(0 0,46% 0,39% 100%,0 100%)}70%{clip-path:polygon(0 0,78% 0,69% 100%,0 100%)}100%{clip-path:inset(0 0 0 0)}}
+@keyframes mt-spray-pass{0%{left:-8%;opacity:0}8%{opacity:.85}75%{opacity:.9}100%{left:95%;opacity:0}}
+.mt-home-hero{background:#0b090d;overflow:hidden}
+.mt-home-hero::after{content:"";position:absolute;left:-2.5vw;bottom:15px;width:clamp(240px,31vw,520px);height:80px;background:url('assets/mt-pincelada.svg') center/contain no-repeat;opacity:.65;z-index:-1;transform:rotate(-4deg)}
+.mt-hero-mark{content:url('assets/mt-borboleta-street.svg');width:clamp(170px,25vw,365px);top:7%;right:max(18px,calc((100vw - 1340px)/2));opacity:.93;filter:drop-shadow(0 4px 18px rgba(142,24,194,.28));transform:rotate(10deg)}
+.mt-home-hero__copy{position:relative;z-index:1}
+.mt-home-hero__copy::before{content:"";position:absolute;top:31px;left:-75px;width:105px;height:100px;background:url('assets/mt-doodles.svg') center/contain no-repeat;opacity:.72;pointer-events:none}
+.mt-home-hero__copy>h2 span{position:relative;z-index:0}
+.mt-home-hero__copy>h2 span::after{content:"";position:absolute;z-index:-1;bottom:-.045em;left:1%;width:94%;height:.13em;background:url('assets/mt-pincelada.svg') center/100% 100% no-repeat;transform:rotate(-2deg)}
+.mt-strip{background:#2b0a3a;border-color:#4d1467}
+.mt-feature{border:1px solid rgba(216,199,255,.14)}
+.mt-feature:first-child::before,.mt-feature:nth-child(2)::before{content:"";position:absolute;z-index:2;top:17px;right:18px;width:80px;height:68px;background:url('assets/mt-borboleta-street.svg') center/contain no-repeat;opacity:.8;filter:drop-shadow(2px 3px 0 #fff)}
+.mt-feature:nth-child(2)::before{background-image:url('assets/mt-coroa.svg');opacity:.9}
+.mt-feature img{object-position:center 24%}
+.mt-feature__content{padding:34px 38px}
+.mt-feature__content::before{content:"";width:100px;height:12px;background:url('assets/mt-pincelada.svg') left/contain no-repeat;position:absolute;top:-8px;left:36px}
+.mt-section:has(#mtHomeProjects){position:relative}
+.mt-section:has(#mtHomeProjects)::before{content:"";width:120px;height:95px;position:absolute;right:3%;top:0;background:url('assets/mt-coroa.svg') center/contain no-repeat;transform:rotate(12deg);opacity:.75}
+.mt-project__image{height:285px;padding:0;overflow:hidden}
+.mt-project img{object-fit:contain;object-position:center center}
+.mt-project:hover{border-color:#a734da}
+.mt-project__meta{border-top:2px solid #722493}
+.mt-editorial{border-top:1px solid #4d1661;border-bottom:1px solid #4d1661}
+.mt-editorial__visual{display:grid;place-items:center;overflow:hidden}
+.mt-editorial__visual img{object-fit:contain;max-height:470px;width:100%;height:auto}
+.mt-editorial__copy{position:relative}
+.mt-editorial__copy::after{content:"";position:absolute;right:30px;bottom:8px;width:130px;height:130px;background:url('assets/mt-doodles.svg') center/contain no-repeat;opacity:.45;pointer-events:none}
+.mt-product-empty{background:linear-gradient(90deg,rgba(48,9,68,.32),transparent);padding:35px 30px;border:1px solid var(--mt-line);position:relative}
+.mt-product-empty::before{content:"";position:absolute;top:-7px;left:30px;width:110px;height:13px;background:url('assets/mt-pincelada.svg') center/contain no-repeat}
+.mt-human__photo{background:#f6f4f9}
+.mt-human__photo img{object-fit:contain;object-position:center bottom}
+.mt-human__copy{position:relative}
+.mt-human__copy::after{content:"";position:absolute;right:6%;top:8%;width:90px;height:90px;background:url('assets/mt-doodles.svg') center/contain no-repeat;opacity:.52}
+.mt-cta{position:relative;overflow:hidden}
+.mt-cta::before{content:"";position:absolute;left:2%;bottom:-27px;width:200px;height:180px;background:url('assets/mt-coroa.svg') center/contain no-repeat;opacity:.28;transform:rotate(-12deg)}
+.mt-cta::after{content:"";position:absolute;right:0;top:0;width:225px;height:38px;background:url('assets/mt-pincelada.svg') center/contain no-repeat;transform:rotate(5deg)}
+.mt-cta>*{position:relative;z-index:1}
+#page-catalogo .hero-card{position:relative;overflow:hidden}
+#page-catalogo .hero-card::after{content:"";position:absolute;right:1%;top:-16px;width:100px;height:95px;background:url('assets/mt-borboleta-street.svg') center/contain no-repeat;opacity:.55;pointer-events:none}
+#page-projetos .center-title,#page-redes .center-title{position:relative}
+#page-projetos .center-title::before,#page-redes .center-title::before{content:"";position:absolute;left:1%;top:18px;width:93px;height:89px;background:url('assets/mt-coroa.svg') center/contain no-repeat;opacity:.65;transform:rotate(-12deg)}
+#page-redes .center-title::before{background-image:url('assets/mt-borboleta-street.svg');opacity:.55}
+#page-sobre .about-hero{position:relative;overflow:hidden}
+#page-sobre .about-hero::after{content:"";position:absolute;right:0;top:0;width:120px;height:110px;background:url('assets/mt-doodles.svg') center/contain no-repeat;opacity:.45}
+.mt-image-missing{opacity:0!important}
+.mt-project__image:has(.mt-image-missing),.mt-feature:has(.mt-image-missing){background:radial-gradient(circle at 70% 30%,#4f1767,transparent 45%),#1b1122}
+@media(max-width:700px){.mt-hero-mark{top:15px;right:7px;width:110px;opacity:.55}.mt-home-hero__copy::before{left:-16px;top:36px;width:45px;height:45px}.mt-feature__content{padding:28px}.mt-intro__art{height:310px}.mt-section:has(#mtHomeProjects)::before{width:63px;height:55px;right:3%}}
