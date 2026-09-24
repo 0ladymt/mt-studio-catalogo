@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 const LINKS_MT = {
-  discord: 'https://discord.gg/eUtDc9KStc',
+  discord: 'https://discord.gg/MAPubH3vRw',
   instagram: 'https://www.instagram.com/mt_studiocriativo/',
   tiktok: 'https://www.tiktok.com/@mt_studiocriativo?_r=1&_t=ZS-95TIQCHu8N5'
 };
