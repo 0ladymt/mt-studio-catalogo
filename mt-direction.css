@@ -174,3 +174,6 @@ body,#page-home,#page-sobre,#page-redes,#page-projetos,#page-catalogo,#page-loja
 .mt-cta{overflow:hidden}
 @media(max-width:900px){.mt-model-stage,.mt-model-carousel--catalog .mt-model-stage{height:235px}}
 @media(max-width:640px){.mt-model-carousel{padding:16px 25px}.mt-model-track{gap:6px}.mt-model-card{padding:5px}.mt-model-stage,.mt-model-carousel--catalog .mt-model-stage{height:clamp(125px,34vw,200px)}.mt-model-caption strong{font-size:18px}.mt-about__visual{min-height:300px}}
+
+.mt-about__visual[hidden]{display:none!important}
+.mt-about:has(#mtAboutPortrait[hidden]){grid-template-columns:minmax(0,790px);justify-content:center;min-height:initial}
