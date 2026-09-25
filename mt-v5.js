@@ -43,6 +43,7 @@
   use('mtHeroPhoto',cover(projects.find(p=>/kings/i.test(p.titulo)) || projects[0]));
   use('mtReadyPhoto',cover(projects.find(p=>/shadows/i.test(p.titulo)) || projects[1] || projects[0]));
   use('mtCustomPhoto',cover(projects.find(p=>/shelby/i.test(p.titulo)) || projects[2] || projects[0]));
+  use('mtShopPhoto',cover(projects.find(p=>/shadows/i.test(p.titulo)) || projects.find(p=>/kings/i.test(p.titulo)) || projects[0]));
   const gallery=document.getElementById('mtHomeProjects');
   if(gallery) {
     projects.slice(0,3).forEach((p,i) => {
