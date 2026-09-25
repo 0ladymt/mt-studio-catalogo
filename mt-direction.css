@@ -138,16 +138,39 @@ footer img{width:54px;height:54px;object-fit:cover}
 @media(max-width:800px){.mt-shop-story{grid-template-columns:1fr}.mt-shop-story__photo{min-height:330px}.mt-shop-story__content{padding:35px}}
 
 
-/* Grafismos vetorizados da própria prancha do manual — hierarquia editorial */
-.mt-home-hero__copy::after{content:"";display:block;position:absolute;right:8%;top:15%;width:clamp(110px,13vw,180px);height:140px;background:url('assets/mt-manual-borboletas.svg') center/contain no-repeat;filter:drop-shadow(5px 6px 0 rgba(30,4,42,.7));opacity:.84;pointer-events:none}
-.mt-page-head h2{position:relative}
-.mt-page-head h2::after{content:"";display:block;width:140px;height:24px;margin:7px 0 -8px;background:url('assets/mt-manual-pinceladas.svg') left center/contain no-repeat;opacity:.72}
-.mt-section:has(#mtHomeProjects) .mt-page-head{position:relative}
-.mt-section:has(#mtHomeProjects) .mt-page-head::before{content:"";position:absolute;right:10px;top:-18px;width:72px;height:66px;background:url('assets/mt-manual-coroa.svg') center/contain no-repeat;display:block;opacity:.8}
-.mt-cta::before{content:"";position:absolute;display:block;left:0;right:0;top:-22px;height:74px;background:url('assets/mt-manual-drips.svg') left top/270px 74px repeat-x;opacity:.45;pointer-events:none}
-.mt-about-detail .mt-page-head h2::after{opacity:.6}
-.mt-shop-story__content::before{content:"";width:153px;height:35px;margin-bottom:13px;background:url('assets/mt-manual-pinceladas.svg') left center/contain no-repeat;opacity:.85}
-#page-projetos .center-title::after{content:"";display:block;width:100px;height:80px;background:url('assets/mt-manual-coroa.svg') center/contain no-repeat;margin:8px auto -10px;opacity:.78}
-#page-redes .center-title::after{content:"";display:block;width:110px;height:70px;background:url('assets/mt-manual-borboletas.svg') center/contain no-repeat;margin:4px auto -4px;opacity:.75}
-.mt-about__visual .mt-about__stamp{background:#211029}
-@media(max-width:840px){.mt-home-hero__copy::after{width:100px;height:95px;right:2%;top:37px;opacity:.52}.mt-section:has(#mtHomeProjects) .mt-page-head::before{width:50px;height:46px}}
+
+/* REVISÃO VISUAL: sem grafismos espalhados, sem fundo de borboleta. */
+body::after,.mt-home-hero::after,.mt-home-hero__copy::after,.mt-home-hero__copy::before,
+.mt-section::before,.mt-section:has(#mtHomeProjects)::before,
+.mt-page-head h2::after,.mt-section:has(#mtHomeProjects) .mt-page-head::before,
+.mt-shop-story__content::before,.mt-cta::before,.mt-cta::after,
+#page-redes .center-title::before,#page-redes .center-title::after,
+#page-projetos .center-title::after,
+.mt-about__visual::before,.mt-about__visual::after,
+.mt-feature::before,.mt-feature__content::before,
+.mt-editorial__copy::after,.mt-human__copy::after {content:none!important;display:none!important;background-image:none!important}
+body,#page-home,#page-sobre,#page-redes,#page-projetos,#page-catalogo,#page-loja{background-image:none!important}
+.mt-page-head{padding-top:35px}
+.mt-section{padding-block:65px}
+.mt-section:has(#mtHomeProjects){padding-top:54px}
+.mt-about__visual{background:#1b1020;min-height:500px}
+.mt-about__visual img{display:block;width:100%;height:100%;max-height:none;object-fit:cover;object-position:center;filter:none}
+.mt-about__visual:has(img.mt-photo-unavailable){display:none}
+.mt-about:has(.mt-photo-unavailable){grid-template-columns:minmax(0,790px);justify-content:center;min-height:initial}
+.mt-about__stamp{display:none}
+.mt-home-hero__copy::after{content:none!important}
+.mt-model-carousel{padding:24px 38px;background:#20142a;overflow:hidden}
+.mt-model-track{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-width:0}
+.mt-model-card{min-width:0;overflow:hidden;padding:10px 10px 16px}
+.mt-model-stage,.mt-model-carousel--catalog .mt-model-stage{position:relative;box-sizing:border-box;width:100%;height:clamp(225px,21vw,310px);aspect-ratio:auto;max-width:none;margin:0;overflow:hidden;display:block;background:#281830}
+.mt-model-stage img,.mt-model-stage canvas,.mt-model-canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important;max-width:100%;max-height:100%;object-fit:contain!important;object-position:center!important}
+.mt-model-caption{padding:12px 3px 8px}
+.mt-model-caption strong{overflow:visible;white-space:normal;line-height:1.1}
+.mt-editorial--carousel .mt-editorial__visual{padding:30px}
+#page-catalogo .grid .card .thumb{object-fit:contain!important;object-position:center!important}
+#page-projetos .center-title{position:relative;padding-top:130px}
+#page-projetos .center-title::before{content:""!important;display:block!important;position:absolute;left:50%;right:auto;top:28px;transform:translateX(-50%);width:110px;height:80px;background:url('assets/mt-manual-coroa.svg') center/contain no-repeat!important;opacity:1}
+#page-redes .center-title{padding-top:65px}
+.mt-cta{overflow:hidden}
+@media(max-width:900px){.mt-model-stage,.mt-model-carousel--catalog .mt-model-stage{height:235px}}
+@media(max-width:640px){.mt-model-carousel{padding:16px 25px}.mt-model-track{gap:6px}.mt-model-card{padding:5px}.mt-model-stage,.mt-model-carousel--catalog .mt-model-stage{height:clamp(125px,34vw,200px)}.mt-model-caption strong{font-size:18px}.mt-about__visual{min-height:300px}}
