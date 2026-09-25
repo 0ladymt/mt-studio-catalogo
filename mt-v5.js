@@ -5,7 +5,7 @@
   intro.className = 'mt-intro';
   intro.setAttribute('role','status');
   intro.setAttribute('aria-label','Abertura da MT Studio');
-  intro.innerHTML = '<div class="mt-intro__center"><div class="mt-intro__art"><img class="mt-intro__graffiti" src="assets/mt-borboleta-street.svg" alt="Borboleta graffiti da MT Studio"><span class="mt-intro__spray" aria-hidden="true"></span><span class="mt-intro__spray mt-intro__spray--two" aria-hidden="true"></span></div><div class="mt-intro__logo">MT STUDIO</div><div class="mt-intro__tag">IDEIAS QUE VIRAM IDENTIDADE</div></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
+  intro.innerHTML = '<div class="mt-intro__center"><div class="mt-intro__art"><div class="mt-intro__ink" aria-hidden="true"></div><img class="mt-intro__graffiti" src="assets/logo-borboleta.png" alt="Borboleta oficial da MT Studio"><span class="mt-intro__spray" aria-hidden="true"></span><span class="mt-intro__spray mt-intro__spray--two" aria-hidden="true"></span></div><div class="mt-intro__logo">MT STUDIO</div><div class="mt-intro__tag">IDEIAS QUE VIRAM IDENTIDADE</div></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isHome = !location.hash || location.hash === '#home';
   if (isHome && !reduced) {
