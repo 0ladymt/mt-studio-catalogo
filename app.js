@@ -458,11 +458,14 @@ function mountModelCarousel(trackId, wrapId, start=0) {
         const canvas=document.createElement('canvas');canvas.className='mt-model-canvas';canvas.setAttribute('aria-label',item.nome+' girando em 3D');
         const renderer3=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
         renderer3.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
-        renderer3.setSize(240,240,false);
+        const stageRect=stage.getBoundingClientRect();
+        const stageWidth=Math.max(160,Math.round(stageRect.width||240));
+        const stageHeight=Math.max(200,Math.round(stageRect.height||260));
+        renderer3.setSize(stageWidth,stageHeight,false);
         renderer3.outputColorSpace=THREE.SRGBColorSpace;
         instance.renderer=renderer3;
         const scene3=new THREE.Scene();
-        const camera3=new THREE.PerspectiveCamera(35,1,.1,200);camera3.position.set(0,.15,4.4);
+        const camera3=new THREE.PerspectiveCamera(35,stageWidth/stageHeight,.1,200);camera3.position.set(0,0,5.8);
         scene3.add(new THREE.HemisphereLight(0xffffff,0x504260,2.0));
         const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(3,4,5);scene3.add(key);
         const rim=new THREE.DirectionalLight(0xc68aff,1.2);rim.position.set(-3,1,-2);scene3.add(rim);
@@ -472,9 +475,13 @@ function mountModelCarousel(trackId, wrapId, start=0) {
           const bounds=new THREE.Box3().setFromObject(obj);
           const size=bounds.getSize(new THREE.Vector3());
           const center=bounds.getCenter(new THREE.Vector3());
-          obj.position.sub(center);obj.scale.setScalar(2.35/(Math.max(size.x,size.y,size.z)||1));
+          obj.position.sub(center);obj.scale.setScalar(1.55/(Math.max(size.x,size.y,size.z)||1));
           scene3.add(obj);instance.object=obj;stage.append(canvas);thumb.classList.add('mt-thumb-backup');
-          instance.draw=()=>{obj.rotation.y+=.006;renderer3.render(scene3,camera3)};
+          instance.draw=()=>{
+            const w=Math.max(1,Math.round(stage.clientWidth)),h=Math.max(1,Math.round(stage.clientHeight));
+            if(w!==instance.width||h!==instance.height){instance.width=w;instance.height=h;renderer3.setSize(w,h,false);camera3.aspect=w/h;camera3.updateProjectionMatrix();}
+            obj.rotation.y+=.006;renderer3.render(scene3,camera3);
+          };
         },undefined,()=>{renderer3.dispose();renderer3.forceContextLoss();instance.renderer=null;});
       }catch(err){if(instance.renderer){instance.renderer.dispose();instance.renderer=null;}}
     }
