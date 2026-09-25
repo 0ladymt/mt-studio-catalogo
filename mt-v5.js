@@ -56,6 +56,14 @@
     });
   }
   document.querySelectorAll('#projectsGrid img').forEach(fallback);
+  const aboutPhoto=document.getElementById('mtAboutRafaJoy');
+  const aboutPortrait=document.getElementById('mtAboutPortrait');
+  if(aboutPhoto && aboutPortrait){
+    const showPortrait=()=>{if(aboutPhoto.naturalWidth>0)aboutPortrait.hidden=false;};
+    aboutPhoto.addEventListener('load',showPortrait);
+    aboutPhoto.addEventListener('error',()=>{aboutPortrait.hidden=true;});
+    if(aboutPhoto.complete)showPortrait();
+  }
   const photo=document.getElementById('mtRafaJoy');
   const human=document.getElementById('mtHuman');
   if(photo && human){
