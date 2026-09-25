@@ -1,0 +1,51 @@
+/* MT Studio — revisão de composição; carregado depois das folhas anteriores. */
+.mt-intro__art{height:clamp(250px,46vh,410px);overflow:visible}
+.mt-intro__street{height:100%;max-height:410px;width:min(590px,86vw);overflow:visible;filter:drop-shadow(0 0 14px rgba(177,34,216,.22))}
+.mt-intro__lines path{stroke-width:8;stroke-dasharray:1200;stroke-dashoffset:1200;animation:mt-street-draw 1.5s cubic-bezier(.25,.7,.2,1) forwards}
+.mt-intro__lines path:nth-child(2){animation-delay:.17s}
+.mt-intro__lines path:nth-child(3){animation-delay:.38s}
+.mt-intro__lines path:nth-child(4){animation-delay:.52s}
+.mt-intro__lines path:nth-child(5){animation-delay:.7s;stroke:#f0cbfa;stroke-width:5}
+.mt-intro__lines path:nth-child(n+6){animation-delay:.86s;stroke-width:5}
+.mt-intro__splatter{opacity:0;animation:mt-splatter .4s steps(2,end) 1.35s forwards}
+@keyframes mt-street-draw{to{stroke-dashoffset:0}}
+@keyframes mt-splatter{to{opacity:1}}
+.mt-intro__graffiti,.mt-intro__spray,.mt-intro__ink{display:none!important}
+.mt-intro__logo{margin-top:-8px;position:relative}
+.mt-intro__center{width:min(650px,94vw)}
+/* Os elementos gráficos pertencem às áreas de conteúdo, não ao fundo inteiro. */
+body::after,.mt-home-hero::after{display:none!important}
+.mt-home-hero__copy>h2 span::after{height:7px;max-width:470px}
+.mt-section:has(#mtHomeProjects) .mt-page-head{position:relative}
+.mt-section:has(#mtHomeProjects) .mt-page-head::before{content:"";display:block;position:absolute;right:10px;top:0;width:95px;height:78px;background:url('assets/mt-manual-coroa.svg') center/contain no-repeat;opacity:.95}
+#page-projetos .center-title::before{display:none!important;content:none!important}
+.mt-projects-crown{width:100px;height:80px;object-fit:contain;display:block;margin:0 auto 18px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+#page-projetos .center-title{padding-top:64px}
+.mt-project__image img,.project-card img{object-fit:cover}
+/* Fotografia da fundadora e do Joy — manter as duas seções visíveis. */
+#mtHuman,#mtAboutPortrait{visibility:visible!important;opacity:1!important}
+#mtHuman[hidden],#mtAboutPortrait[hidden]{display:revert!important}
+.mt-human{display:grid!important;grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr);min-height:510px}
+.mt-human__photo{position:relative;background:#f6effb;min-height:480px}
+.mt-human__photo img{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important;object-position:center bottom!important;display:block!important}
+.mt-about{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)!important;justify-content:initial!important}
+.mt-about__visual{min-height:520px!important;overflow:hidden;background:#f6effb!important;display:grid!important;place-items:center}
+.mt-about__visual img{width:100%!important;height:100%!important;max-height:620px!important;object-fit:contain!important;object-position:center bottom!important;display:block!important;filter:none!important}
+.mt-about__visual::before,.mt-about__visual::after{display:none!important}
+.mt-human__copy::after{display:none!important}
+.mt-human__copy h2{position:relative}
+.mt-human__copy h2::after{content:"";display:block;width:170px;height:16px;background:url('assets/mt-pincelada.svg') center/contain no-repeat;margin-top:9px}
+.mt-cta::after{content:""!important;display:block!important;position:absolute;top:0;left:0;right:0;width:100%;height:24px;background:url('assets/mt-manual-drips.svg') top center/auto 24px repeat-x!important;opacity:.8}
+.mt-cta>*{z-index:1}
+/* O carrossel fica só na home; proporção preservada e margem para rotação. */
+#page-catalogo .mt-catalog-showcase{display:none!important}
+.mt-model-carousel{overflow:visible!important;padding:25px 42px}
+.mt-model-track{grid-template-columns:repeat(3,minmax(0,1fr));min-width:0;align-items:stretch}
+.mt-model-card{min-width:0;overflow:hidden}
+.mt-model-stage{height:clamp(230px,21vw,330px)!important;overflow:hidden;display:block}
+.mt-model-stage canvas{width:100%!important;height:100%!important;display:block}
+.mt-model-stage img{object-fit:contain!important}
+#page-catalogo .grid .card .thumb{object-fit:contain!important}
+@media(max-width:900px){.mt-about{grid-template-columns:1fr!important}.mt-human{grid-template-columns:1fr}.mt-human__photo{min-height:380px}.mt-model-stage{height:220px!important}}
+@media(max-width:640px){.mt-model-carousel{padding:16px 26px}.mt-model-track{gap:6px}.mt-model-stage{height:155px!important}.mt-intro__art{height:300px}.mt-projects-crown{width:85px;height:70px}}
+@media(prefers-reduced-motion:reduce){.mt-intro__lines path{stroke-dashoffset:0;animation:none}.mt-intro__splatter{opacity:1;animation:none}}
