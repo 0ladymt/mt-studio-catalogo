@@ -110,3 +110,29 @@ footer img{width:54px;height:54px;object-fit:cover}
 @media(max-width:900px){.mt-home-hero{min-height:690px}.mt-home-hero__copy{padding-top:112px}.mt-feature{height:430px}.mt-editorial{grid-template-columns:1fr}.mt-editorial__visual{min-height:380px}.mt-model-stage{height:180px}.mt-about{grid-template-columns:1fr}.mt-about__visual{min-height:400px;order:2}}
 @media(max-width:640px){.topbar{padding:12px 18px}.mt-shell,.mt-home-hero__copy{width:calc(100% - 40px)}.mt-home-hero{min-height:650px}.mt-home-hero__image{object-position:65% center}.mt-home-hero::before{background:linear-gradient(90deg,rgba(16,13,19,.9),rgba(16,13,19,.42)),linear-gradient(0deg,#100d13,transparent 64%)}.mt-home-hero h2{font-size:clamp(69px,14vw,101px)}.mt-home-hero__copy{padding-top:122px}.mt-split{grid-template-columns:1fr}.mt-feature{height:430px}.mt-projects{grid-template-columns:1fr}.mt-section{padding:65px 0}.mt-cta{min-height:350px;padding:70px 22px}.mt-feature__content{padding:28px}.mt-about__visual{min-height:350px}.mt-model-carousel{padding:18px 28px}.mt-model-stage{height:110px}.mt-model-caption strong{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.mt-model-card,.mt-intro__graffiti,.mt-intro__spray{animation:none!important}.mt-intro__graffiti{clip-path:none!important}}
+
+
+/* Editorial de loja: fotografia real do portfólio, não catálogo fictício. */
+.mt-shop .mt-page-head h2 span{color:#e3bbfa}
+.mt-shop-story{display:grid;grid-template-columns:1.02fr .98fr;min-height:470px;margin:42px 0 100px;border:1px solid #73447c;background:#21122a}
+.mt-shop-story__photo{position:relative;min-height:450px;overflow:hidden;background:#1f1426}
+.mt-shop-story__photo::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,8,27,.65),transparent 70%)}
+.mt-shop-story__photo img{width:100%;height:100%;position:absolute;inset:0;object-fit:cover;object-position:center;display:block}
+.mt-shop-story__content{padding:clamp(30px,5vw,75px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:radial-gradient(circle at 96% 8%,rgba(174,45,226,.18),transparent 60%),#21122a}
+.mt-shop-story__content h3{font:400 clamp(55px,6vw,90px)/.9 "Bebas Neue",Impact,sans-serif;margin:17px 0}
+.mt-shop-story__content p{font-size:14px;color:#dfcfe7;line-height:1.85;max-width:460px;margin-bottom:26px}
+.mt-shop-story__content .mt-button{font-size:10px}
+.mt-about__visual{isolation:isolate}
+.mt-about__visual::before{z-index:0}
+.mt-about__visual .mt-about__stamp{z-index:3}
+.mt-about__visual::after{z-index:1}
+.mt-intro__center{width:min(570px,90vw)}
+.mt-intro__art{height:clamp(260px,44vh,410px);overflow:hidden}
+.mt-intro__ink{position:absolute;inset:2%;background:radial-gradient(ellipse at center,rgba(176,53,232,.38),transparent 63%);filter:blur(18px);opacity:0;animation:mt-ink-arrive 1.8s ease-out forwards}
+.mt-intro__graffiti{position:relative;width:min(400px,72vw);height:min(400px,42vh);border:0;object-fit:cover;mix-blend-mode:screen;filter:contrast(1.2) saturate(.8);clip-path:inset(0 100% 0 0);animation:mt-ink-reveal 2s steps(30,end) .12s forwards}
+.mt-intro__spray{background-image:radial-gradient(#dc9df9 1px,transparent 1.6px),radial-gradient(#b63cdd .8px,transparent 1.3px);background-size:13px 16px,9px 11px;filter:blur(.3px);animation:mt-spray-pass 1.85s cubic-bezier(.25,.6,.4,1) .12s forwards}
+.mt-intro__spray--two{animation-delay:.5s}
+.mt-intro__logo{font-size:clamp(50px,7vw,78px)}
+@keyframes mt-ink-reveal{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}
+@keyframes mt-ink-arrive{15%{opacity:0}54%{opacity:1}100%{opacity:.4}}
+@media(max-width:800px){.mt-shop-story{grid-template-columns:1fr}.mt-shop-story__photo{min-height:330px}.mt-shop-story__content{padding:35px}}
