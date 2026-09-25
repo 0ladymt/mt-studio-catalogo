@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 const LINKS_MT = {
-  discord: 'https://discord.gg/eUtDc9KStc',
+  discord: 'https://discord.gg/MAPubH3vRw',
   instagram: 'https://www.instagram.com/mt_studiocriativo/',
   tiktok: 'https://www.tiktok.com/@mt_studiocriativo?_r=1&_t=ZS-95TIQCHu8N5'
 };
@@ -22,6 +22,23 @@ const catalogo = Array.isArray(window.CATALOGO_MT) ? window.CATALOGO_MT : [];
 const projetos = Array.isArray(window.PROJETOS_MT) ? window.PROJETOS_MT : [];
 
 const $ = (id) => document.getElementById(id);
+
+const IMAGE_FALLBACK_BASE = 'https://raw.githubusercontent.com/0ladymt/mt-studio-catalogo/desenvolvimento-loja-mt/';
+function recoverImage(image, localPath){
+  if(!image || !localPath || image.dataset.mtFallbackBound === '1') return;
+  image.dataset.mtFallbackBound = '1';
+  image.addEventListener('error', () => {
+    if(image.dataset.remoteFallback === '1'){
+      image.classList.add('mt-image-missing');
+      image.removeAttribute('src');
+      return;
+    }
+    const current = image.getAttribute('src') || '';
+    image.dataset.remoteFallback = '1';
+    image.src = IMAGE_FALLBACK_BASE + current.replace(/^\/+/, '');
+  });
+}
+
 const grid = $('grid');
 const empty = $('empty');
 const search = $('search');
@@ -56,6 +73,7 @@ function openPage(page){
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   $(`page-${page}`)?.classList.add('active');
   history.replaceState(null, '', `#${page}`);
+  window.scrollTo({top:0,behavior:'instant'});
 }
 
 function unique(arr){
@@ -105,6 +123,7 @@ function renderProjects(){
         <p>${fotos.length} foto${fotos.length === 1 ? '' : 's'} • projeto produzido pela MT Studio.</p>
       </div>
     `;
+    recoverImage(card.querySelector('img'), capa);
     card.addEventListener('click', () => openProject(index));
     box.appendChild(card);
   });
@@ -122,6 +141,8 @@ function setProjectImage(src){
   img.onerror = () => {
     if(loading) loading.textContent = 'Não foi possível carregar esta imagem.';
   };
+  recoverImage(img, src);
+  delete img.dataset.remoteFallback;
   img.src = src;
 }
 
@@ -140,6 +161,7 @@ function openProject(index){
     btn.className = 'project-thumb' + (i === 0 ? ' active' : '');
     btn.type = 'button';
     btn.innerHTML = `<img src="${foto}" alt="">`;
+    recoverImage(btn.querySelector('img'), foto);
     btn.addEventListener('click', () => {
       setProjectImage(foto);
       document.querySelectorAll('.project-thumb').forEach(t => t.classList.remove('active'));
@@ -397,12 +419,126 @@ function resizeViewer(){
   renderer.setSize(width, height, true);
 }
 
+
+/* Vitrine 3D: sem prévia fotográfica durante transições. */
+const mtCarousels = [];
+function mountModelCarousel(trackId, wrapId, start=0) {
+  const track=$(trackId), wrap=$(wrapId);
+  if(!track||!wrap||!catalogo.length)return;
+  const total=catalogo.length;
+  let offset=start, generation=0, instances=[];
+  const dispose=()=>{
+    for(const inst of instances){
+      inst.disposed=true;
+      if(inst.renderer){inst.renderer.dispose();inst.renderer.forceContextLoss();}
+      inst.object?.traverse(child=>{
+        if(child.isMesh){
+          child.geometry.dispose();
+          if(Array.isArray(child.material))child.material.forEach(m=>m.dispose());
+          else child.material?.dispose();
+        }
+      });
+    }
+    instances=[];
+  };
+  const render=()=>{
+    dispose();
+    const current=++generation;
+    track.replaceChildren();
+    for(let n=0;n<3;n++){
+      const item=catalogo[(offset+n)%total];
+      const card=document.createElement('article');card.className='mt-model-card';
+      const stage=document.createElement('div');stage.className='mt-model-stage mt-model-stage--loading';
+      const status=document.createElement('span');status.className='mt-model-status';status.textContent='Preparando modelo 3D…';status.setAttribute('role','status');
+      stage.append(status);
+      const label=document.createElement('div');label.className='mt-model-caption';
+      const small=document.createElement('small');small.textContent=item.genero+' / '+item.categoria;
+      const strong=document.createElement('strong');strong.textContent=item.nome;
+      label.append(small,strong);
+      const open=document.createElement('button');open.type='button';open.textContent='Ver modelo ↗';open.addEventListener('click',()=>openViewer(item));
+      card.append(stage,label,open);track.append(card);
+      const inst={renderer:null,object:null,disposed:false,draw:null};instances.push(inst);
+      const fail=()=>{
+        if(inst.disposed||generation!==current)return;
+        status.textContent='Prévia 3D indisponível — abra o modelo';
+        stage.classList.remove('mt-model-stage--loading');
+        stage.classList.add('mt-model-stage--error');
+      };
+      if(!window.WebGLRenderingContext){fail();continue;}
+      try{
+        const canvas=document.createElement('canvas');canvas.className='mt-model-canvas';canvas.setAttribute('aria-label',item.nome+' girando em 3D');
+        const renderer3=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
+        inst.renderer=renderer3;
+        renderer3.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+        renderer3.outputColorSpace=THREE.SRGBColorSpace;
+        const scene3=new THREE.Scene();
+        const camera3=new THREE.PerspectiveCamera(35,1,.1,200);
+        scene3.add(new THREE.HemisphereLight(0xffffff,0x504260,2));
+        const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(3,4,5);scene3.add(key);
+        const rim=new THREE.DirectionalLight(0xc68aff,1.2);rim.position.set(-3,1,-2);scene3.add(rim);
+        new OBJLoader().load(fixPath(item.obj),obj=>{
+          if(inst.disposed||generation!==current){
+            obj.traverse(x=>{if(x.isMesh)x.geometry.dispose()});
+            return;
+          }
+          obj.traverse(x=>{if(x.isMesh)x.material=new THREE.MeshStandardMaterial({color:0xeae4ef,metalness:.08,roughness:.7,side:THREE.DoubleSide})});
+          const bounds=new THREE.Box3().setFromObject(obj),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+          const fitScale=1.12/(Math.max(size.x,size.y,size.z)||1);
+          obj.scale.setScalar(fitScale);
+          obj.position.set(-center.x*fitScale,-center.y*fitScale,-center.z*fitScale);
+          const sphere=new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
+          scene3.add(obj);inst.object=obj;
+          inst.draw=()=>{
+            const w=Math.max(1,Math.round(stage.clientWidth)),h=Math.max(1,Math.round(stage.clientHeight));
+            if(w!==inst.width||h!==inst.height){
+              inst.width=w;inst.height=h;renderer3.setSize(w,h,false);
+              camera3.aspect=w/h;camera3.updateProjectionMatrix();
+              const vfov=THREE.MathUtils.degToRad(camera3.fov);
+              const hfov=2*Math.atan(Math.tan(vfov/2)*camera3.aspect);
+              camera3.position.set(0,0,Math.max(3.7,sphere.radius/Math.sin(Math.min(vfov,hfov)/2)*1.48));
+              camera3.lookAt(0,0,0);
+            }
+            obj.rotation.y+=.006;
+            renderer3.render(scene3,camera3);
+          };
+          // Só mostramos o canvas depois de um quadro real ter sido renderizado.
+          inst.draw();
+          stage.append(canvas);
+          stage.classList.remove('mt-model-stage--loading');
+          stage.classList.add('mt-model-stage--ready');
+          status.remove();
+        },undefined,fail);
+      }catch(err){
+        if(inst.renderer){inst.renderer.dispose();inst.renderer.forceContextLoss();inst.renderer=null;}
+        fail();
+      }
+    }
+  };
+  wrap.querySelector('.mt-model-prev')?.addEventListener('click',()=>{offset=(offset-1+total)%total;render()});
+  wrap.querySelector('.mt-model-next')?.addEventListener('click',()=>{offset=(offset+1)%total;render()});
+  render();
+  mtCarousels.push({wrap,instances:()=>instances});
+}
+function animateModelCarousels(){
+  requestAnimationFrame(animateModelCarousels);
+  if(document.hidden)return;
+  for(const carousel of mtCarousels){
+    if(!carousel.wrap.getBoundingClientRect().width)continue;
+    const rect=carousel.wrap.getBoundingClientRect();
+    if(rect.bottom<0||rect.top>innerHeight)continue;
+    carousel.instances().forEach(inst=>{if(!inst.disposed&&inst.draw)inst.draw()});
+  }
+}
+
 setupLinks();
 setupPages();
 fillFilters();
 updateStats();
 renderProjects();
 renderGrid();
+mountModelCarousel('homeModelTrack','homeModelCarousel',0);
+
+animateModelCarousels();
 
 const initialHash = location.hash.replace('#','');
-if(['catalogo','sobre','redes','projetos'].includes(initialHash)) openPage(initialHash);
+if(['home','loja','catalogo','sobre','redes','projetos'].includes(initialHash)) openPage(initialHash); else openPage('home');

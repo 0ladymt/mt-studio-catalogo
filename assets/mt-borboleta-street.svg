@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 590" role="img" aria-label="Borboleta street MT Studio em estilo graffiti">
+<defs>
+ <filter id="rough" x="-12%" y="-12%" width="124%" height="124%"><feTurbulence type="fractalNoise" baseFrequency=".015 .025" numOctaves="3" seed="18" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="13"/></filter>
+ <filter id="spray"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="3" seed="4" result="n"/><feColorMatrix in="n" type="saturate" values="0"/><feComponentTransfer><feFuncA type="discrete" tableValues="0 0 0 .3 .65 .95"/></feComponentTransfer></filter>
+ <linearGradient id="paint" x2="1" y2="1"><stop stop-color="#f8ebff"/><stop offset=".28" stop-color="#d14dff"/><stop offset="1" stop-color="#9322bd"/></linearGradient>
+ <mask id="texture"><rect width="700" height="590" fill="white"/><path d="M82 145L610 463M54 350L594 88M122 506L580 240" stroke="#000" stroke-width="2" opacity=".3"/><rect width="700" height="590" filter="url(#spray)" opacity=".42"/></mask>
+</defs>
+<g opacity=".64" fill="#be36eb">
+ <circle cx="53" cy="165" r="5"/><circle cx="75" cy="183" r="2"/><circle cx="608" cy="85" r="7"/><circle cx="628" cy="126" r="3"/><circle cx="646" cy="177" r="4"/><circle cx="50" cy="403" r="3"/><circle cx="110" cy="462" r="7"/><circle cx="556" cy="501" r="4"/><circle cx="605" cy="425" r="6"/><circle cx="174" cy="83" r="4"/>
+ <path d="M128 103l-28-17 33 8 4-25 5 28 28-9-23 18 9 25-22-18-24 17z"/>
+</g>
+<g filter="url(#rough)" mask="url(#texture)" fill="url(#paint)" stroke="#f6e8ff" stroke-width="3" stroke-linejoin="round">
+ <!-- asymmetrical upper wings, cut into angular graffiti shapes -->
+ <path d="M343 270 C298 217 240 150 156 82 L99 48 112 105 67 105 91 141 59 160 110 181 92 224 142 213 163 257 211 245 254 279 318 308Z"/>
+ <path d="M359 270 C407 201 489 130 590 80 L635 73 617 113 656 129 614 145 635 190 586 183 572 234 531 226 510 272 456 254 398 305Z"/>
+ <path d="M321 307 C253 268 187 266 126 288 L67 312 107 328 76 359 119 360 97 398 151 387 154 441 202 413 219 471 275 424 327 349Z"/>
+ <path d="M377 307 C449 276 524 270 584 302 L633 329 595 345 621 375 579 378 589 421 542 407 528 454 481 415 453 478 420 415 375 345Z"/>
+</g>
+<g fill="#0b090d" opacity=".98" filter="url(#rough)">
+ <path d="M309 268C252 205 202 158 143 124c31 61 87 119 155 165z"/>
+ <path d="M391 267c62-71 104-103 174-142-41 66-100 121-159 164z"/>
+ <path d="M303 326c-59-22-108-13-163 18 56 4 95 11 152 4z"/>
+ <path d="M397 325c65-25 119-11 166 24-65-1-98 6-154 1z"/>
+ <path d="M334 261l-12-80 27 62 26-74-8 102z"/>
+</g>
+<path d="M338 231 Q345 283 339 354 L308 418 342 401 361 456 370 402 401 427 373 353 369 238Z" fill="#f8efff" stroke="#a72be6" stroke-width="4"/>
+<path d="M344 241Q306 182 274 164M367 240q39-63 82-74" fill="none" stroke="#f6e9ff" stroke-width="8" stroke-linecap="round"/>
+<g fill="#a82ddd">
+ <path d="M132 379v88q-2 26 11 25t10-25v-80z"/><path d="M161 398v45q0 21 9 20t8-19v-45z"/>
+ <path d="M516 388v82q-2 18 9 18t9-17v-87z"/><path d="M554 370v60q-1 21 8 21t9-20v-58z"/>
+ <path d="M339 438v58q0 21 11 21t10-20v-60z"/>
+</g>
+<g fill="#e8b0ff" opacity=".85"><circle cx="128" cy="518" r="5"/><circle cx="146" cy="537" r="2"/><circle cx="563" cy="522" r="4"/><circle cx="582" cy="482" r="3"/><circle cx="92" cy="261" r="2"/><circle cx="612" cy="253" r="3"/></g>
+</svg>

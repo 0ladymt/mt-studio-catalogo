@@ -6,11 +6,11 @@
   <title>MT Studio Criativo ™</title>
   <link rel="icon" type="image/png" href="assets/logo-borboleta.png?v=2">
   <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="mt-v5.css" /><link rel="stylesheet" href="mt-direction.css" /><link rel="stylesheet" href="mt-fixes.css" /><link rel="stylesheet" href="mt-polish.css" /><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" data-page-link="catalogo" href="#catalogo">
+    <a class="brand" data-page-link="home" href="#home">
       <img class="brand-logo" src="assets/logo-borboleta.png" alt="MT Studio">
       <div>
         <h1>MT Studio</h1>
@@ -19,7 +19,7 @@
     </a>
 
     <nav class="nav-tabs" aria-label="Navegação principal">
-      <button class="nav-tab active" data-page="catalogo">Catálogo</button>
+      <button class="nav-tab active" data-page="home">Início</button><button class="nav-tab" data-page="loja">Loja</button><button class="nav-tab" data-page="catalogo">Catálogo 3D</button>
       <button class="nav-tab" data-page="sobre">Sobre</button>
       <button class="nav-tab" data-page="redes">Redes Sociais</button>
       <button class="nav-tab" data-page="projetos">Projetos</button>
@@ -33,7 +33,33 @@
     </a>
   </header>
 
-  <section id="page-catalogo" class="page active">
+  
+<section id="page-home" class="page active">
+  <section class="mt-home-hero">
+    <img id="mtHeroPhoto" class="mt-home-hero__image" src="" alt="Projeto da MT Studio">
+    
+    <div class="mt-shell mt-home-hero__copy"><span class="mt-overline">MT Studio Criativo / FiveM</span>
+      <h2>IDEIAS QUE<br>VIRAM <span>IDENTIDADE.</span></h2>
+      <p>Roupas e projetos visuais para FiveM. Peças prontas e criações personalizadas com a assinatura da MT Studio.</p>
+      <div class="mt-hero-actions"><a class="mt-button" data-page-link="loja" href="#loja">Conhecer a loja ↗</a><a class="mt-button mt-button--outline" data-page-link="catalogo" href="#catalogo">Catálogo 3D ↗</a></div>
+    </div>
+  </section>
+  <div class="mt-strip">MT STUDIO · ROUPAS PARA FIVEM · CRIAÇÕES PERSONALIZADAS · MT STUDIO</div>
+  <section class="mt-shell mt-section"><div class="mt-page-head"><div><span class="mt-overline">O que você procura?</span><h2>ESCOLHA COMO COMEÇAR.</h2></div></div>
+    <div class="mt-split">
+      <a class="mt-feature" href="#loja" data-page-link="loja"><img id="mtReadyPhoto" src="" alt="Projeto da MT Studio" loading="lazy"><div class="mt-feature__content"><span class="mt-overline">Loja</span><h3>PRODUTOS PRONTOS.</h3><p>Peças finalizadas para a sua cidade. Confira a vitrine e acompanhe os próximos lançamentos.</p><span>Ir para a loja ↗</span></div></a>
+      <a class="mt-feature" href="#catalogo" data-page-link="catalogo"><img id="mtCustomPhoto" src="" alt="Projeto da MT Studio" loading="lazy"><div class="mt-feature__content"><span class="mt-overline">Sob encomenda</span><h3>DO SEU JEITO.</h3><p>Escolha uma referência no catálogo e converse com a MT pelo Discord.</p><span>Explorar modelos ↗</span></div></a>
+    </div>
+  </section>
+  <section class="mt-shell mt-section"><div class="mt-page-head"><div><span class="mt-overline">Portfólio</span><h2>PROJETOS DA MT.</h2></div><a class="mt-button mt-button--outline" data-page-link="projetos" href="#projetos">Ver todos ↗</a></div><div class="mt-projects" id="mtHomeProjects"></div></section>
+  <section class="mt-editorial mt-editorial--carousel"><div class="mt-editorial__visual"><div class="mt-model-carousel" id="homeModelCarousel" aria-label="Modelos do catálogo em destaque"><button class="mt-model-prev" type="button" aria-label="Modelos anteriores">‹</button><div class="mt-model-track" id="homeModelTrack"></div><button class="mt-model-next" type="button" aria-label="Próximos modelos">›</button></div></div>
+    <div class="mt-editorial__copy"><span class="mt-overline">Catálogo 3D</span><h2>ESCOLHA A BASE.<br>CRIE O SEU ESTILO.</h2><p>Explore diferentes modelos, veja as peças girando e abra o visualizador para conferir os detalhes em 3D.</p><a class="mt-button" data-page-link="catalogo" href="#catalogo">Abrir catálogo ↗</a></div>
+  </section>
+  <section class="mt-human" id="mtHuman"><div class="mt-human__photo"><img id="mtRafaJoy" src="assets/rafa-joy-foto.jpg?v=3" alt="Rafa com Joy no colo" loading="lazy"></div><div class="mt-human__copy"><span class="mt-overline">Quem está por trás da MT</span><h2>RAFA & JOY.</h2><p>Por trás de cada criação está a Rafa, fundadora da MT Studio. Joy faz parte da história e da personalidade que inspiram a marca.</p><a class="mt-button mt-button--outline" data-page-link="sobre" href="#sobre">Conheça a MT ↗</a></div></section>
+  <section class="mt-cta"><span class="mt-overline">Projetos personalizados</span><h2>VAMOS CRIAR<br>O SEU PROJETO?</h2><p>Orçamento, alinhamento e entrega de encomendas pelo Discord da MT Studio.</p><a class="mt-button" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Abrir ticket ↗</a></section>
+</section>
+<section id="page-loja" class="page"><div class="mt-page-shell mt-shop"><div class="mt-page-head"><div><span class="mt-overline">MT Studio / Loja</span><h2>PEÇAS PRONTAS.<br><span>IDENTIDADE PRÓPRIA.</span></h2></div><p>Peças digitais da MT Studio. A compra automática será disponibilizada após a configuração do pagamento e da entrega.</p></div><div class="mt-shop-story"><div class="mt-shop-story__photo"><img id="mtShopPhoto" alt="Trabalho de roupas da MT Studio" loading="lazy"></div><div class="mt-shop-story__content"><span class="mt-overline">Em preparação</span><h3>A VITRINE ESTÁ<br>GANHANDO FORMA.</h3><p>Os produtos prontos aparecerão aqui com fotos, preço e descrição. Por enquanto, explore as bases no catálogo 3D ou converse com a MT para uma criação personalizada.</p><div class="mt-hero-actions"><a class="mt-button" data-page-link="catalogo" href="#catalogo">Explorar modelos ↗</a><a class="mt-button mt-button--outline" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Encomendar no Discord ↗</a></div></div></div></div></section>
+<section id="page-catalogo" class="page">
     <section class="hero">
       <div class="hero-card">
         <h2>Escolha o modelo ideal para sua criação</h2>
@@ -48,6 +74,8 @@
       </div>
     </section>
 
+    
+
     <section class="controls">
       <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
       <select id="gender"><option value="">Todos os gêneros</option></select>
@@ -60,81 +88,28 @@
     </main>
   </section>
 
-  <section id="page-sobre" class="page info-page">
-    <section class="about-hero">
-      <span class="section-kicker">Quem somos</span>
-      <div class="about-title">
-        <img src="assets/logo-borboleta.png" alt="MT Studio">
-        <h2>MT <span>Studio</span></h2>
+
+  <section id="page-sobre" class="page">
+    <div class="mt-shell mt-about mt-about--complete">
+      <div class="mt-about__visual" id="mtAboutPortrait"><img id="mtAboutRafaJoy" src="assets/rafa-joy-foto.jpg?v=3" alt="Rafa com Joy no colo" loading="lazy"></div>
+      <div class="mt-about__copy"><span class="mt-overline">Quem somos</span><h2>IDEIAS QUE<br>VIRAM <em>IDENTIDADE.</em></h2>
+        <p>A MT Studio é um estúdio criativo potiguar voltado para roupas e projetos visuais no universo FiveM. Nossa proposta é transformar referências em criações que expressem a personalidade de cada cidade, equipe ou marca.</p>
+        <p>Trabalhamos com peças e projetos personalizados, combinando estética street, organização e acabamento visual. Rafa é a criadora da MT Studio, e Joy faz parte da identidade e da história da marca.</p>
+        <a id="aboutDiscord" class="mt-button" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Fale com a MT no Discord ↗</a>
       </div>
-      <p>
-        A MT Studio é um estúdio criativo focado em transformar ideias em identidade visual dentro do universo FiveM.
-        Criamos peças personalizadas e projetos visuais com estética, organização e presença, para que cada cliente
-        tenha algo único, reconhecível e alinhado com o estilo da sua cidade, equipe ou marca.
-      </p>
-    </section>
-
-    <section class="section-line">
-      <span>O que fazemos</span>
-    </section>
-
-    <div class="service-grid">
-      <article class="service-card">
-        <h3>FiveM & In-game</h3>
-        <ul>
-          <li>Roupas, uniformes e peças personalizadas</li>
-          <li>Retexturização, conversão e otimização</li>
-          <li>Itens visuais personalizados</li>
-          <li>Projetos especiais sob demanda</li>
-        </ul>
-      </article>
-
-      <article class="service-card">
-        <h3>Design & Identidade</h3>
-        <ul>
-          <li>Banners, capas e artes promocionais</li>
-          <li>Identidade para facções, lojas e marcas</li>
-          <li>Layouts e materiais personalizados</li>
-          <li>Artes para divulgação e apresentação</li>
-        </ul>
-      </article>
-
-      <article class="service-card">
-        <h3>Atendimento Criativo</h3>
-        <ul>
-          <li>Briefing via ticket</li>
-          <li>Referências e direcionamento visual</li>
-          <li>Ajustes dentro do escopo combinado</li>
-          <li>Entrega organizada para uso no servidor</li>
-        </ul>
-      </article>
     </div>
-
-    <section class="section-line">
-      <span>Como trabalhamos</span>
-    </section>
-
-    <div class="workflow-grid">
-      <div><b>✓</b> Atendimento via Discord</div>
-      <div><b>✓</b> Escolha do modelo pelo catálogo</div>
-      <div><b>✓</b> Briefing com referências e cores</div>
-      <div><b>✓</b> Criação alinhada à identidade do cliente</div>
-      <div><b>✓</b> Organização dos arquivos de entrega</div>
-      <div><b>✓</b> Projetos feitos sob demanda</div>
-    </div>
-
-    <div class="mission-card">
-      <strong>Nossa missão:</strong>
-      transformar ideias em estilo, criando peças e projetos que carregam identidade, presença e acabamento visual.
-      A MT Studio existe para ajudar cada cliente a sair do comum e levar para o FiveM algo com personalidade própria.
-      <a id="aboutDiscord" href="#" target="_blank" rel="noreferrer">Abra seu ticket</a> e comece seu projeto.
+    <div class="mt-shell mt-about-detail"><div class="mt-page-head"><div><span class="mt-overline">Nossos serviços</span><h2>O QUE FAZEMOS.</h2></div></div>
+      <div class="mt-about-grid"><article><h3>ROUPAS & FIVE M</h3><p>Roupas, uniformes, texturização e projetos especiais para personagens, equipes e cidades.</p></article><article><h3>DESIGN & IDENTIDADE</h3><p>Artes e materiais visuais para apresentar projetos, produtos e marcas com personalidade.</p></article><article><h3>ATENDIMENTO CRIATIVO</h3><p>Alinhamento de referências e necessidades pelo Discord, com escopo e entrega combinados.</p></article></div>
+      <div class="mt-page-head"><div><span class="mt-overline">Nosso processo</span><h2>COMO TRABALHAMOS.</h2></div></div>
+      <div class="mt-about-steps"><span>01 / Escolha um modelo no catálogo ou apresente sua referência.</span><span>02 / Abra seu ticket no Discord para alinhar os detalhes.</span><span>03 / Desenvolvemos o projeto dentro do escopo combinado.</span><span>04 / A entrega das encomendas personalizadas acontece pelo Discord.</span></div>
+      <div class="mt-about-mission"><strong>Nossa missão.</strong> Transformar ideias em estilo e criar peças e projetos que carreguem identidade, presença e acabamento visual.</div>
     </div>
   </section>
 
   <section id="page-redes" class="page socials-page">
     <section class="center-title">
       <h2>Nossas <span>Redes</span></h2>
-      <p>Acompanhe novidades, lançamentos, bastidores e atualizações da MT Studio.</p>
+      <p>Entre na comunidade, acompanhe os projetos e veja os bastidores da MT Studio.</p>
     </section>
 
     <div class="social-list">
@@ -144,7 +119,7 @@
         </div>
         <div>
           <span>Discord</span>
-          <strong>MT Studio Criativo</strong>
+          <strong>Atendimento, encomendas e comunidade</strong>
         </div>
       </a>
 
@@ -152,7 +127,7 @@
         <div class="social-icon">◎</div>
         <div>
           <span>Instagram</span>
-          <strong>@mt_studiocriativo</strong>
+          <strong>Portfólio, novidades e lançamentos</strong>
         </div>
       </a>
 
@@ -164,16 +139,21 @@
         </div>
         <div>
           <span>TikTok</span>
-          <strong>@mt_studiocriativo</strong>
+          <strong>Tutoriais, criação e bastidores</strong>
         </div>
+      </a>
+      <a class="social-row youtube" id="socialYouTube" href="https://www.youtube.com/@mtstudiocriativo" target="_blank" rel="noopener noreferrer">
+        <div class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2C.5 9.1.5 12 .5 12s0 2.9.5 4.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-4.8.5-4.8s0-2.9-.5-4.8ZM9.7 15.3V8.7l5.8 3.3-5.8 3.3Z"/></svg></div>
+        <div><span>YouTube</span><strong>Tutoriais, projetos e bastidores</strong></div>
       </a>
     </div>
   </section>
 
   <section id="page-projetos" class="page projects-page">
     <section class="center-title">
+      <img class="mt-projects-crown" src="assets/mt-manual-coroa.svg" alt="" aria-hidden="true">
       <h2>Nossos <span>Projetos</span></h2>
-      <p>Galeria organizada com trabalhos e criações já produzidas pela MT Studio.</p>
+      <p>Roupas, uniformes e identidades criadas para personagens, equipes e cidades.</p>
     </section>
 
     <div id="projectsGrid" class="projects-grid"></div>
@@ -249,6 +229,6 @@
   </script>
   <script src="catalogo-data.js"></script>
   <script src="projetos-data.js"></script>
-  <script type="module" src="app.js"></script>
+  <script src="mt-v5.js" defer></script><script type="module" src="app.js"></script>
 </body>
 </html>
