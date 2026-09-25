@@ -6,7 +6,7 @@
   <title>MT Studio Criativo ™</title>
   <link rel="icon" type="image/png" href="assets/logo-borboleta.png?v=2">
   <link rel="preconnect" href="https://unpkg.com">
-  <link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="mt-v5.css" /><link rel="stylesheet" href="mt-direction.css" /><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="mt-v5.css" /><link rel="stylesheet" href="mt-direction.css" /><link rel="stylesheet" href="mt-fixes.css" /><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <header class="topbar">
@@ -55,7 +55,7 @@
   <section class="mt-editorial mt-editorial--carousel"><div class="mt-editorial__visual"><div class="mt-model-carousel" id="homeModelCarousel" aria-label="Modelos do catálogo em destaque"><button class="mt-model-prev" type="button" aria-label="Modelos anteriores">‹</button><div class="mt-model-track" id="homeModelTrack"></div><button class="mt-model-next" type="button" aria-label="Próximos modelos">›</button></div></div>
     <div class="mt-editorial__copy"><span class="mt-overline">Catálogo 3D</span><h2>ESCOLHA A BASE.<br>CRIE O SEU ESTILO.</h2><p>Explore diferentes modelos, veja as peças girando e abra o visualizador para conferir os detalhes em 3D.</p><a class="mt-button" data-page-link="catalogo" href="#catalogo">Abrir catálogo ↗</a></div>
   </section>
-  <section class="mt-human" id="mtHuman" hidden><div class="mt-human__photo"><img id="mtRafaJoy" src="assets/rafa-joy-foto.jpg" alt="Rafa com Joy no colo" loading="lazy"></div><div class="mt-human__copy"><span class="mt-overline">Quem está por trás da MT</span><h2>RAFA & JOY.</h2><p>Rafa é a criadora da MT Studio. Joy faz parte da história e da identidade da marca.</p><a class="mt-button mt-button--outline" data-page-link="sobre" href="#sobre">Conheça a MT ↗</a></div></section>
+  <section class="mt-human" id="mtHuman"><div class="mt-human__photo"><img id="mtRafaJoy" src="assets/rafa-joy-foto.jpg?v=3" alt="Rafa com Joy no colo" loading="lazy"></div><div class="mt-human__copy"><span class="mt-overline">Quem está por trás da MT</span><h2>RAFA & JOY.</h2><p>Rafa é a criadora da MT Studio. Joy faz parte da história e da identidade da marca.</p><a class="mt-button mt-button--outline" data-page-link="sobre" href="#sobre">Conheça a MT ↗</a></div></section>
   <section class="mt-cta"><span class="mt-overline">Projetos personalizados</span><h2>VAMOS CRIAR<br>O SEU PROJETO?</h2><p>Orçamento, alinhamento e entrega de encomendas pelo Discord da MT Studio.</p><a class="mt-button" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Abrir ticket ↗</a></section>
 </section>
 <section id="page-loja" class="page"><div class="mt-page-shell mt-shop"><div class="mt-page-head"><div><span class="mt-overline">MT Studio / Loja</span><h2>PEÇAS PRONTAS.<br><span>IDENTIDADE PRÓPRIA.</span></h2></div><p>Produtos digitais finalizados, preparados para entrega por e-mail após a confirmação do pagamento.</p></div><div class="mt-shop-story"><div class="mt-shop-story__photo"><img id="mtShopPhoto" alt="Trabalho de roupas da MT Studio" loading="lazy"></div><div class="mt-shop-story__content"><span class="mt-overline">Em preparação</span><h3>A VITRINE ESTÁ<br>GANHANDO FORMA.</h3><p>Os produtos prontos aparecerão aqui com fotos, preço e descrição. Por enquanto, explore as bases no catálogo 3D ou converse com a MT para uma criação personalizada.</p><div class="mt-hero-actions"><a class="mt-button" data-page-link="catalogo" href="#catalogo">Explorar modelos ↗</a><a class="mt-button mt-button--outline" href="https://discord.gg/MAPubH3vRw" target="_blank" rel="noopener noreferrer">Encomendar no Discord ↗</a></div></div></div></div></section>
@@ -74,7 +74,7 @@
       </div>
     </section>
 
-    <section class="mt-catalog-showcase mt-shell" aria-label="Modelos 3D em rotação"><div class="mt-catalog-showcase__top"><div><span class="mt-overline">Vitrine de modelos</span><h3>CONFIRA EM 3D.</h3></div><p>Gire, explore e escolha a peça que combina com seu projeto.</p></div><div class="mt-model-carousel mt-model-carousel--catalog" id="catalogModelCarousel"><button class="mt-model-prev" type="button" aria-label="Modelos anteriores">‹</button><div class="mt-model-track" id="catalogModelTrack"></div><button class="mt-model-next" type="button" aria-label="Próximos modelos">›</button></div></section>
+    
 
     <section class="controls">
       <input id="search" placeholder="Buscar modelo, arquivo ou categoria..." />
@@ -91,7 +91,7 @@
 
   <section id="page-sobre" class="page">
     <div class="mt-shell mt-about mt-about--complete">
-      <div class="mt-about__visual" id="mtAboutPortrait" hidden><img id="mtAboutRafaJoy" src="assets/rafa-joy-foto.jpg" alt="Rafa com Joy no colo" loading="lazy"></div>
+      <div class="mt-about__visual" id="mtAboutPortrait"><img id="mtAboutRafaJoy" src="assets/rafa-joy-foto.jpg?v=3" alt="Rafa com Joy no colo" loading="lazy"></div>
       <div class="mt-about__copy"><span class="mt-overline">Quem somos</span><h2>IDEIAS QUE<br>VIRAM <em>IDENTIDADE.</em></h2>
         <p>A MT Studio é um estúdio criativo potiguar voltado para roupas e projetos visuais no universo FiveM. Nossa proposta é transformar referências em criações que expressem a personalidade de cada cidade, equipe ou marca.</p>
         <p>Trabalhamos com peças e projetos personalizados, combinando estética street, organização e acabamento visual. Rafa é a criadora da MT Studio, e Joy faz parte da identidade e da história da marca.</p>
@@ -147,6 +147,7 @@
 
   <section id="page-projetos" class="page projects-page">
     <section class="center-title">
+      <img class="mt-projects-crown" src="assets/mt-manual-coroa.svg" alt="" aria-hidden="true">
       <h2>Nossos <span>Projetos</span></h2>
       <p>Galeria organizada com trabalhos e criações já produzidas pela MT Studio.</p>
     </section>
