@@ -475,7 +475,7 @@ function mountModelCarousel(trackId, wrapId, start=0) {
           const bounds=new THREE.Box3().setFromObject(obj);
           const size=bounds.getSize(new THREE.Vector3());
           const center=bounds.getCenter(new THREE.Vector3());
-          const fitScale=1.48/(Math.max(size.x,size.y,size.z)||1);
+          const fitScale=1.12/(Math.max(size.x,size.y,size.z)||1);
           obj.scale.setScalar(fitScale);
           // OBJ.position não escala junto com a malha: compensar o centro na escala final.
           obj.position.set(-center.x*fitScale,-center.y*fitScale,-center.z*fitScale);
@@ -484,7 +484,7 @@ function mountModelCarousel(trackId, wrapId, start=0) {
           const verticalFov=THREE.MathUtils.degToRad(camera3.fov);
           const horizontalFov=2*Math.atan(Math.tan(verticalFov/2)*camera3.aspect);
           const safeFov=Math.min(verticalFov,horizontalFov);
-          camera3.position.set(0,0,Math.max(4.5,sphere.radius/Math.sin(safeFov/2)*1.28));
+          camera3.position.set(0,0,Math.max(5.4,sphere.radius/Math.sin(safeFov/2)*1.85));
           camera3.lookAt(0,0,0);
           scene3.add(obj);instance.object=obj;stage.append(canvas);thumb.classList.add('mt-thumb-backup');
           instance.draw=()=>{
