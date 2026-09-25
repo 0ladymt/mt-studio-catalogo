@@ -71,3 +71,45 @@ footer{padding-block:34px}
 @media(max-width:1000px){#page-redes .social-list{grid-template-columns:1fr;max-width:650px}#page-redes .social-row{min-height:125px;flex-direction:row;align-items:center;justify-content:flex-start;gap:20px}.mt-editorial--carousel .mt-editorial__visual{padding:20px}.mt-model-carousel{padding:18px 28px!important}}
 @media(max-width:760px){.mt-home-hero{min-height:640px}.mt-home-hero__image{object-position:60% center}.mt-home-hero::before{background:linear-gradient(90deg,rgba(9,7,12,.94),rgba(9,7,12,.47)),linear-gradient(0deg,#100b13,transparent 70%)}.mt-home-hero h2{font-size:clamp(62px,14vw,94px)}.mt-human,#page-sobre .mt-about{grid-template-columns:1fr!important}.mt-human__photo{height:430px}.mt-human__copy{padding:38px 25px 46px}.mt-about__visual{height:430px!important}.mt-editorial--carousel .mt-editorial__visual{padding:15px}.mt-model-track{grid-template-columns:repeat(3,minmax(0,1fr))}.mt-model-card{padding:5px!important}.mt-model-stage{height:clamp(120px,30vw,205px)!important}.mt-model-caption strong{font-size:17px}.mt-shop-story{grid-template-columns:1fr}.mt-shop-story__photo{min-height:310px}.mt-projects{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){#page-redes .social-row{transition:none}}
+
+/* Revisão da identidade: grafismos associados à mensagem, nunca em divisórias aleatórias. */
+.mt-editorial--carousel{border-bottom:0}
+.mt-model-stage--loading{display:grid!important;place-items:center}
+.mt-model-status{display:block;max-width:85%;text-align:center;color:#d8b9e7;font:700 10px/1.5 Montserrat,sans-serif;letter-spacing:.13em;text-transform:uppercase}
+.mt-model-stage--loading::after{content:"";position:absolute;bottom:22%;left:38%;width:24%;height:2px;background:#ad3ce5;animation:mt-loader 1.1s ease-in-out infinite alternate}
+.mt-model-stage--error .mt-model-status{color:#efdaf4}
+.mt-model-stage--ready canvas{opacity:1}
+@keyframes mt-loader{from{transform:scaleX(.2);opacity:.3}to{transform:scaleX(1);opacity:1}}
+/* A imagem é uma ilustração inteira: não pode herdar enquadramento de banner. */
+#mtHuman{height:auto!important;min-height:0!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;overflow:visible!important}
+#mtHuman .mt-human__photo{position:relative!important;height:auto!important;min-height:0!important;aspect-ratio:1 / 1;display:flex!important;align-items:center;justify-content:center;overflow:visible!important;background:#f7f0fa!important}
+#mtHuman .mt-human__photo img{position:relative!important;inset:auto!important;width:100%!important;height:auto!important;max-height:none!important;object-fit:contain!important;object-position:center!important;display:block!important}
+#mtHuman .mt-human__copy{align-self:center}
+.mt-cta::after,.mt-cta::before{content:none!important;display:none!important;background:none!important}
+.mt-cta h2::after{content:"";display:block;width:clamp(140px,22vw,270px);height:18px;background:url("assets/mt-pincelada.svg") center/contain no-repeat;margin:15px auto 0;transform:rotate(-2deg)}
+/* Assinaturas do manual: coroa sobre portfólio e pincelada associada aos títulos. */
+.mt-section:has(#mtHomeProjects) .mt-page-head::before{content:""!important;display:block!important;position:absolute;right:3px;top:-28px;width:88px;height:67px;background:url("assets/mt-manual-coroa.svg") center/contain no-repeat!important;opacity:.9}
+.mt-section:has(#mtHomeProjects) .mt-page-head{position:relative}
+.mt-feature__content>span:last-child{border-bottom:2px solid #bd39eb;padding-bottom:5px}
+#page-redes .center-title h2::after{content:"";display:block;width:155px;height:12px;margin:9px auto 0;background:url("assets/mt-pincelada.svg") center/contain no-repeat}
+#page-redes .social-row{position:relative;overflow:hidden}
+#page-redes .social-row::after{content:"";position:absolute;top:0;right:0;width:76px;height:8px;background:#a929d8;transform:skewX(-32deg) translateX(9px)}
+#page-redes .social-list{grid-template-columns:repeat(4,minmax(0,1fr))!important;max-width:1260px!important}
+#page-redes .social-row strong{font-size:15px!important;overflow-wrap:anywhere}
+#page-redes .social-row.youtube .social-icon{background:#9e1439}
+#page-sobre .mt-about__visual{position:relative!important;height:auto!important;min-height:0!important;aspect-ratio:1 / 1;overflow:visible!important}
+#page-sobre .mt-about__visual img{position:relative!important;inset:auto!important;height:auto!important;width:100%!important;max-height:none!important;object-fit:contain!important;display:block!important}
+#page-projetos .center-title .mt-projects-crown{display:block!important;width:100px;height:78px;margin:0 auto 14px}
+.mt-intro__art{height:min(58vh,430px)!important;overflow:visible!important}
+.mt-intro__street--brand{width:min(500px,76vw);height:100%;max-height:none;overflow:visible;filter:drop-shadow(0 0 13px rgba(190,54,238,.36))}
+.mt-intro__paint-pass{animation:mt-paint-brand 1.85s cubic-bezier(.22,.6,.3,1) .1s forwards}
+.mt-intro__paint-spray{opacity:0;animation:mt-brand-spray .4s steps(2,end) 1.15s forwards}
+.mt-intro__spray-cloud{opacity:0;animation:mt-brand-cloud 1.85s linear .12s forwards}
+.mt-intro__logo{animation:mt-logo .45s ease-out 1.6s forwards}
+.mt-intro__tag{animation:mt-logo .45s ease-out 1.85s forwards}
+@keyframes mt-paint-brand{0%{width:0}22%{width:158px}50%{width:353px}77%{width:560px}100%{width:735px}}
+@keyframes mt-brand-spray{to{opacity:1}}
+@keyframes mt-brand-cloud{0%{opacity:0;transform:translateX(0)}15%{opacity:.8}85%{opacity:.8}100%{opacity:0;transform:translateX(700px)}}
+@media(max-width:1050px){#page-redes .social-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:760px){#mtHuman,#page-sobre .mt-about{grid-template-columns:1fr!important}#mtHuman .mt-human__photo{width:100%;aspect-ratio:1/1}#page-sobre .mt-about__visual{width:100%;aspect-ratio:1/1}#page-redes .social-list{grid-template-columns:1fr!important}.mt-section:has(#mtHomeProjects) .mt-page-head::before{width:55px;height:43px;top:-12px}}
+@media(prefers-reduced-motion:reduce){.mt-intro__paint-pass{width:735px;animation:none}.mt-intro__spray-cloud{display:none}.mt-model-stage--loading::after{animation:none}}
