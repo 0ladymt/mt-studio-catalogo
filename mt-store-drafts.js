@@ -9,6 +9,8 @@
  const money=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
  function render(){
    list.replaceChildren();
+   const shop=document.getElementById('mtShopDrafts');
+   if(shop){shop.replaceChildren();products.forEach(p=>{const card=document.createElement('article');card.className='mt-shop-draft';if(p.image && !/^(https?:|data:|\/\/)/i.test(p.image) && !p.image.includes('..')){const img=document.createElement('img');img.src=p.image;img.alt=p.name;img.loading='lazy';card.append(img)}const title=document.createElement('h4');title.textContent=p.name;const price=document.createElement('strong');price.textContent=money(p.price);const desc=document.createElement('p');desc.textContent=p.description;const note=document.createElement('small');note.textContent='Rascunho · compra indisponível';card.append(title,price,desc,note);shop.append(card)});}
    if(!products.length){const p=document.createElement('p');p.textContent='Nenhum produto em rascunho.';list.append(p);return;}
    products.forEach(p=>{
      const row=document.createElement('article');row.className='mt-draft';
