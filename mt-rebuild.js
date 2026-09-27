@@ -22,8 +22,7 @@
       <g class="mt-intro__spray-specks" fill="#ad31e1"><path d="M159 358v78q0 16 9 16t9-17v-77M220 379v47q0 14 8 14t8-14v-53M532 378v72q0 17 9 17t8-16v-71M589 363v56q0 15 9 15t9-15v-57M370 352v95q0 17 9 17t9-17v-95"/><circle cx="81" cy="85" r="4"/><circle cx="110" cy="451" r="5"/><circle cx="682" cy="102" r="6"/><circle cx="655" cy="457" r="4"/><circle cx="276" cy="466" r="3"/><circle cx="486" cy="466" r="3"/></g>
     </svg>`;
   }
-  // A assinatura entra depois da pintura pela linha do tempo do CSS.
-  // Substitui somente o branco/lilás exterior conectado às bordas.
+  // O lettering só entra quando a pichação já foi pintada. A opacidade inline\n  // vence os estilos legados que mantinham o nome invisível.\n  const intro=document.getElementById('mtIntro');\n  if(intro){\n    const title=intro.querySelector('.mt-intro__logo');\n    const tag=intro.querySelector('.mt-intro__tag');\n    setTimeout(()=>title?.style.setProperty('opacity','1','important'),2100);\n    setTimeout(()=>tag?.style.setProperty('opacity','1','important'),2400);\n  }\n  // Substitui somente o branco/lilás exterior conectado às bordas.
   // A região central da mascote é protegida, inclusive o pelo claro do Joy.
   function integratePortrait(img){
     if(!img)return;
