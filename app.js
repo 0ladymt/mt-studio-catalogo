@@ -397,13 +397,19 @@ function centerAndFit(obj){
   obj.position.sub(center);
 
   const maxDim = Math.max(size.x, size.y, size.z) || 1;
-  obj.scale.setScalar(2.45 / maxDim);
+  obj.scale.setScalar(2.2 / maxDim);
 
   const box2 = new THREE.Box3().setFromObject(obj);
   const center2 = new THREE.Vector3();
   box2.getCenter(center2);
   controls.target.copy(center2);
-  camera.position.set(0, 0.65, 4.2);
+  const sphere = box2.getBoundingSphere(new THREE.Sphere());
+  const v = THREE.MathUtils.degToRad(camera.fov);
+  const h = 2*Math.atan(Math.tan(v/2)*camera.aspect);
+  const distance = sphere.radius/Math.sin(Math.min(v,h)/2)*1.25;
+  camera.position.set(0,0,Math.max(2.2,distance));
+  controls.minDistance=Math.max(.2,sphere.radius*1.15);
+  controls.maxDistance=Math.max(10,distance*3);
   camera.lookAt(center2);
   controls.update();
 }
@@ -420,113 +426,112 @@ function resizeViewer(){
 }
 
 
-/* Vitrine 3D: sem prévia fotográfica durante transições. */
+/* Vitrine 3D: carrega os três OBJs antes de trocar a página; mantém o quadro anterior até todos estarem prontos. */
 const mtCarousels = [];
-function mountModelCarousel(trackId, wrapId, start=0) {
-  const track=$(trackId), wrap=$(wrapId);
+function mountModelCarousel(trackId,wrapId,start=0){
+  const track=$(trackId),wrap=$(wrapId);
   if(!track||!wrap||!catalogo.length)return;
-  const total=catalogo.length;
-  let offset=start, generation=0, instances=[];
-  const dispose=()=>{
-    for(const inst of instances){
+  let offset=start, request=0, instances=[], busy=false;
+  const loader=new OBJLoader();
+  function dispose(instancesToDispose){
+    for(const inst of instancesToDispose){
       inst.disposed=true;
-      if(inst.renderer){inst.renderer.dispose();inst.renderer.forceContextLoss();}
-      inst.object?.traverse(child=>{
-        if(child.isMesh){
-          child.geometry.dispose();
-          if(Array.isArray(child.material))child.material.forEach(m=>m.dispose());
-          else child.material?.dispose();
+      inst.renderer?.dispose();
+      inst.object?.traverse(node=>{
+        if(node.isMesh){
+          node.geometry?.dispose();
+          if(Array.isArray(node.material))node.material.forEach(m=>m.dispose());
+          else node.material?.dispose();
         }
       });
     }
-    instances=[];
-  };
-  const render=()=>{
-    dispose();
-    const current=++generation;
-    track.replaceChildren();
-    for(let n=0;n<3;n++){
-      const item=catalogo[(offset+n)%total];
-      const card=document.createElement('article');card.className='mt-model-card';
-      const stage=document.createElement('div');stage.className='mt-model-stage mt-model-stage--loading';
-      const status=document.createElement('span');status.className='mt-model-status';status.textContent='Preparando modelo 3D…';status.setAttribute('role','status');
-      stage.append(status);
-      const label=document.createElement('div');label.className='mt-model-caption';
-      const small=document.createElement('small');small.textContent=item.genero+' / '+item.categoria;
-      const strong=document.createElement('strong');strong.textContent=item.nome;
-      label.append(small,strong);
-      const open=document.createElement('button');open.type='button';open.textContent='Ver modelo ↗';open.addEventListener('click',()=>openViewer(item));
-      card.append(stage,label,open);track.append(card);
-      const inst={renderer:null,object:null,disposed:false,draw:null};instances.push(inst);
-      const fail=()=>{
-        if(inst.disposed||generation!==current)return;
-        status.textContent='Prévia 3D indisponível — abra o modelo';
-        stage.classList.remove('mt-model-stage--loading');
-        stage.classList.add('mt-model-stage--error');
-      };
-      if(!window.WebGLRenderingContext){fail();continue;}
-      try{
-        const canvas=document.createElement('canvas');canvas.className='mt-model-canvas';canvas.setAttribute('aria-label',item.nome+' girando em 3D');
+  }
+  function fitCamera(camera,obj,w,h){
+    const bounds=new THREE.Box3().setFromObject(obj);
+    const sphere=bounds.getBoundingSphere(new THREE.Sphere());
+    const vertical=THREE.MathUtils.degToRad(camera.fov);
+    const horizontal=2*Math.atan(Math.tan(vertical/2)*(w/h));
+    // Esfera circunscrita: segura inclusive quando o objeto gira.
+    const distance=Math.max(.5,sphere.radius/Math.sin(Math.min(vertical,horizontal)/2)*1.24);
+    camera.aspect=w/h;
+    camera.near=Math.max(.001,distance-sphere.radius*2.5);
+    camera.far=distance+sphere.radius*4+10;
+    camera.position.set(0,0,distance);
+    camera.lookAt(0,0,0);
+    camera.updateProjectionMatrix();
+  }
+  async function prepare(nextOffset,token){
+    const nextItems=Array.from({length:Math.min(3,catalogo.length)},(_,n)=>catalogo[(nextOffset+n)%catalogo.length]);
+    const objects=await Promise.all(nextItems.map(item=>loader.loadAsync(fixPath(item.obj))));
+    if(token!==request){objects.forEach(o=>o.traverse(n=>{if(n.isMesh)n.geometry?.dispose()}));return;}
+    const cards=[],fresh=[];
+    try{
+      for(let i=0;i<objects.length;i++){
+        const item=nextItems[i],obj=objects[i];
+        const card=document.createElement('article');card.className='mt-model-card';
+        const stage=document.createElement('div');stage.className='mt-model-stage mt-model-stage--ready';
+        const canvas=document.createElement('canvas');canvas.className='mt-model-canvas';canvas.setAttribute('aria-label',item.nome+' em rotação 3D');
+        stage.append(canvas);
+        const caption=document.createElement('div');caption.className='mt-model-caption';
+        const small=document.createElement('small');small.textContent=item.genero+' / '+item.categoria;
+        const strong=document.createElement('strong');strong.textContent=item.nome;
+        caption.append(small,strong);
+        const open=document.createElement('button');open.type='button';open.textContent='Ver modelo ↗';open.onclick=()=>openViewer(item);
+        card.append(stage,caption,open);cards.push(card);
         const renderer3=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
-        inst.renderer=renderer3;
-        renderer3.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
         renderer3.outputColorSpace=THREE.SRGBColorSpace;
+        renderer3.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
         const scene3=new THREE.Scene();
-        const camera3=new THREE.PerspectiveCamera(35,1,.1,200);
         scene3.add(new THREE.HemisphereLight(0xffffff,0x504260,2));
         const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(3,4,5);scene3.add(key);
         const rim=new THREE.DirectionalLight(0xc68aff,1.2);rim.position.set(-3,1,-2);scene3.add(rim);
-        new OBJLoader().load(fixPath(item.obj),obj=>{
-          if(inst.disposed||generation!==current){
-            obj.traverse(x=>{if(x.isMesh)x.geometry.dispose()});
-            return;
+        obj.traverse(n=>{if(n.isMesh)n.material=new THREE.MeshStandardMaterial({color:0xeae4ef,roughness:.72,side:THREE.DoubleSide})});
+        const box=new THREE.Box3().setFromObject(obj),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+        const scale=1.6/(Math.max(size.x,size.y,size.z)||1);
+        obj.scale.setScalar(scale);obj.position.set(-center.x*scale,-center.y*scale,-center.z*scale);
+        scene3.add(obj);
+        const camera3=new THREE.PerspectiveCamera(35,1,.01,1000);
+        const inst={renderer:renderer3,object:obj,disposed:false,draw:null};
+        inst.draw=()=>{
+          const w=Math.max(120,stage.clientWidth||250),h=Math.max(120,stage.clientHeight||260);
+          if(w!==inst.width||h!==inst.height){
+            inst.width=w;inst.height=h;renderer3.setSize(w,h,false);fitCamera(camera3,obj,w,h);
           }
-          obj.traverse(x=>{if(x.isMesh)x.material=new THREE.MeshStandardMaterial({color:0xeae4ef,metalness:.08,roughness:.7,side:THREE.DoubleSide})});
-          const bounds=new THREE.Box3().setFromObject(obj),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
-          const fitScale=1.12/(Math.max(size.x,size.y,size.z)||1);
-          obj.scale.setScalar(fitScale);
-          obj.position.set(-center.x*fitScale,-center.y*fitScale,-center.z*fitScale);
-          const sphere=new THREE.Box3().setFromObject(obj).getBoundingSphere(new THREE.Sphere());
-          scene3.add(obj);inst.object=obj;
-          inst.draw=()=>{
-            const w=Math.max(1,Math.round(stage.clientWidth)),h=Math.max(1,Math.round(stage.clientHeight));
-            if(w!==inst.width||h!==inst.height){
-              inst.width=w;inst.height=h;renderer3.setSize(w,h,false);
-              camera3.aspect=w/h;camera3.updateProjectionMatrix();
-              const vfov=THREE.MathUtils.degToRad(camera3.fov);
-              const hfov=2*Math.atan(Math.tan(vfov/2)*camera3.aspect);
-              camera3.position.set(0,0,Math.max(3.7,sphere.radius/Math.sin(Math.min(vfov,hfov)/2)*1.48));
-              camera3.lookAt(0,0,0);
-            }
-            obj.rotation.y+=.006;
-            renderer3.render(scene3,camera3);
-          };
-          // Só mostramos o canvas depois de um quadro real ter sido renderizado.
-          inst.draw();
-          stage.append(canvas);
-          stage.classList.remove('mt-model-stage--loading');
-          stage.classList.add('mt-model-stage--ready');
-          status.remove();
-        },undefined,fail);
-      }catch(err){
-        if(inst.renderer){inst.renderer.dispose();inst.renderer.forceContextLoss();inst.renderer=null;}
-        fail();
+          obj.rotation.y+=.006;
+          renderer3.render(scene3,camera3);
+        };
+        fresh.push(inst);
       }
-    }
-  };
-  wrap.querySelector('.mt-model-prev')?.addEventListener('click',()=>{offset=(offset-1+total)%total;render()});
-  wrap.querySelector('.mt-model-next')?.addEventListener('click',()=>{offset=(offset+1)%total;render()});
-  render();
+      if(token!==request){dispose(fresh);return;}
+      // Swap único: nenhum card antigo desaparece durante o download dos próximos modelos.
+      const old=instances;
+      track.replaceChildren(...cards);
+      instances=fresh;
+      offset=nextOffset;
+      fresh.forEach(inst=>inst.draw());
+      dispose(old);
+    }catch(error){dispose(fresh);throw error;}
+  }
+  async function advance(delta){
+    if(busy)return;
+    busy=true;wrap.classList.add('is-preparing');
+    const token=++request;
+    try{await prepare((offset+delta+catalogo.length)%catalogo.length,token);}
+    catch(error){console.error('Pré-carregamento do carrossel:',error);}
+    finally{busy=false;wrap.classList.remove('is-preparing');}
+  }
+  wrap.querySelector('.mt-model-prev')?.addEventListener('click',()=>advance(-3));
+  wrap.querySelector('.mt-model-next')?.addEventListener('click',()=>advance(3));
+  advance(0);
   mtCarousels.push({wrap,instances:()=>instances});
 }
 function animateModelCarousels(){
   requestAnimationFrame(animateModelCarousels);
   if(document.hidden)return;
   for(const carousel of mtCarousels){
-    if(!carousel.wrap.getBoundingClientRect().width)continue;
     const rect=carousel.wrap.getBoundingClientRect();
-    if(rect.bottom<0||rect.top>innerHeight)continue;
-    carousel.instances().forEach(inst=>{if(!inst.disposed&&inst.draw)inst.draw()});
+    if(rect.width&&rect.bottom>=0&&rect.top<=innerHeight)
+      carousel.instances().forEach(inst=>{if(!inst.disposed&&inst.draw)inst.draw()});
   }
 }
 
