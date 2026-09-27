@@ -546,4 +546,4 @@ mountModelCarousel('homeModelTrack','homeModelCarousel',0);
 animateModelCarousels();
 
 const initialHash = location.hash.replace('#','');
-if(['home','loja','catalogo','sobre','redes','projetos'].includes(initialHash)) openPage(initialHash); else openPage('home');
+if(['home','loja','catalogo','sobre','redes','projetos','admin'].includes(initialHash)) openPage(initialHash); else openPage('home');
