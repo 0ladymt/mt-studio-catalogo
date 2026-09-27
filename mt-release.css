@@ -1,0 +1,68 @@
+/* MT Studio / uma camada de composição compartilhada. Assets reais do acervo. */
+:root{--mt-bg:#120e15;--mt-accent:#bf43ed;--mt-outline:rgba(224,173,245,.3)}
+/* A animação usa caminhos de spray como máscara, não um PNG surgindo inteiro. */
+.mt-intro__street{display:block;width:100%;height:100%;overflow:visible}
+.mt-intro__art{overflow:visible!important}
+.mt-street-strokes path{stroke-width:105;stroke-dasharray:1200;stroke-dashoffset:1200;animation:mt-ink-stroke 1.3s cubic-bezier(.3,.05,.4,1) forwards}
+.mt-street-strokes path:nth-child(2){animation-delay:.22s}
+.mt-street-strokes path:nth-child(3){animation-delay:.43s}
+.mt-street-strokes path:nth-child(4){animation-delay:.62s}
+.mt-street-strokes path:nth-child(5){stroke-width:74;animation-delay:.86s}
+@keyframes mt-ink-stroke{to{stroke-dashoffset:0}}
+.mt-intro__logo{opacity:0!important;animation:mt-lettering .52s ease 2.05s forwards!important}
+.mt-intro__tag{opacity:0!important;animation:mt-lettering .5s ease 2.45s forwards!important}
+@keyframes mt-lettering{to{opacity:1}}
+/* Textura e assinatura em áreas específicas: nada de ícones flutuando no meio de textos. */
+#page-home>.mt-section{background:linear-gradient(180deg,#120e15 0%,#1b1020 100%);position:relative}
+#page-home>.mt-section+.mt-section{background:linear-gradient(180deg,#1b1020,#120e15)}
+#page-home>.mt-section .mt-page-head{position:relative}
+#page-home>.mt-section .mt-page-head h2{position:relative;z-index:1}
+#page-home>.mt-section:has(#mtHomeProjects) .mt-page-head::before{right:8px;top:8px;width:88px;height:70px}
+#page-home .mt-feature,#page-home .mt-project{box-shadow:0 18px 42px rgba(0,0,0,.17)}
+#page-home .mt-project__image{height:290px}
+#page-home .mt-project__image img{object-fit:contain!important}
+.mt-editorial{border-top:1px solid var(--mt-outline);border-bottom:1px solid var(--mt-outline)}
+.mt-model-carousel.is-preparing .mt-model-prev,.mt-model-carousel.is-preparing .mt-model-next{opacity:.55;cursor:wait}
+.mt-model-carousel{overflow:hidden!important}
+.mt-model-stage{height:clamp(240px,21vw,330px)!important;position:relative}
+.mt-model-stage canvas{width:100%;height:100%;display:block}
+.mt-model-card{min-width:0}
+#page-catalogo .grid .thumb{object-fit:contain!important}
+.mt-human{background:linear-gradient(110deg,#211429 0%,#160f1c 100%)!important;color:#fff;position:relative;border-top:1px solid var(--mt-outline)}
+.mt-human__photo{background:#1b1121!important;position:relative;overflow:hidden}
+.mt-human__photo img{object-fit:contain!important;object-position:center center!important}
+.mt-human__photo::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset -25px 0 40px #1b1121;opacity:.85}
+.mt-human__copy{color:#fff}
+.mt-human__copy h2,.mt-human__copy p{color:#fff!important}
+.mt-human__copy p{color:#e5d9ec!important}
+.mt-human__copy .mt-button--outline{border-color:#b85be1!important}
+#page-sobre .mt-about__visual{background:#1b1121!important}
+#page-sobre .mt-about__visual::after{content:"";display:block!important;position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 45px #1b1121}
+#page-sobre .mt-about__visual img{object-fit:contain!important}
+.mt-cta::after{background-image:url('assets/mt-manual-drips.svg')!important;background-repeat:repeat-x!important;opacity:.22!important}
+#page-projetos .center-title{padding-top:45px!important}
+#page-projetos .mt-projects-crown{width:105px;height:88px;object-fit:contain;margin:0 auto 20px}
+#page-projetos .project-card img{width:100%;height:330px;aspect-ratio:auto;object-fit:contain!important;background:#1a1120}
+#page-projetos .project-card h3{font-family:"Bebas Neue",Impact,sans-serif;font-size:36px;letter-spacing:.02em}
+#page-redes .social-icon{background:#31123f!important;color:#ca5bf4!important;border:1px solid #78418f}
+#page-redes .social-icon svg{fill:currentColor;width:32px;height:32px}
+#page-redes .social-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+#page-redes .social-row{min-height:180px}
+/* Admin: rascunhos sem aparência de checkout ativo. */
+.mt-admin{padding:75px 0 100px;min-height:65vh}
+.mt-admin h2{font:400 clamp(50px,7vw,90px)/.95 "Bebas Neue",Impact,sans-serif;margin:15px 0}
+.mt-admin-note{max-width:760px;line-height:1.7;color:#e0cfeb;background:#29172f;border-left:4px solid #bf43ed;padding:18px 22px}
+.mt-admin-form{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:950px;margin:35px 0}
+.mt-admin-form label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#dbb6ee;display:grid;gap:9px}
+.mt-admin-form label:nth-child(4){grid-column:1/-1}
+.mt-admin-form textarea{background:#1a1020;border:1px solid #704581;color:white;padding:15px;font:inherit;resize:vertical}
+.mt-admin-form button{width:max-content}
+.mt-admin-actions{display:flex;gap:12px;margin:22px 0}
+.mt-admin-actions button,.mt-admin-import,.mt-draft button{border:1px solid #9051ab;background:#281632;color:white;padding:12px 18px;cursor:pointer;font:700 12px Montserrat,Arial,sans-serif}
+.mt-admin-import input{display:none}
+.mt-drafts{display:grid;gap:12px;max-width:950px}
+.mt-draft{border:1px solid #5b3869;background:#211528;padding:20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+.mt-draft strong{font-size:18px}.mt-draft p{flex-basis:100%;margin:0;color:#dac8e3}
+@media(max-width:900px){#page-redes .social-list{grid-template-columns:repeat(2,minmax(0,1fr))}.mt-human{grid-template-columns:1fr!important}.mt-human__photo{height:450px}.mt-human__photo::after{box-shadow:inset 0 -24px 36px #1b1121}.mt-admin-form{grid-template-columns:1fr}}
+@media(max-width:620px){#page-redes .social-list{grid-template-columns:1fr}.mt-model-stage{height:185px!important}.mt-home-hero h2{font-size:clamp(58px,13vw,88px)}.mt-admin{padding:38px 0 70px}}
+@media(prefers-reduced-motion:reduce){.mt-street-strokes path{animation:none;stroke-dashoffset:0}.mt-intro__logo,.mt-intro__tag{animation:none!important;opacity:1!important}}
