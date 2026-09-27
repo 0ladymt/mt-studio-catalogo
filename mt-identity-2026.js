@@ -75,4 +75,44 @@
   }
   darkenPortrait(document.getElementById('mtRafaJoy'));
   darkenPortrait(document.getElementById('mtAboutRafaJoy'));
+  /* Troca apenas o fundo roxo das miniaturas por cinza de estúdio, sem dessaturar a malha. */
+  const neutralCache=new Map();
+  function neutralizeThumb(img){
+    if(!img || img.dataset.mtNeutral === '1')return;
+    img.dataset.mtNeutral='1';
+    const paint=()=>{
+      if(!img.naturalWidth||!img.isConnected)return;
+      const src=img.currentSrc||img.src;
+      if(neutralCache.has(src)){img.src=neutralCache.get(src);return;}
+      try{
+        const w=Math.min(500,img.naturalWidth),h=Math.round(w*img.naturalHeight/img.naturalWidth);
+        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+        const cx=canvas.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,w,h);
+        const data=cx.getImageData(0,0,w,h),p=data.data;
+        for(let k=0;k<p.length;k+=4){
+          const r=p[k],g=p[k+1],b=p[k+2],bright=Math.max(r,g,b);
+          // Fundos de preview são roxo escuro; preservar as peças rosa, brancas e cinza.
+          if(bright<160 && r>g*1.4 && b>g*1.5 && b>r*.82 && b>32){
+            const grain=Math.round((r+g+b)/14);
+            p[k]=39+grain;p[k+1]=36+grain;p[k+2]=43+grain;
+          }else if(r<26&&g<26&&b<26){p[k]=32;p[k+1]=29;p[k+2]=35;}
+        }
+        cx.putImageData(data,0,0);
+        const url=canvas.toDataURL('image/webp',.88);
+        neutralCache.set(src,url);img.src=url;
+      }catch(error){console.warn('Miniatura original preservada:',error);}
+    };
+    if(img.complete&&img.naturalWidth)paint();else img.addEventListener('load',paint,{once:true});
+  }
+  const grid=document.getElementById('grid');
+  if(grid){
+    const observer=new IntersectionObserver(entries=>{
+      for(const entry of entries)if(entry.isIntersecting){observer.unobserve(entry.target);neutralizeThumb(entry.target);}
+    },{rootMargin:'500px'});
+    const observe=()=>grid.querySelectorAll('img.thumb:not([data-mt-neutral])').forEach(img=>observer.observe(img));
+    const changes=new MutationObserver(observe);
+    changes.observe(grid,{childList:true,subtree:true});
+    observe();
+  }
+
 })();
