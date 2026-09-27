@@ -452,7 +452,7 @@ function mountModelCarousel(trackId,wrapId,start=0){
     const vertical=THREE.MathUtils.degToRad(camera.fov);
     const horizontal=2*Math.atan(Math.tan(vertical/2)*(w/h));
     // Esfera circunscrita: segura inclusive quando o objeto gira.
-    const distance=Math.max(.5,sphere.radius/Math.sin(Math.min(vertical,horizontal)/2)*1.24);
+    const distance=Math.max(.5,sphere.radius/Math.sin(Math.min(vertical,horizontal)/2)*1.42);
     camera.aspect=w/h;
     camera.near=Math.max(.001,distance-sphere.radius*2.5);
     camera.far=distance+sphere.radius*4+10;
@@ -493,18 +493,19 @@ function mountModelCarousel(trackId,wrapId,start=0){
         const camera3=new THREE.PerspectiveCamera(35,1,.01,1000);
         const inst={renderer:renderer3,object:obj,disposed:false,draw:null};
         inst.draw=()=>{
-          const w=Math.max(120,stage.clientWidth||250),h=Math.max(120,stage.clientHeight||260);
+          const w=Math.max(120,stage.clientWidth||inst.preparedWidth||250),h=Math.max(120,stage.clientHeight||inst.preparedHeight||260);
           if(w!==inst.width||h!==inst.height){
             inst.width=w;inst.height=h;renderer3.setSize(w,h,false);fitCamera(camera3,obj,w,h);
           }
           obj.rotation.y+=.006;
           renderer3.render(scene3,camera3);
         };
-        fresh.push(inst);
+        inst.preparedWidth=Math.max(140,Math.floor((track.clientWidth-28)/3)-20);inst.preparedHeight=Math.max(180,Math.min(330,Math.round(inst.preparedWidth*.95)));renderer3.setSize(inst.preparedWidth,inst.preparedHeight,false);inst.draw();fresh.push(inst);
       }
       if(token!==request){dispose(fresh);return;}
       // Swap único: nenhum card antigo desaparece durante o download dos próximos modelos.
       const old=instances;
+      // Todos os modelos já estão carregados e receberam o primeiro frame antes da troca.
       track.replaceChildren(...cards);
       instances=fresh;
       offset=nextOffset;
