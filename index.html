@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="assets/logo-borboleta.png?v=2">
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="style.css" /><link rel="stylesheet" href="mt-v5.css" /><link rel="stylesheet" href="mt-direction.css" /><link rel="stylesheet" href="mt-fixes.css" /><link rel="stylesheet" href="mt-polish.css" /><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="mt-release.css?v=4" />
 </head>
 <body>
   <header class="topbar">
@@ -22,7 +23,7 @@
       <button class="nav-tab active" data-page="home">Início</button><button class="nav-tab" data-page="loja">Loja</button><button class="nav-tab" data-page="catalogo">Catálogo 3D</button>
       <button class="nav-tab" data-page="sobre">Sobre</button>
       <button class="nav-tab" data-page="redes">Redes Sociais</button>
-      <button class="nav-tab" data-page="projetos">Projetos</button>
+      <button class="nav-tab" data-page="projetos">Projetos</button><button class="nav-tab" data-page="admin">Painel</button>
     </nav>
 
     <a class="discord-btn" id="discordTop" href="#" target="_blank" rel="noreferrer">
@@ -146,9 +147,12 @@
         <div class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2C.5 9.1.5 12 .5 12s0 2.9.5 4.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-4.8.5-4.8s0-2.9-.5-4.8ZM9.7 15.3V8.7l5.8 3.3-5.8 3.3Z"/></svg></div>
         <div><span>YouTube</span><strong>Tutoriais, projetos e bastidores</strong></div>
       </a>
+      <a class="social-row pinterest" href="https://www.pinterest.com/mt_studiocriativo/" target="_blank" rel="noopener noreferrer"><div class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.64 19.31c-.03-.79-.01-1.72.2-2.58l1.27-5.36s-.32-.64-.32-1.59c0-1.49.86-2.61 1.94-2.61.92 0 1.36.69 1.36 1.51 0 .92-.59 2.29-.9 3.56-.26 1.07.54 1.94 1.6 1.94 1.92 0 3.4-2.03 3.4-4.96 0-2.6-1.87-4.42-4.55-4.42a5.17 5.17 0 0 0-5.39 5.2 5.2 0 0 0 .99 3.12c.11.13.13.25.1.39l-.37 1.48c-.06.24-.19.29-.44.18-1.23-.57-2-2.35-2-3.78 0-3.08 2.24-5.91 6.46-5.91 3.39 0 6.02 2.42 6.02 5.65 0 3.37-2.13 6.09-5.09 6.09-.99 0-1.92-.51-2.24-1.11l-.61 2.32c-.22.85-.82 1.92-1.22 2.65A10 10 0 1 0 12 2Z"/></svg></div><div><span>Pinterest</span><strong>Referências e inspirações MT</strong></div></a>
+      <a class="social-row twitter" href="https://x.com/mt_studiobr" target="_blank" rel="noopener noreferrer"><div class="social-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.4l7.3-8.4L1.9 2h6.5l4.4 6.8L18.9 2Zm-1.1 18h1.7L7.4 3.9H5.6Z"/></svg></div><div><span>X / Twitter</span><strong>Novidades e atualizações</strong></div></a>
     </div>
   </section>
 
+<section id="page-admin" class="page"><div class="mt-shell mt-admin"><span class="mt-overline">Gestão da vitrine</span><h2>PAINEL DE PRODUTOS.</h2><p class="mt-admin-note">Rascunho local para preparar a vitrine. Os dados ficam apenas neste navegador. Publicação, login seguro, Pix e entrega automática exigem backend e não estão habilitados.</p><form id="mtProductForm" class="mt-admin-form"><label>Nome do produto<input name="name" required maxlength="120"></label><label>Preço (R$)<input name="price" type="number" min="0.01" step="0.01" required></label><label>Imagem (caminho no site)<input name="image" placeholder="assets/produtos/exemplo.jpg"></label><label>Descrição<textarea name="description" maxlength="1000" rows="4" required></textarea></label><button class="mt-button" type="submit">Salvar rascunho</button></form><div class="mt-admin-actions"><button id="mtExportProducts" type="button">Exportar JSON</button><label class="mt-admin-import">Importar JSON<input id="mtImportProducts" type="file" accept=".json,application/json"></label></div><div id="mtDraftProducts" class="mt-drafts"></div></div></section>
   <section id="page-projetos" class="page projects-page">
     <section class="center-title">
       <img class="mt-projects-crown" src="assets/mt-manual-coroa.svg" alt="" aria-hidden="true">
@@ -229,6 +233,6 @@
   </script>
   <script src="catalogo-data.js"></script>
   <script src="projetos-data.js"></script>
-  <script src="mt-v5.js" defer></script><script type="module" src="app.js"></script>
+  <script src="mt-v5.js" defer></script><script src="mt-store-drafts.js" defer></script><script type="module" src="app.js"></script>
 </body>
 </html>
