@@ -5,25 +5,19 @@
   intro.className = 'mt-intro';
   intro.setAttribute('role','status');
   intro.setAttribute('aria-label','Abertura da MT Studio');
-  // A borboleta vetorial oficial é revelada por passadas de tinta, não por PNG nem por contorno genérico.
-  intro.innerHTML = `<div class="mt-intro__center"><div class="mt-intro__art">
-    <svg class="mt-intro__street mt-intro__street--brand" viewBox="0 0 700 590" role="img" aria-label="Marca street da MT Studio sendo pintada">
-      <defs>
-        <mask id="mtPaintReveal" maskContentUnits="userSpaceOnUse">
-          <rect class="mt-intro__paint-pass" x="-15" y="-15" width="0" height="620" fill="white"/>
-          <g class="mt-intro__paint-spray" fill="white">
-            <circle cx="42" cy="121" r="3"/><circle cx="69" cy="174" r="2"/><circle cx="104" cy="286" r="4"/>
-            <circle cx="119" cy="475" r="3"/><circle cx="161" cy="79" r="2"/><circle cx="244" cy="507" r="3"/>
-            <circle cx="352" cy="57" r="2"/><circle cx="468" cy="491" r="4"/><circle cx="586" cy="111" r="3"/>
-          </g>
-        </mask>
-      </defs>
-      <image class="mt-intro__brand-art" href="assets/mt-borboleta-street.svg" x="0" y="0" width="700" height="590" mask="url(#mtPaintReveal)" preserveAspectRatio="xMidYMid meet"/>
-      <g class="mt-intro__spray-cloud" fill="#bb35ed" aria-hidden="true">
-        <circle cx="0" cy="90" r="3"/><circle cx="11" cy="160" r="2"/><circle cx="-9" cy="251" r="4"/>
-        <circle cx="13" cy="343" r="2"/><circle cx="-13" cy="425" r="3"/><circle cx="20" cy="500" r="2"/>
-      </g>
-    </svg></div><div class="mt-intro__logo">MT STUDIO</div><div class="mt-intro__tag">IDEIAS QUE VIRAM IDENTIDADE</div></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>`;
+  // A borboleta É a pichação: passadas irregulares desenham as asas, depois entra o lettering.
+  intro.innerHTML = '<div class="mt-intro__center"><div class="mt-intro__art">' +
+    '<svg class="mt-intro__street" viewBox="0 0 700 590" role="img" aria-label="Borboleta sendo pichada">' +
+    '<defs><mask id="mtStreetMask"><g class="mt-street-strokes" fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M340 275 Q243 117 92 91 L182 199 74 167 198 221 127 252 318 308"/>' +
+    '<path d="M360 275 Q476 115 625 100 L517 189 637 165 498 230 568 251 390 309"/>' +
+    '<path d="M323 326 Q191 264 84 326 L206 345 105 387 237 390 192 455 329 343"/>' +
+    '<path d="M377 326 Q511 263 623 332 L497 350 602 392 467 389 503 455 371 343"/>' +
+    '<path d="M351 187 L355 455"/>' +
+    '</g></mask></defs>' +
+    '<image href="assets/mt-borboleta-street.svg" x="0" y="0" width="700" height="590" mask="url(#mtStreetMask)"/>' +
+    '</svg></div><div class="mt-intro__logo">MT STUDIO</div><div class="mt-intro__tag">IDEIAS QUE VIRAM IDENTIDADE</div></div>' +
+    '<button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isHome = !location.hash || location.hash === '#home';
   if (isHome && !reduced) {
@@ -38,7 +32,7 @@
       setTimeout(() => intro.remove(), 550);
     };
     intro.querySelector('button').addEventListener('click', finish);
-    setTimeout(finish, 2750);
+    setTimeout(finish, 3650);
     window.addEventListener('pagehide', finish, {once:true});
   }
   const projects = Array.isArray(window.PROJETOS_MT) ? window.PROJETOS_MT : [];
