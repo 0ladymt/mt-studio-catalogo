@@ -47,6 +47,7 @@
     if (!link) return;
     event.preventDefault();
     window.mtOpenPage(link.dataset.pageLink || link.dataset.page);
+    if(link.dataset.catalogCategory){for(const id of ["search","gender"]){const input=document.getElementById(id);if(input)input.value="";}const category=document.getElementById("category");category.value=link.dataset.catalogCategory;category.dispatchEvent(new Event("change",{bubbles:true}));}
   });
   window.addEventListener("hashchange", () =>
     showPage(location.hash.slice(1), true),
@@ -118,78 +119,6 @@
     });
     document.getElementById("mtHomeProjects").append(a);
   });
-  // Keep the approved portrait pixels. Only background connected to the outer
-  // edge is composited out; the central person/dog is not regenerated or recolored.
-  const portraitSource = new Image();
-  portraitSource.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = portraitSource.naturalWidth;
-    canvas.height = portraitSource.naturalHeight;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return;
-    ctx.drawImage(portraitSource, 0, 0);
-    const w = canvas.width,
-      h = canvas.height,
-      im = ctx.getImageData(0, 0, w, h),
-      d = im.data;
-    const visited = new Uint8Array(w * h),
-      queue = new Int32Array(w * h);
-    let front = 0,
-      back = 0;
-    const push = (i) => {
-      if (visited[i]) return;
-      // Joy's light lower fur reaches the edge of the original illustration.
-      // Protect that foreground explicitly from the connected-background fill.
-      const px = (i % w) / w,
-        py = Math.floor(i / w) / h;
-      if (py > 0.82 && py < 0.97 && px > 0.67 && px < 0.94) return;
-      const k = i * 4,
-        r = d[k],
-        g = d[k + 1],
-        b = d[k + 2];
-      if (
-        r > 176 &&
-        g > 150 &&
-        b > 180 &&
-        Math.max(r, g, b) - Math.min(r, g, b) < 88
-      ) {
-        visited[i] = 1;
-        queue[back++] = i;
-      }
-    };
-    for (let x = 0; x < w; x++) {
-      push(x);
-      push((h - 1) * w + x);
-    }
-    for (let y = 0; y < h; y++) {
-      push(y * w);
-      push(y * w + w - 1);
-    }
-    while (front < back) {
-      const i = queue[front++],
-        x = i % w,
-        y = Math.floor(i / w);
-      if (x) push(i - 1);
-      if (x < w - 1) push(i + 1);
-      if (y) push(i - w);
-      if (y < h - 1) push(i + w);
-    }
-    for (let i = 0; i < visited.length; i++) if (visited[i]) d[i * 4 + 3] = 0;
-    ctx.putImageData(im, 0, 0);
-    for (const id of ["mtRafaJoy", "mtAboutRafaJoy"]) {
-      const original = document.getElementById(id),
-        display = document.createElement("canvas");
-      display.width = w;
-      display.height = h;
-      display.className = "mt-portrait-canvas";
-      display.setAttribute("role", "img");
-      display.setAttribute("aria-label", original.alt);
-      display.getContext("2d").drawImage(canvas, 0, 0);
-      original.after(display);
-      original.classList.add("mt-portrait-processed");
-    }
-  };
-  portraitSource.src = "assets/rafa-joy-foto.jpg";
   // Shared keyboard handling for existing gallery and model dialogs.
   let previousFocus = null;
   const dialogs = [

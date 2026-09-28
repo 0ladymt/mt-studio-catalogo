@@ -297,7 +297,7 @@ button:focus:not(:focus-visible) {
   display: block;
   width: 80%;
   height: 24px;
-  background: url("assets/brand/brush.png") center 22%/100% auto no-repeat;
+  background: url("assets/brand/underline.svg?v=20260928-2") center/100% 100% no-repeat;
   margin-top: 6px;
 }
 .mt-home-hero p {
@@ -543,17 +543,9 @@ button:focus:not(:focus-visible) {
   position: relative;
   justify-self: center;
 }
-.mt-human__photo img,
-.mt-about__visual img,
-.mt-portrait-canvas {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-.mt-human__photo .mt-portrait-processed,
-.mt-about__visual .mt-portrait-processed {
-  display: none;
-}
+.mt-portrait{width:100%;height:auto;display:block;mask:url("assets/brand/portrait-mask.svg?v=20260928-2") center/100% 100% no-repeat;-webkit-mask:url("assets/brand/portrait-mask.svg?v=20260928-2") center/100% 100% no-repeat;position:relative;z-index:1}
+.mt-human__photo::before,.mt-about__visual::before{content:"";position:absolute;inset:8% -3% 5%;background:url("assets/brand/brush.svg") center/contain no-repeat;transform:rotate(-22deg);opacity:.22}
+.mt-portrait-heart{position:absolute;right:0;top:12%;width:13%;transform:rotate(12deg)}
 .mt-human__copy h2,
 .mt-about__copy h2 {
   margin-bottom: 25px;
@@ -564,7 +556,7 @@ button:focus:not(:focus-visible) {
 .mt-human__copy h2::after {
   content: "";
   display: block;
-  background: url("assets/brand/brush.png") center/contain no-repeat;
+  background: url("assets/brand/underline.svg?v=20260928-2") center/contain no-repeat;
   width: 160px;
   height: 38px;
   margin-top: 12px;
@@ -588,7 +580,8 @@ button:focus:not(:focus-visible) {
   border: 0;
 }
 .mt-about-detail {
-  padding: 30px 0 var(--space);
+  padding: 64px 0 var(--space);
+  border-top: 1px solid var(--line);
 }
 .mt-about-grid {
   display: grid;
@@ -1204,7 +1197,7 @@ footer p {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #343033;
+  background: #1b1b20;
   display: grid;
   place-items: center;
   transition: opacity 0.5s;
@@ -1230,8 +1223,8 @@ footer p {
   transition:
     opacity 0.6s,
     transform 0.6s;
-  background: #080808e8;
-  padding: 12px 25px;
+  background: transparent;
+  padding: 0;
   max-width: 80vw;
 }
 .mt-intro__signature img {
@@ -1692,3 +1685,39 @@ footer p {
     transition: none !important;
   }
 }
+
+/* Brand composition reconstructed from the supplied manual. */
+:root{--studio:#27272e}
+body{position:relative;isolation:isolate}
+.mt-wall-marks{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.mt-wall-marks::before{content:"";position:absolute;inset:0;opacity:.32;background:url("assets/brand/edge-grunge.svg") left top/48px 1300px repeat-y,url("assets/brand/edge-grunge.svg") right 480px/38px 1300px repeat-y}
+.mt-section,.mt-human,.mt-about,.mt-center-title,.mt-shop{position:relative}
+.mt-hero::before{content:"";position:absolute;width:130px;height:130px;left:-55px;top:4%;opacity:.09;transform:rotate(-18deg);background:url("assets/brand/butterflies.svg") center/contain no-repeat;pointer-events:none}
+.mt-section:has(#mtHomeProjects)::after{content:"";position:absolute;width:150px;height:95px;right:0;top:-1px;opacity:.45;background:url("assets/brand/drips.svg") center/contain no-repeat;pointer-events:none}
+.mt-cta{overflow:hidden;background:#140b1b;isolation:isolate}
+.mt-cta::before,.mt-cta::after{content:"";position:absolute;width:clamp(120px,20vw,300px);height:260px;top:20%;z-index:-1;opacity:.19;pointer-events:none}
+.mt-cta::before{left:2%;background:url("assets/brand/sticker.svg") center/contain no-repeat;transform:rotate(-15deg)}
+.mt-cta::after{right:2%;background:url("assets/brand/butterflies.svg") center/contain no-repeat;transform:rotate(16deg)}
+#page-redes .mt-center-title::before{content:"";display:block;width:65px;height:65px;margin:0 auto 20px;background:url("assets/brand/heart.svg") center/contain no-repeat}
+.social-icon{color:var(--purple)}
+.viewer-loading{color:#e8e4ed}
+.mt-intro::before{content:"";position:absolute;inset:0;background:url("assets/brand/wall-grain.svg");opacity:.32;pointer-events:none}
+.mt-intro__signature img{width:clamp(145px,16vw,210px)}
+#page-admin{background:#101012;padding-inline:clamp(20px,4vw,52px);margin-block:36px;border:1px solid var(--line)}
+.mt-admin-form{padding:28px;background:#18181c;border:1px solid #36333d}
+.mt-admin-form label{font-size:.875rem;font-weight:600}
+.mt-admin-note{border-left:3px solid var(--purple);padding-left:16px}
+.card{transition:border-color .2s,transform .2s}.card:hover{border-color:#61506e;transform:translateY(-3px)}
+.card-body{border-top:1px solid #3b3942}.card h3{letter-spacing:.025em}
+.project-card:first-child{grid-column:1/-1;display:grid;grid-template-columns:1.65fr 1fr;gap:35px;align-items:center}
+.project-card:first-child>div{padding-bottom:30px}.project-card:first-child h3{font-size:clamp(2.2rem,4vw,4rem)}
+.project-card img{object-fit:cover}
+@media(max-width:760px){.project-card:first-child{display:block}.project-card:first-child>div{padding:12px}.mt-admin-form{padding:18px}.mt-hero::before{left:0;width:75px}.mt-cta::before,.mt-cta::after{opacity:.09}.mt-wall-marks{opacity:.18}.mt-about-detail{padding-top:48px}}
+
+.mt-model-stage img{width:100%;height:100%;object-fit:contain;display:block}
+.viewer-fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--studio)}
+.viewer-loading{z-index:2;pointer-events:none;padding:20px;background:#27272ed9}
+.mt-about-grid article{min-width:0}.mt-about-grid h3{font-size:clamp(1.5rem,2.1vw,2rem);overflow-wrap:break-word}
+
+.shop-collections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-bottom:64px}.shop-collections a{border:1px solid var(--line);background:#111114;padding:24px}.shop-collections a:hover{border-color:var(--purple)}.shop-collections span{color:var(--lilac);font-size:.75rem;letter-spacing:.12em}.shop-collections strong{font-size:2rem;display:block;margin:12px 0}.shop-collections small{color:var(--muted)}
+@media(max-width:760px){.shop-collections{grid-template-columns:1fr;gap:12px}.shop-collections a{padding:18px 22px}.shop-collections strong{margin:4px 0}}
