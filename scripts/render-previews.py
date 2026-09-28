@@ -37,9 +37,14 @@ def load_obj(path):
     v=np.asarray(verts,dtype='f4');f=np.asarray(faces,dtype='i4')
     center=(v.min(0)+v.max(0))/2;v-=center
     a=v[f[:,1]]-v[f[:,0]];b=v[f[:,2]]-v[f[:,0]]
-    fn=np.cross(a,b);norm=np.zeros_like(v)
-    for k in range(3):np.add.at(norm,f[:,k],fn)
-    norm/=np.maximum(np.linalg.norm(norm,axis=1,keepdims=True),1e-12)
+    fn=np.cross(a,b);unit=fn/np.maximum(np.linalg.norm(fn,axis=1,keepdims=True),1e-12)
+    corners=v[f].reshape(-1,3);epsilon=max(float(np.ptp(v,axis=0).max()),1e-6)*1e-5
+    _,ids=np.unique(np.floor(corners/epsilon+.5).astype('i8'),axis=0,return_inverse=True)
+    order=np.argsort(ids);groups=np.split(order,np.flatnonzero(np.diff(ids[order]))+1);norm=np.zeros_like(corners)
+    for group in groups:
+        fi=group//3;allowed=(unit[fi]@unit[fi].T)>=math.cos(math.radians(65))
+        n=allowed.astype('f4')@fn[fi];norm[group]=n/np.maximum(np.linalg.norm(n,axis=1,keepdims=True),1e-12)
+
     return v,f,norm
 
 if __name__=='__main__':
@@ -54,10 +59,10 @@ if __name__=='__main__':
         view=np.eye(4,dtype='f4');view[2,3]=-distance
         near=radius/1000;far=distance+radius*10;t=1/math.tan(math.radians(18))
         proj=np.array([[t,0,0,0],[0,t,0,0],[0,0,(far+near)/(near-far),2*far*near/(near-far)],[0,0,-1,0]],dtype='f4')
-        data=np.column_stack([v[f].reshape(-1,3),n[f].reshape(-1,3)]).astype('f4')
+        data=np.column_stack([v[f].reshape(-1,3),n]).astype('f4')
         vbo=ctx.buffer(data.tobytes());vao=ctx.vertex_array(program,[(vbo,'3f 3f','position','normal')])
         program['mvp'].write((proj@view@model).T.tobytes());program['rotation'].write(rot.T.tobytes())
-        fbo.clear(222/255,222/255,224/255,1);vao.render()
+        fbo.clear(39/255,39/255,46/255,1);vao.render()
         image=Image.frombytes('RGB',(512,512),fbo.read(components=3)).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         image.save(ROOT/item['preview'],optimize=True)
         vao.release();vbo.release()

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import * as BufferGeometryUtils from "three/addons/utils/BufferGeometryUtils.js";
+import {setupStudio,studioMaterial,smoothStudioNormals} from "./studio3d.js?v=20260928-2";
 
 const LINKS_MT = {
   discord: "https://discord.gg/MAPubH3vRw",
@@ -236,7 +236,7 @@ function renderGrid() {
     const card = document.createElement("article");
     card.className = "card";
     card.innerHTML = `
-      <img class="thumb" src="${fixPath(item.preview)}" alt="${item.nome}" loading="lazy">
+      <img class="thumb" src="${fixPath(item.preview)}?v=20260928-2" alt="${item.nome}" loading="lazy">
       <div class="card-body">
         <div class="tags"><span class="tag">${item.genero || "-"}</span><span class="tag">${item.categoria || "-"}</span></div>
         <h3>${item.nome || item.id}</h3>
@@ -327,10 +327,10 @@ function setModelColor(color) {
 
 function setBrightness(value) {
   const b = Number(value);
-  if (keyLight) keyLight.intensity = 2.15 * b;
-  if (fillLight) fillLight.intensity = 1.05 * b;
-  if (topLight) topLight.intensity = 0.9 * b;
-  if (rimLight) rimLight.intensity = 0.7 * b;
+  if (keyLight) keyLight.intensity = 1.8 * b;
+  if (fillLight) fillLight.intensity = 0.8 * b;
+  if (topLight) topLight.intensity = 0.4 * b;
+  if (rimLight) rimLight.intensity = 0.65 * b;
 }
 
 function resetViewerSettings() {
@@ -355,12 +355,16 @@ function openViewer(item) {
   $("modal").classList.add("open");
   $("modal").setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+  $("viewer3d").parentElement.querySelector(".viewer-fallback")?.remove();
+  $("viewer3d").hidden=false;
   setupPalette();
   requestAnimationFrame(() => {
     if ($("modal").classList.contains("open")) {
       try {
         initViewer(item);
       } catch (error) {
+        const image=new Image();image.src=fixPath(item.preview)+"?v=20260928-2";image.alt=item.nome;image.className="viewer-fallback";
+        $("viewer3d").hidden=true;$("viewer3d").parentElement.append(image);
         $("viewerLoading").textContent =
           "Seu navegador não conseguiu iniciar o 3D. Ative a aceleração gráfica e tente novamente.";
       }
@@ -419,26 +423,8 @@ function initViewer(item) {
   controls.minDistance = 0.45;
   controls.maxDistance = 9;
 
-  keyLight = new THREE.DirectionalLight(0xffffff, 2.15);
-  keyLight.position.set(2.5, 3.4, 4.2);
-  scene.add(keyLight);
-  fillLight = new THREE.DirectionalLight(0xffffff, 1.05);
-  fillLight.position.set(-3, 1.5, 2.5);
-  scene.add(fillLight);
-  topLight = new THREE.DirectionalLight(0xffffff, 0.9);
-  topLight.position.set(0, 4.8, 1.2);
-  scene.add(topLight);
-  rimLight = new THREE.DirectionalLight(0xffffff, 0.7);
-  rimLight.position.set(0, 2.2, -4);
-  scene.add(rimLight);
-  scene.add(new THREE.AmbientLight(0xffffff, 1.25));
-
-  currentMaterial = new THREE.MeshStandardMaterial({
-    color: DEFAULT_VIEWER.color,
-    roughness: 0.76,
-    metalness: 0.02,
-    side: THREE.DoubleSide,
-  });
+  [keyLight,fillLight,topLight,rimLight]=setupStudio(renderer,scene);
+  currentMaterial=studioMaterial();
 
   const objUrl = fixPath(item.obj);
   if (!objUrl) {
@@ -460,15 +446,10 @@ function initViewer(item) {
       }
       obj.traverse((child) => {
         if (child.isMesh) {
-          try {
-            child.geometry = BufferGeometryUtils.mergeVertices(
-              child.geometry,
-              0.001,
-            );
-            child.geometry.computeVertexNormals();
-          } catch (e) {
-            child.geometry.computeVertexNormals();
-          }
+          const original=child.geometry;
+          child.geometry=smoothStudioNormals(original);
+          if(original!==child.geometry)original.dispose();
+          for(const material of [child.material].flat()) material?.dispose?.();
           child.material = currentMaterial;
           child.frustumCulled = true;
         }
@@ -558,6 +539,7 @@ function fitModelCamera(camera, radius, w, h) {
   camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
 }
+let webglAvailable=true;
 function mountModelCarousel(trackId, wrapId, start = 0) {
   const track = $(trackId),
     wrap = $(wrapId);
@@ -572,8 +554,8 @@ function mountModelCarousel(trackId, wrapId, start = 0) {
     live.delete(set);
     set.instances.forEach((i) => {
       disposeObject(i.group);
-      i.renderer.dispose();
-      i.renderer.forceContextLoss();
+      i.renderer?.dispose();
+      i.renderer?.forceContextLoss();
     });
     set.layer.remove();
   }
@@ -615,6 +597,7 @@ function mountModelCarousel(trackId, wrapId, start = 0) {
         });
         throw Error("Modelo indisponível");
       }
+      const previews=await Promise.all(items.map(async item=>{const image=new Image();image.src=fixPath(item.preview)+"?v=20260928-2";image.alt=item.nome;await image.decode();return image;}));
       const layer = document.createElement("div");
       layer.className = "mt-model-set";
       layer.inert = true;
@@ -644,31 +627,19 @@ function mountModelCarousel(trackId, wrapId, start = 0) {
         open.onclick = () => openViewer(item);
         card.append(stage, caption, open);
         layer.append(card);
-        const renderer3 = new THREE.WebGLRenderer({
-          canvas,
-          antialias: true,
-          powerPreference: "low-power",
-        });
+        let renderer3;
+        if(webglAvailable)try{renderer3=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"low-power"});}catch{webglAvailable=false;}
+        if(!renderer3){canvas.replaceWith(previews[i]);fresh.instances.push({group:obj,draw(){}});return;}
         renderer3.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
-        renderer3.outputColorSpace = THREE.SRGBColorSpace;
-        renderer3.setClearColor(0xdedee0, 1);
         const scene3 = new THREE.Scene();
-        scene3.add(new THREE.HemisphereLight(0xffffff, 0x888888, 2));
-        const key = new THREE.DirectionalLight(0xffffff, 2.5);
-        key.position.set(3, 4, 5);
-        scene3.add(key);
-        const fill = new THREE.DirectionalLight(0xffffff, 1);
-        fill.position.set(-3, 1, -2);
-        scene3.add(fill);
+        setupStudio(renderer3,scene3);
         obj.traverse((n) => {
           if (n.isMesh) {
             n.material?.dispose?.();
-            n.geometry.computeVertexNormals();
-            n.material = new THREE.MeshStandardMaterial({
-              color: 0xd4d4d6,
-              roughness: 0.76,
-              side: THREE.DoubleSide,
-            });
+            const original=n.geometry;
+            n.geometry=smoothStudioNormals(original);
+            if(original!==n.geometry)original.dispose();
+            n.material=studioMaterial();
           }
         });
         const box = new THREE.Box3().setFromObject(obj),
@@ -724,7 +695,7 @@ function mountModelCarousel(trackId, wrapId, start = 0) {
         );
         dispose(old);
       }
-      status.textContent = "";
+      status.textContent = webglAvailable ? "" : "Prévia em imagem. A rotação 3D requer aceleração gráfica.";
     } catch (error) {
       if (fresh) dispose(fresh);
       status.textContent = current
