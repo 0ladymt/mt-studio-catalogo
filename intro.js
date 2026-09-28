@@ -4,7 +4,7 @@
 (() => {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const reference = new Image();
-  reference.src = "assets/brand/graffiti-reference.png";
+  reference.src = "assets/brand/graffiti.svg?v=20260928-2";
   let closeActive = null;
   const strokes = [
     [
@@ -71,37 +71,6 @@
       [0.8, 0.9],
     ],
   ];
-  function inside(x, y, points) {
-    let yes = false;
-    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-      const a = points[i],
-        b = points[j];
-      if (
-        a[1] > y !== b[1] > y &&
-        x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]
-      )
-        yes = !yes;
-    }
-    return yes;
-  }
-  const silhouette = [
-    [0.03, 0.1],
-    [0.19, 0.07],
-    [0.4, 0.24],
-    [0.49, 0.45],
-    [0.63, 0.23],
-    [0.94, 0.01],
-    [0.99, 0.22],
-    [0.94, 0.52],
-    [0.87, 0.9],
-    [0.72, 0.94],
-    [0.57, 0.79],
-    [0.49, 0.66],
-    [0.34, 0.82],
-    [0.05, 0.96],
-    [0.02, 0.69],
-    [0.07, 0.42],
-  ];
   function pathTime(x, y) {
     let best = Infinity,
       time = 0;
@@ -142,7 +111,7 @@
     root.setAttribute("aria-modal", "true");
     root.setAttribute("aria-label", "Borboleta da MT Studio sendo pintada");
     root.innerHTML =
-      '<canvas aria-label="Pichação progressiva da borboleta original"></canvas><span class="mt-intro__caption">MT STUDIO / IDEIAS QUE VIRAM IDENTIDADE</span><div class="mt-intro__signature"><img src="assets/brand/signature.png" alt="MT Studio"></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
+      '<canvas aria-label="Pichação progressiva da borboleta original"></canvas><span class="mt-intro__caption">UM TRAÇO. UMA IDENTIDADE.</span><div class="mt-intro__signature"><img src="assets/brand/signature.svg?v=20260928-2" alt="MT Studio"></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
     const siblings = [...document.body.children].filter(
       (el) => !["SCRIPT"].includes(el.tagName),
     );
@@ -184,47 +153,24 @@
     const output = root.querySelector("canvas"),
       ctx = output.getContext("2d");
     const pigment = document.createElement("canvas");
-    pigment.width = pigment.height = 720;
+    pigment.width = pigment.height = 900;
     const pc = pigment.getContext("2d");
     const sample = document.createElement("canvas");
-    sample.width = sample.height = 720;
+    sample.width = sample.height = 900;
     const sc = sample.getContext("2d", { willReadFrequently: true });
-    sc.drawImage(reference, 0, 0, 720, 720);
-    const rgba = sc.getImageData(0, 0, 720, 720).data,
+    sc.drawImage(reference, 0, 0, 900, 900);
+    const rgba = sc.getImageData(0, 0, 900, 900).data,
       dabs = [];
-    // Dabs include the actual irregular pigment contours and photo grain.
-    for (let y = 0; y < 720; y += 2)
-      for (let x = 0; x < 720; x += 2) {
-        const u = x / 720,
-          v = y / 720,
-          k = (y * 720 + x) * 4,
-          r = rgba[k],
-          g = rgba[k + 1],
-          b = rgba[k + 2];
-        const purple = b > g * 1.15 && r > g * 1.06,
-          black = Math.max(r, g, b) < 72,
-          white = Math.min(r, g, b) > 151;
-        const antenna = v > 0.16 && v < 0.48 && u > 0.37 && u < 0.67;
-        if (
-          (inside(u, v, silhouette) || antenna) &&
-          (purple || black || white)
-        ) {
-          const phase = purple ? 1 : white ? 2 : 0;
-          dabs.push({
-            x,
-            y,
-            color: `rgb(${r} ${g} ${b})`,
-            time: (phase + pathTime(u, v) * 0.96) / 3,
-          });
-        }
-      }
-    dabs.sort((a, b) => a.time - b.time);
-    // Wall samples come from the unpainted top-centre area of the supplied photo.
-    const wall = document.createElement("canvas");
-    wall.width = 480;
-    wall.height = 320;
-    const wc = wall.getContext("2d");
-    wc.drawImage(reference, 470, 15, 260, 160, 0, 0, 480, 320);
+    let seed=28;
+    const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+    for(let y=0;y<900;y+=2)for(let x=0;x<900;x+=2){
+      const k=(y*900+x)*4,r=rgba[k],g=rgba[k+1],b=rgba[k+2],alpha=rgba[k+3];
+      if(alpha<80||random()<.024)continue;
+      const phase=b<60?0:g>110?2:1,grain=.82+random()*.18;
+      dabs.push({x,y,color:`rgba(${r*grain},${g*grain},${b*grain},${alpha/255})`,time:(phase+pathTime(x/900,y/900)*.92)/3});
+    }
+    for(const dab of [...dabs])if(dab.time>.33&&dab.time<.68&&random()<.006)for(let i=0;i<9;i++){const angle=random()*Math.PI*2,distance=random()**2*28;dabs.push({x:dab.x+Math.cos(angle)*distance,y:dab.y+Math.sin(angle)*distance,color:`rgba(163,32,255,${.07+random()*.15})`,time:dab.time});}
+    dabs.sort((a,b)=>a.time-b.time);
     let width,
       height,
       side,
@@ -239,54 +185,41 @@
       output.width = width * ratio;
       output.height = height * ratio;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      side = Math.min(width * 0.92, height * 0.88, 920);
+      side = Math.min(width * 0.86, height * 0.74, 760);
       left = (width - side) / 2;
-      top = (height - side) / 2 - 25;
+      top = (height - side) / 2 - height*.045;
       draw();
     }
     function draw() {
-      ctx.fillStyle = ctx.createPattern(wall, "repeat");
-      ctx.fillRect(0, 0, width, height);
-      const shade = ctx.createRadialGradient(
-        width * 0.5,
-        height * 0.4,
-        20,
-        width * 0.5,
-        height * 0.5,
-        Math.max(width, height) * 0.7,
-      );
-      shade.addColorStop(0, "#08060900");
-      shade.addColorStop(1, "#080609a0");
-      ctx.fillStyle = shade;
-      ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0,0,width,height);
       ctx.drawImage(pigment, left, top, side, side);
     }
     window.addEventListener("resize", resize);
     resize();
     function frame(now) {
       if (finished) return;
-      const progress = Math.min(1, (now - start) / 7400);
+      const progress = Math.min(1, (now - start) / 5400);
       while (index < dabs.length && dabs[index].time <= progress) {
         const d = dabs[index++];
         pc.fillStyle = d.color;
-        pc.fillRect(d.x, d.y, 2.1, 2.1);
+        pc.beginPath();pc.arc(d.x,d.y,1.52,0,Math.PI*2);pc.fill();
       }
       draw();
       if (progress < 1) {
         raf = requestAnimationFrame(frame);
       } else {
         root.classList.add("is-signed");
-        timeout = setTimeout(finish, 1900);
+        timeout = setTimeout(finish, 1400);
       }
     }
     raf = requestAnimationFrame(frame);
   }
-  document.querySelector(".replay-intro").addEventListener("click", play);
+  document.querySelector(".replay-intro").addEventListener("click", () => play());
   const isHome = !location.hash || location.hash === "#home";
   let seen = false;
   try {
-    seen = sessionStorage.getItem("mt-intro-2026") === "1";
-    if (isHome) sessionStorage.setItem("mt-intro-2026", "1");
+    seen = sessionStorage.getItem("mt-intro-20260928") === "1";
+    if (isHome) sessionStorage.setItem("mt-intro-20260928", "1");
   } catch {}
   if (isHome && !seen) play();
 })();
