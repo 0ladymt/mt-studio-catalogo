@@ -1,53 +1,228 @@
-/* MT Studio — painel de rascunhos, sem simular checkout/segurança. */
-(()=>{
- const key='mt-studio-product-drafts-v1';
- const form=document.getElementById('mtProductForm'),list=document.getElementById('mtDraftProducts');
- if(!form||!list)return;
- let products=[];
- try{const stored=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(stored))products=stored;}catch(e){console.warn('Rascunhos inválidos',e)}
- const save=()=>{localStorage.setItem(key,JSON.stringify(products));render()};
- const money=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
- function render(){
-   list.replaceChildren();
-   const shop=document.getElementById('mtShopDrafts');
-   if(shop){shop.replaceChildren();products.forEach(p=>{const card=document.createElement('article');card.className='mt-shop-draft';if(p.image && !/^(https?:|data:|\/\/)/i.test(p.image) && !p.image.includes('..')){const img=document.createElement('img');img.src=p.image;img.alt=p.name;img.loading='lazy';card.append(img)}const title=document.createElement('h4');title.textContent=p.name;const price=document.createElement('strong');price.textContent=money(p.price);const desc=document.createElement('p');desc.textContent=p.description;const note=document.createElement('small');note.textContent='Rascunho · compra indisponível';card.append(title,price,desc,note);shop.append(card)});}
-   if(!products.length){const p=document.createElement('p');p.textContent='Nenhum produto em rascunho.';list.append(p);return;}
-   products.forEach(p=>{
-     const row=document.createElement('article');row.className='mt-draft';
-     const title=document.createElement('strong');title.textContent=p.name;
-     const price=document.createElement('span');price.textContent=money(p.price);
-     const desc=document.createElement('p');desc.textContent=p.description;
-     const edit=document.createElement('button');edit.type='button';edit.textContent='Editar';edit.onclick=()=>{
-       form.elements.name.value=p.name;form.elements.price.value=p.price;
-       form.elements.image.value=p.image;form.elements.description.value=p.description;
-       form.dataset.edit=p.id;form.scrollIntoView({behavior:'smooth'});
-     };
-     const del=document.createElement('button');del.type='button';del.textContent='Excluir';del.onclick=()=>{products=products.filter(x=>x.id!==p.id);save()};
-     row.append(title,price,desc,edit,del);list.append(row);
-   });
- }
- form.addEventListener('submit',event=>{
-   event.preventDefault();const data=new FormData(form);
-   const name=String(data.get('name')||'').trim(),price=Number(data.get('price')),description=String(data.get('description')||'').trim(),image=String(data.get('image')||'').trim();
-   if(!name||!description||!Number.isFinite(price)||price<=0)return;
-   const id=form.dataset.edit||('mt-'+Date.now()+'-'+Math.random().toString(36).slice(2,7));
-   const item={id,name,price,description,image,status:'draft'};
-   products=form.dataset.edit?products.map(p=>p.id===id?item:p):[...products,item];
-   delete form.dataset.edit;form.reset();save();
- });
- document.getElementById('mtExportProducts')?.addEventListener('click',()=>{
-   const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'});
-   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mt-studio-produtos-rascunho.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
- });
- document.getElementById('mtImportProducts')?.addEventListener('change',async event=>{
-   const file=event.target.files?.[0];if(!file)return;
-   try{
-     const data=JSON.parse(await file.text());
-     if(!Array.isArray(data)||data.some(p=>!p||typeof p.name!=='string'||typeof p.description!=='string'||!Number.isFinite(Number(p.price))))throw Error('Formato inválido');
-     products=data.map((p,i)=>({id:String(p.id||'import-'+i),name:p.name.slice(0,120),description:p.description.slice(0,1000),price:Number(p.price),image:String(p.image||''),status:'draft'}));
-     save();
-   }catch(error){alert('O arquivo não contém uma lista válida de produtos.');}
-   event.target.value='';
- });
- render();
+/* Local product preparation only. Never stores customer, payment or delivery data. */
+(() => {
+  const key = "mt-studio-product-drafts-v1",
+    form = document.getElementById("mtProductForm"),
+    list = document.getElementById("mtDraftProducts"),
+    status = document.getElementById("draftStatus");
+  const availability = {
+    coming: "Em breve",
+    available: "Disponível após ativação",
+    unavailable: "Indisponível",
+  };
+  const categories = ["Roupas", "Uniformes", "Acessórios", "Props"];
+  let products = [];
+  const safeImage = (s) =>
+    typeof s === "string" &&
+    /^assets\/[a-zA-Z0-9_\-/ .%\u00C0-\u024F]+\.(png|jpe?g|webp)$/i.test(s) &&
+    !s.includes("..")
+      ? s
+      : "";
+  function normalize(p, i) {
+    if (
+      !p ||
+      typeof p.name !== "string" ||
+      !p.name.trim() ||
+      typeof p.description !== "string" ||
+      !p.description.trim() ||
+      !Number.isFinite(Number(p.price)) ||
+      Number(p.price) <= 0
+    )
+      throw Error("Produto inválido");
+    return {
+      id: String(p.id || `mt-${Date.now()}-${i}`),
+      name: p.name.trim().slice(0, 120),
+      description: p.description.trim().slice(0, 1000),
+      price: Math.round(Number(p.price) * 100) / 100,
+      image: safeImage(p.image || ""),
+      category: categories.includes(p.category) ? p.category : "Roupas",
+      kind: p.kind === "custom" ? "custom" : "ready",
+      availability: Object.hasOwn(availability, p.availability)
+        ? p.availability
+        : "coming",
+      status: "draft",
+    };
+  }
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || "[]");
+    if (Array.isArray(stored)) products = stored.map(normalize);
+  } catch {
+    status.textContent =
+      "Não foi possível ler os rascunhos salvos. Você pode importar uma cópia.";
+  }
+  const money = (n) =>
+    n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  function save(next) {
+    try {
+      localStorage.setItem(key, JSON.stringify(next));
+      products = next;
+      render();
+      status.textContent = "Rascunhos salvos somente neste navegador.";
+      return true;
+    } catch {
+      status.textContent =
+        "O navegador bloqueou o armazenamento. Os dados anteriores foram preservados.";
+      return false;
+    }
+  }
+  function reset() {
+    form.reset();
+    delete form.dataset.edit;
+    document.getElementById("cancelProductEdit").hidden = true;
+  }
+  document.getElementById("cancelProductEdit").onclick = reset;
+  function render() {
+    list.replaceChildren();
+    const shop = document.getElementById("mtShopDrafts");
+    shop.replaceChildren();
+    document.getElementById("shopEmpty").hidden = products.length > 0;
+    document.getElementById("localDraftNotice").hidden = !products.length;
+    if (!products.length) {
+      const empty = document.createElement("p");
+      empty.textContent =
+        "Nenhum rascunho cadastrado. Prepare o primeiro produto no formulário acima.";
+      list.append(empty);
+    }
+    products.forEach((p) => {
+      const card = document.createElement("article");
+      card.className = "mt-shop-draft";
+      if (p.image) {
+        const img = new Image();
+        img.src = p.image;
+        img.alt = p.name;
+        img.loading = "lazy";
+        img.onerror = () => {
+          const empty = document.createElement("div");
+          empty.className = "product-no-image";
+          empty.textContent = "Imagem não encontrada";
+          img.replaceWith(empty);
+        };
+        card.append(img);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "product-no-image";
+        empty.textContent = "Produto sem imagem";
+        card.append(empty);
+      }
+      const tag = document.createElement("small");
+      tag.textContent = `${p.category} · ${p.kind === "custom" ? "Encomenda" : "Produto pronto"}`;
+      const name = document.createElement("h4");
+      name.textContent = p.name;
+      const price = document.createElement("strong");
+      price.textContent = money(p.price);
+      const desc = document.createElement("p");
+      desc.textContent = p.description;
+      const note = document.createElement("small");
+      note.textContent = `${availability[p.availability]} · rascunho local`;
+      const purchase = document.createElement("button");
+      purchase.textContent = "Compra ainda indisponível";
+      purchase.disabled = true;
+      card.append(tag, name, price, desc, note, purchase);
+      shop.append(card);
+      const row = document.createElement("article");
+      row.className = "mt-draft";
+      const title = document.createElement("strong");
+      title.textContent = p.name;
+      const value = document.createElement("span");
+      value.textContent = money(p.price);
+      const info = document.createElement("p");
+      info.textContent = `${p.category} / ${availability[p.availability]} — ${p.description}`;
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.textContent = "Editar";
+      edit.onclick = () => {
+        for (const field of [
+          "name",
+          "price",
+          "image",
+          "description",
+          "category",
+          "kind",
+          "availability",
+        ])
+          form.elements[field].value = p[field];
+        form.dataset.edit = p.id;
+        document.getElementById("cancelProductEdit").hidden = false;
+        form.elements.name.focus();
+      };
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Excluir";
+      remove.onclick = () => {
+        if (confirm(`Excluir o rascunho “${p.name}”?`)) {
+          if (
+            save(products.filter((x) => x.id !== p.id)) &&
+            form.dataset.edit === p.id
+          )
+            reset();
+        }
+      };
+      row.append(title, value, info, edit, remove);
+      list.append(row);
+    });
+  }
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    try {
+      const raw = Object.fromEntries(new FormData(form)),
+        item = normalize(
+          {
+            ...raw,
+            id:
+              form.dataset.edit ||
+              `mt-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          },
+          0,
+        );
+      if (raw.image && !item.image) {
+        status.textContent =
+          "Use um caminho de imagem dentro de assets/, sem links externos.";
+        return;
+      }
+      const next = form.dataset.edit
+        ? products.map((p) => (p.id === item.id ? item : p))
+        : [...products, item];
+      if (save(next)) reset();
+    } catch {
+      status.textContent =
+        "Confira o nome, a descrição e o preço maior que zero.";
+    }
+  });
+  document.getElementById("mtExportProducts").onclick = () => {
+    const url = URL.createObjectURL(
+        new Blob([JSON.stringify(products, null, 2)], {
+          type: "application/json",
+        }),
+      ),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = "mt-studio-produtos-rascunho.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  document
+    .getElementById("mtImportProducts")
+    .addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        if (file.size > 2_000_000) throw Error("too large");
+        const data = JSON.parse(await file.text());
+        if (!Array.isArray(data) || data.length > 1000) throw Error("invalid");
+        const next = data.map(normalize);
+        if (new Set(next.map((p) => p.id)).size !== next.length)
+          throw Error("duplicate");
+        if (
+          products.length &&
+          !confirm("Substituir os rascunhos locais pelo arquivo importado?")
+        )
+          return;
+        if (save(next)) reset();
+      } catch {
+        status.textContent =
+          "Arquivo inválido. Importe uma lista de produtos com nome, descrição e preço positivo; os rascunhos atuais foram mantidos.";
+      } finally {
+        e.target.value = "";
+      }
+    });
+  render();
 })();
