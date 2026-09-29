@@ -1,3 +1,5 @@
+import {CatalogViewer} from "./catalog-viewer.js";
+const catalogViewer = new CatalogViewer();
 import * as THREE from "three";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -320,12 +322,14 @@ function setupPalette() {
 }
 
 function setModelColor(color) {
+  if (catalogViewer.active) { catalogViewer.setColor(color); return; }
   if (!currentMaterial) return;
   currentMaterial.color.setHex(color);
   currentMaterial.needsUpdate = true;
 }
 
 function setBrightness(value) {
+  if (catalogViewer.active) { catalogViewer.setBrightness(value); return; }
   const b = Number(value);
   if (keyLight) keyLight.intensity = 1.8 * b;
   if (fillLight) fillLight.intensity = 0.8 * b;
@@ -334,6 +338,7 @@ function setBrightness(value) {
 }
 
 function resetViewerSettings() {
+  if (catalogViewer.active) { catalogViewer.reset(); return; }
   $("brightnessRange").value = DEFAULT_VIEWER.brightness;
   setModelColor(DEFAULT_VIEWER.color);
   setBrightness(DEFAULT_VIEWER.brightness);
@@ -349,6 +354,9 @@ function resetViewerSettings() {
 }
 
 function openViewer(item) {
+  if (document.getElementById("page-catalogo").classList.contains("active")) {
+    setupPalette(); catalogViewer.open(item, catalogo.filter(itemMatches)); return;
+  }
   $("modalTitle").textContent = `${item.nome || item.id}`;
   $("modalSubtitle").textContent =
     `${item.genero || ""}, ${item.categoria || ""}`;
@@ -382,6 +390,7 @@ $("brightnessRange").addEventListener("input", (e) =>
 $("resetViewer").addEventListener("click", resetViewerSettings);
 
 function closeViewer() {
+  if (catalogViewer.active) { catalogViewer.close(); return; }
   $("modal").classList.remove("open");
   $("modal").setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
