@@ -2,6 +2,7 @@
 Requirements: numpy, moderngl, Pillow; OpenGL via EGL. Does not modify models.
 """
 import json, math
+from io import BytesIO
 from pathlib import Path
 import numpy as np
 import moderngl
@@ -64,7 +65,17 @@ if __name__=='__main__':
         program['mvp'].write((proj@view@model).T.tobytes());program['rotation'].write(rot.T.tobytes())
         fbo.clear(39/255,39/255,46/255,1);vao.render()
         image=Image.frombytes('RGB',(512,512),fbo.read(components=3)).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
-        image.save(ROOT/item['preview'],optimize=True)
+        # Validate encoded bytes and publish atomically; never truncate a valid preview.
+        output=BytesIO();image.save(output,format='PNG',optimize=True)
+        encoded=output.getvalue()
+        with Image.open(BytesIO(encoded)) as check:
+            check.load()
+            if check.size!=(512,512):raise RuntimeError('Invalid preview dimensions')
+        target=ROOT/item['preview'];temporary=target.with_suffix('.png.tmp')
+        temporary.write_bytes(encoded)
+        if temporary.read_bytes()!=encoded:raise RuntimeError(f'Incomplete preview write: {target}')
+        temporary.replace(target)
+        with Image.open(target) as check:check.verify()
         vao.release();vbo.release()
         # Project actual vertices through many orientations and portrait/landscape aspects.
         worst=0
