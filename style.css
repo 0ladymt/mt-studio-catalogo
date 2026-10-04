@@ -2244,3 +2244,37 @@ body {
   #page-home .mt-home-hero .mt-overline::after,
   #page-home .mt-section:has(.mt-split) > .mt-page-head .mt-overline::after { flex-basis:20px; width:20px; }
 }
+
+
+/* Grupo 7B — scoped Home projects, portrait and CTA butterfly only. */
+#page-home #mtHomeProjects { grid-template-columns:repeat(2,minmax(0,1fr)); gap:40px 36px; }
+#page-home #mtHomeProjects .mt-project { grid-row:auto; align-self:start; }
+#page-home #mtHomeProjects .mt-project__image img { width:100%; aspect-ratio:16/10; height:auto; object-fit:contain; }
+#page-home #mtHomeProjects .mt-project__meta h3 { font-size:clamp(1.6rem,2.1vw,2.25rem); }
+#page-home #mtHuman { grid-template-columns:minmax(0,.9fr) minmax(0,1fr); align-items:center; gap:clamp(28px,4vw,56px); }
+#page-home #mtHuman .mt-human__photo { width:min(100%,360px); margin-inline:0; }
+#page-home #mtHuman .mt-human__photo::before,
+#page-home #mtHuman .mt-human__photo::after { content:none; }
+#page-home #mtHuman .mt-portrait-heart { display:none; }
+#page-home #mtRafaJoy { mask-image:url("assets/brand/portrait-home-mask.svg"); -webkit-mask-image:url("assets/brand/portrait-home-mask.svg"); }
+#page-home #mtHuman .mt-overline::before { content:none; }
+#page-home #mtHuman .mt-human__copy h2 { width:fit-content; max-width:100%; font-size:clamp(2.65rem,4vw,3.5rem); }
+#page-home #mtHuman .mt-human__copy h2::after { content:none; }
+#page-home #mtHuman .mt-title-end { display:inline-block; white-space:nowrap; color:inherit; }
+#page-home #mtHuman .mt-title-end::after {
+  content:""; display:inline-block; width:clamp(38px,4vw,55px); height:20px; margin:0 0 0 12px;
+  vertical-align:middle; background-image:url("assets/brand/underline.svg"); opacity:.85;
+}
+#page-home .mt-cta::after { width:112px; height:96px; right:max(2%,calc((100% - 1320px)/2)); }
+@media(max-width:760px) {
+  #page-home #mtHomeProjects { gap:30px 24px; }
+  #page-home #mtHuman { grid-template-columns:minmax(0,1fr); gap:28px; }
+  #page-home #mtHuman .mt-human__photo { width:min(100%,300px); }
+  #page-home .mt-cta::after { width:82px; height:64px; right:20px; bottom:24px; }
+}
+@media(max-width:520px) {
+  #page-home #mtHomeProjects { grid-template-columns:minmax(0,1fr); }
+  #page-home #mtHuman .mt-human__photo { width:min(100%,280px); }
+  #page-home #mtHuman .mt-human__copy h2 { font-size:2.65rem; }
+  #page-home #mtHuman .mt-title-end::after { width:34px; height:15px; margin-left:8px; }
+}
