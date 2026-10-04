@@ -2201,3 +2201,46 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
  #page-redes .center-title h2,#page-projetos .center-title h2 { font-size:clamp(2.6rem,10vw,3.8rem); }
 }
 @media(prefers-reduced-motion:reduce) { #page-redes .social-row,#page-projetos .project-card img { transition:none; } }
+
+
+/* Grupo 7A — only the shared surface and unanchored global marks.
+   Page compositions, portraits, intro and all interactive components are preserved. */
+body {
+  background-color:#09090b;
+  background-image:radial-gradient(ellipse at 95% 8%,#24172a55,transparent 48%),
+                   radial-gradient(ellipse at 4% 82%,#25252c66,transparent 56%),
+                   linear-gradient(135deg,#09090b,#121216 54%,#09090b);
+  background-attachment:fixed;
+  background-repeat:no-repeat;
+}
+.mt-wall-marks { position:fixed; opacity:1; }
+.mt-wall-marks::before {
+  opacity:.5;
+  background:url("assets/brand/site-surface.svg") center/100% 100% no-repeat;
+}
+#page-home::before {
+  position:fixed;
+  opacity:.45;
+  background:url("assets/brand/site-surface.svg") center/100% 100% no-repeat;
+}
+/* The old hero butterfly occupied empty margin; the approved CTA signature remains. */
+.mt-hero::before { content:none; }
+/* Keep the existing real underline at the end of these introductory captions.
+   Other sections are reserved for their individual refinement groups. */
+#page-home .mt-home-hero .mt-overline::before,
+#page-home .mt-section:has(.mt-split) > .mt-page-head .mt-overline::before { content:none; }
+#page-home .mt-home-hero .mt-overline,
+#page-home .mt-section:has(.mt-split) > .mt-page-head .mt-overline { width:fit-content; }
+#page-home .mt-home-hero .mt-overline::after,
+#page-home .mt-section:has(.mt-split) > .mt-page-head .mt-overline::after {
+  content:""; flex:0 0 26px; width:26px; height:8px;
+  background:url("assets/brand/underline.svg") center/contain no-repeat; opacity:.85;
+}
+/* Remove paint marks floating below the strip and above the project preview.
+   The official crown and the project layout stay intact. */
+#page-home .mt-strip::after,
+#page-home .mt-section:has(#mtHomeProjects)::before { content:none; }
+@media(max-width:760px) {
+  #page-home .mt-home-hero .mt-overline::after,
+  #page-home .mt-section:has(.mt-split) > .mt-page-head .mt-overline::after { flex-basis:20px; width:20px; }
+}

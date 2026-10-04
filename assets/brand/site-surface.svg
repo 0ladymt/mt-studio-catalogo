@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <title>MT Studio — superfície urbana contínua</title>
+  <!-- Native-size procedural grain derived from wall-grain.svg: no tile or enlarged bitmap. -->
+  <filter id="surface" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency=".012 .021" numOctaves="3" seed="17" result="plaster"/>
+    <feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="2" seed="31" result="grain"/>
+    <feBlend in="plaster" in2="grain" mode="soft-light"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#surface)" opacity=".16"/>
+</svg>
