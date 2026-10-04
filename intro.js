@@ -54,12 +54,15 @@
     ["#100e14",7,[495,450,463,350,397,214,382,242]],
     ["#100e14",7,[516,451,562,343,620,213,634,240]],
   ];
-  const paintDuration = 7100, settleDuration = 650;
+  const paintDuration = 3500, settleDuration = 180;
+  // Finish each wing with layered paint before moving the nozzle to the next.
+  const paintOrder = [0,1,8,9,16,17,22,23,31,32,33,2,3,10,11,18,19,24,25,34,35,4,5,12,13,20,26,27,36,37,38,6,7,14,15,21,28,29,39,40,41,42,43,30,44,45,46];
   function preparePaint() {
     let seed=290926;
     const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
     const dabs=[],drips=[];
-    gestures.forEach(([color,width,p],g)=>{
+    paintOrder.forEach((gestureIndex,pass)=>{
+      const g=gestureIndex,[color,width,p]=gestures[g];
       const count=240;
       for(let n=0;n<=count;n++){
         const t=n/count,u=1-t;
@@ -74,15 +77,15 @@
         const highlight=g>=22&&g<=29;
         const breakup=Math.sin(Math.floor(n/6)*127.1+g*311.7)*43758.5453;
         const skipHighlight=highlight&&breakup-Math.floor(breakup)>.82;
-        const time=(g+t)/gestures.length;
+        const time=(pass+Math.pow(t,.88))/paintOrder.length;
         for(let j=0;j<30;j++){
-          const angle=random()*Math.PI*2,dist=Math.sqrt(random())*radius*.52;
+          const angle=random()*Math.PI*2,dist=random()**.72*radius*.52;
           const px=x+wobbleX+Math.cos(angle)*dist,py=y+wobbleY+Math.sin(angle)*dist;
           // Stationary wall pores break coverage, even on overlapping passes.
           const pore=Math.sin(Math.floor(px)*127.1+Math.floor(py)*311.7)*43758.5453;
           if(pore-Math.floor(pore)>.84||random()<.12||skipHighlight)continue;
-          dabs.push({x:px,y:py,r:.45+random()**2*2.8,color,
-            alpha:(.34+random()*.59)*coverage*(highlight ? .72 : 1),aspect:.6+random()*.65,rotation:random()*Math.PI,time});
+          dabs.push({x:px,y:py,r:.35+random()**2*3.6,color,
+            alpha:(.24+random()*.59)*coverage*(highlight ? .72 : 1),aspect:.6+random()*.65,rotation:random()*Math.PI,time});
         }
         for(let j=0;j<4;j++){
           const angle=random()*Math.PI*2,dist=radius*(.4+random()*.55);
@@ -131,7 +134,7 @@
       document.body.style.overflow = oldOverflow;
       siblings.forEach((el, i) => (el.inert = inertBefore[i]));
       previous?.focus?.();
-      setTimeout(() => root.remove(), 500);
+      setTimeout(() => root.remove(), 350);
       window.removeEventListener("resize", resize);
       document.removeEventListener("keydown", key);
       reduced.removeEventListener("change", finish);
@@ -156,28 +159,27 @@
     const pc = pigment.getContext("2d");
     pc.translate(pigmentMargin, pigmentMargin);
     const {dabs,drips}=preparePaint();
-    // Full-viewport plaster, generated independently from the butterfly.
-    const wall=document.createElement("canvas");wall.width=wall.height=384;
-    const wc=wall.getContext("2d"),noise=wc.createImageData(384,384);
-    let wallSeed=41;
-    for(let i=0;i<noise.data.length;i+=4){
-      wallSeed=(Math.imul(wallSeed,1664525)+1013904223)>>>0;
-      const x=(i/4)%384,y=Math.floor(i/4/384);
-      const fine=(wallSeed/4294967296-.5)*8;
-      const relief=Math.sin(x*.049+y*.028)*Math.cos(y*.063)*2.2;
-      const pore=(wallSeed%47===0)?-5:0;
-      const grain=fine+relief+pore;
-      noise.data[i]=19+grain;noise.data[i+1]=18+grain;noise.data[i+2]=22+grain;noise.data[i+3]=255;
+    // Native-resolution, non-tiled concrete. Smooth multiscale relief and fine
+    // aggregate are generated for this viewport; no stretched texture image.
+    const wall=document.createElement("canvas"),wc=wall.getContext("2d");
+    const hash=(x,y)=>{let n=Math.imul(x+71,374761393)^Math.imul(y+139,668265263);n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;};
+    const relief=(x,y,cell)=>{
+      const a=Math.floor(x/cell),b=Math.floor(y/cell);
+      let u=x/cell-a,v=y/cell-b;u=u*u*(3-2*u);v=v*v*(3-2*v);
+      return (hash(a,b)*(1-u)+hash(a+1,b)*u)*(1-v)+(hash(a,b+1)*(1-u)+hash(a+1,b+1)*u)*v;
+    };
+    function buildWall(w,h){
+      wall.width=w;wall.height=h;
+      const noise=wc.createImageData(w,h);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const i=(y*w+x)*4,fine=hash(x*3,y*5);
+        const grain=(fine-.5)*5+(relief(x,y,170)-.5)*7+(relief(x,y,39)-.5)*3;
+        const light=7*Math.max(0,1-Math.hypot((x-w*.47)/w,(y-h*.39)/h)*1.4);
+        const pore=fine>.987?-7:0;
+        noise.data[i]=23+grain+light+pore;noise.data[i+1]=22+grain+light+pore;noise.data[i+2]=26+grain+light+pore;noise.data[i+3]=255;
+      }
+      wc.putImageData(noise,0,0);
     }
-    wc.putImageData(noise,0,0);
-    // Pitted plaster relief covers the viewport independently of the painting.
-    for(let n=0;n<420;n++){
-      wallSeed=(Math.imul(wallSeed,1664525)+1013904223)>>>0;
-      const x=wallSeed%384,y=(wallSeed>>>9)%384,r=1+(wallSeed%45)/10;
-      wc.fillStyle="rgba(0,0,0,.12)";wc.beginPath();wc.ellipse(x,y,r,r*.6,.4,0,Math.PI*2);wc.fill();
-      wc.strokeStyle="rgba(74,69,80,.08)";wc.lineWidth=.6;wc.beginPath();wc.arc(x,y+1,r,.2,Math.PI*.8);wc.stroke();
-    }
-    const wallPattern=ctx.createPattern(wall,"repeat");
     let width,
       height,
       side,
@@ -192,13 +194,14 @@
       output.width = width * ratio;
       output.height = height * ratio;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      buildWall(width,height);
       side = Math.min(width * 0.86, height * 0.74, 760);
       left = (width - side) / 2;
       top = (height - side) / 2 - height*.045;
       draw();
     }
     function draw() {
-      ctx.fillStyle=wallPattern;ctx.fillRect(0,0,width,height);
+      ctx.drawImage(wall,0,0,width,height);
       ctx.drawImage(pigment, left-side*pigmentMargin/1000, top-side*pigmentMargin/1000, side*pigment.width/1000, side*pigment.height/1000);
       const elapsed=(performance.now()-start)/paintDuration;
       ctx.save();ctx.translate(left,top);ctx.scale(side/1000,side/1000);
@@ -231,7 +234,7 @@
         timeout = setTimeout(()=>{
           if(finished)return;
           root.classList.add("is-signed");
-          timeout=setTimeout(finish,1500);
+          timeout=setTimeout(finish,850);
         },settleDuration);
       }
     }

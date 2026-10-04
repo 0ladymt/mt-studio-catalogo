@@ -2399,3 +2399,8 @@ body {
  #page-redes .center-title h2 > span { padding-right:38px; }
  #page-redes .center-title h2 > span::after { width:30px; height:12px; }
 }
+
+/* Grupo 7G: apenas superfície e tempo de saída da abertura. */
+.mt-intro::before { display:none; }
+.mt-intro { transition:opacity .35s; }
+@media(prefers-reduced-motion:reduce) { .mt-intro { transition:none; } }
