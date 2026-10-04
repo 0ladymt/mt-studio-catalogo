@@ -2324,3 +2324,54 @@ body {
 @media(max-width:760px) {
   #page-catalogo .catalog-title-end::after { width:28px; height:12px; margin-left:8px; }
 }
+
+/* Grupo 7E: composição editorial exclusiva da página Sobre. */
+#page-sobre .mt-about { grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); align-items:center; gap:clamp(32px,5vw,72px); padding-block:48px 0; }
+#page-sobre .mt-about__visual { width:min(100%,350px); justify-self:center; margin:0; }
+#page-sobre .mt-about__visual::before,
+#page-sobre .mt-about__visual::after,
+#page-sobre .mt-portrait-heart { display:none; }
+#page-sobre .mt-portrait { mask-image:url('assets/brand/portrait-home-mask.svg'); -webkit-mask-image:url('assets/brand/portrait-home-mask.svg'); }
+#page-sobre .mt-about__copy h2 { font-size:clamp(2.5rem,3.9vw,4rem); margin-block:14px 24px; }
+#page-sobre .mt-about__copy p { max-width:53ch; line-height:1.75; }
+#page-sobre .mt-about-detail { margin-top:64px; padding-top:36px; border-top:1px solid #ffffff18; padding-bottom:64px; }
+#page-sobre .mt-about-detail::before,
+#page-sobre .mt-about-grid article::before,
+#page-sobre .mt-about-mission::before { display:none; }
+#page-sobre .mt-page-head { margin-bottom:28px; }
+#page-sobre .mt-page-head h2 { font-size:clamp(2rem,3.1vw,3.1rem); line-height:1.15; }
+#page-sobre .about-title-end { display:inline-block; position:relative; padding-right:52px; }
+#page-sobre .about-title-end::after { content:''; position:absolute; right:0; bottom:.16em; width:44px; height:14px; background:url('assets/brand/underline.svg') center/contain no-repeat; opacity:.8; }
+#page-sobre .mt-about-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; margin-bottom:60px; border-block:1px solid #ffffff18; }
+#page-sobre .mt-about-grid article { padding:28px 26px; border-right:1px solid #ffffff18; }
+#page-sobre .mt-about-grid article:first-child { padding-left:0; }
+#page-sobre .mt-about-grid article:last-child { border-right:0; padding-right:0; }
+#page-sobre .mt-about-grid h3 { font-size:clamp(1.5rem,1.9vw,1.9rem); margin-bottom:14px; }
+#page-sobre .mt-about-grid p { margin:0; line-height:1.75; max-width:35ch; }
+#page-sobre .mt-about-steps { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 40px; }
+#page-sobre .mt-about-steps > span { display:grid; grid-template-columns:44px minmax(0,1fr); gap:12px; align-items:start; padding:22px 0; line-height:1.7; }
+#page-sobre .about-step-number { color:var(--purple,#a320ff); font-family:var(--display); font-size:1.7rem; line-height:1.3; }
+#page-sobre .mt-about-mission { display:grid; grid-template-columns:minmax(150px,.45fr) minmax(0,1fr); gap:32px; max-width:none; margin-top:48px; padding:32px 0 0; border-top:1px solid #ffffff28; line-height:1.65; font-size:clamp(1.2rem,2vw,1.65rem); color:var(--text); }
+#page-sobre .mt-about-mission strong { font-size:clamp(1.8rem,2.3vw,2.3rem); margin:0; }
+@media(max-width:900px) {
+ #page-sobre .mt-about { gap:28px; }
+ #page-sobre .mt-about-grid article { padding-inline:18px; }
+ #page-sobre .mt-about-grid h3 { font-size:1.5rem; }
+}
+@media(max-width:760px) {
+ #page-sobre .mt-about { grid-template-columns:minmax(0,1fr); gap:20px; padding-top:32px; }
+ #page-sobre .mt-about__visual { width:min(100%,280px); justify-self:start; }
+ #page-sobre .mt-about__copy h2 { font-size:clamp(2.25rem,8vw,3.3rem); }
+ #page-sobre .mt-about-detail { margin-top:44px; padding-top:28px; padding-bottom:40px; }
+ #page-sobre .mt-about-grid { grid-template-columns:minmax(0,1fr); margin-bottom:40px; }
+ #page-sobre .mt-about-grid article,#page-sobre .mt-about-grid article:first-child,#page-sobre .mt-about-grid article:last-child { padding:22px 0; border-right:0; }
+ #page-sobre .mt-about-grid article+article { border-top:1px solid #ffffff18; }
+ #page-sobre .mt-about-grid p { max-width:52ch; }
+ #page-sobre .mt-about-steps { grid-template-columns:minmax(0,1fr); }
+ #page-sobre .mt-about-mission { grid-template-columns:minmax(0,1fr); gap:12px; margin-top:36px; padding-top:26px; }
+ #page-sobre .about-title-end { padding-right:38px; }
+ #page-sobre .about-title-end::after { width:32px; height:12px; }
+}
+#page-sobre .mt-about-steps > span > span { padding:0; border:0; min-width:0; line-height:inherit; }
+#page-sobre .about-step-number { white-space:nowrap; font-size:1.4rem; }
+#page-sobre .mt-overline::before { display:none; }
