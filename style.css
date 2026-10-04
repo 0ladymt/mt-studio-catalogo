@@ -2278,3 +2278,35 @@ body {
   #page-home #mtHuman .mt-human__copy h2 { font-size:2.65rem; }
   #page-home #mtHuman .mt-title-end::after { width:34px; height:15px; margin-left:8px; }
 }
+
+
+/* Grupo 7C — store backdrop and editorial headings only.
+   The three approved category cards and all product/admin components stay intact. */
+#page-loja {
+  background:radial-gradient(ellipse 75% 600px at 95% 8%,#251a304d,transparent 80%),
+             radial-gradient(ellipse 60% 500px at 0% 55%,#25252c33,transparent 85%);
+}
+#page-loja .mt-shop > .mt-page-head { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:clamp(28px,5vw,72px); align-items:center; }
+#page-loja .mt-shop > .mt-page-head > div { min-width:0; }
+#page-loja .mt-shop > .mt-page-head h2 { font-size:clamp(2.35rem,4.2vw,4rem); line-height:1.14; }
+#page-loja .mt-shop > .mt-page-head h2::after { content:none; }
+#page-loja .mt-shop > .mt-page-head p { max-width:34ch; font-size:.9rem; line-height:1.9; }
+#page-loja .shop-title-end { display:inline-block; white-space:nowrap; }
+#page-loja .shop-title-end::after {
+  content:""; display:inline-block; width:clamp(32px,3.5vw,48px); height:18px; margin-left:12px;
+  vertical-align:middle; background:url("assets/brand/underline.svg") center/contain no-repeat; opacity:.85;
+}
+#page-loja .mt-overline { width:fit-content; }
+#page-loja .mt-overline::before { content:none; }
+#page-loja .mt-overline::after {
+  content:""; flex:0 0 22px; width:22px; height:8px;
+  background:url("assets/brand/underline.svg") center/contain no-repeat; opacity:.65;
+}
+@media(max-width:1000px) {
+  #page-loja .mt-shop > .mt-page-head { grid-template-columns:minmax(0,1fr); gap:24px; }
+  #page-loja .mt-shop > .mt-page-head p { max-width:56ch; }
+}
+@media(max-width:760px) {
+  #page-loja .mt-shop > .mt-page-head h2 { font-size:clamp(2rem,7.4vw,3rem); }
+  #page-loja .shop-title-end::after { width:30px; height:13px; margin-left:8px; }
+}
