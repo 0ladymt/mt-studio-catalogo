@@ -2375,3 +2375,27 @@ body {
 #page-sobre .mt-about-steps > span > span { padding:0; border:0; min-width:0; line-height:inherit; }
 #page-sobre .about-step-number { white-space:nowrap; font-size:1.4rem; }
 #page-sobre .mt-overline::before { display:none; }
+
+/* Grupo 7F: títulos conectados e galeria com ritmo consistente. */
+#page-redes .center-title::before,
+#page-redes .center-title::after { display:none; }
+#page-redes .center-title h2 > span { display:inline-block; position:relative; padding-right:54px; }
+#page-redes .center-title h2 > span::after { content:''; position:absolute; right:0; bottom:.14em; width:44px; height:14px; background:url('assets/brand/underline.svg') center/contain no-repeat; opacity:.75; }
+#page-projetos .center-title { padding-bottom:36px; }
+#page-projetos .mt-projects-crown { width:72px; height:56px; margin-bottom:12px; }
+#page-projetos .projects-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:44px 28px; }
+#page-projetos .project-card,
+#page-projetos .project-card:nth-child(odd):not(:first-child) { grid-column:auto; margin:0; }
+#page-projetos .project-card:first-child { grid-column:1/-1; max-width:none; }
+#page-projetos .project-card img { aspect-ratio:4/3; object-fit:contain; background:#111014; }
+#page-projetos .project-card:first-child img { aspect-ratio:16/9; max-height:560px; }
+#page-projetos .project-card > div { padding-top:16px; }
+#page-projetos .project-card h3 { font-size:clamp(1.65rem,2.2vw,2.3rem); }
+#page-projetos .project-card:first-child::after { display:none; }
+@media(max-width:600px) {
+ #page-projetos .projects-grid { grid-template-columns:minmax(0,1fr); gap:32px; }
+ #page-projetos .project-card,#page-projetos .project-card:first-child,#page-projetos .project-card:nth-child(odd):not(:first-child) { grid-column:1; }
+ #page-projetos .project-card:first-child img { aspect-ratio:4/3; }
+ #page-redes .center-title h2 > span { padding-right:38px; }
+ #page-redes .center-title h2 > span::after { width:30px; height:12px; }
+}
