@@ -2310,3 +2310,17 @@ body {
   #page-loja .mt-shop > .mt-page-head h2 { font-size:clamp(2rem,7.4vw,3rem); }
   #page-loja .shop-title-end::after { width:30px; height:13px; margin-left:8px; }
 }
+
+
+/* Grupo 7D — catalog title and render presentation only. */
+#page-catalogo .hero-card h2 { padding-bottom:0; }
+#page-catalogo .hero-card h2::after { content:none; }
+#page-catalogo .catalog-title-end { display:inline-block; white-space:nowrap; color:inherit; }
+#page-catalogo .catalog-title-end::after {
+  content:""; display:inline-block; width:clamp(28px,3vw,42px); height:16px; margin-left:10px;
+  vertical-align:middle; background:url("assets/brand/underline.svg") center/contain no-repeat; opacity:.75;
+}
+#page-catalogo .thumb { background:#27272e; image-rendering:auto; }
+@media(max-width:760px) {
+  #page-catalogo .catalog-title-end::after { width:28px; height:12px; margin-left:8px; }
+}

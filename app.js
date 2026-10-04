@@ -238,7 +238,7 @@ function renderGrid() {
     const card = document.createElement("article");
     card.className = "card";
     card.innerHTML = `
-      <img class="thumb" src="${fixPath(item.preview)}?v=20260928-2" alt="${item.nome}" loading="lazy">
+      <img class="thumb" src="${fixPath(item.preview).replace("assets/previews/", "assets/catalog-previews/")}?v=20261004-7d" alt="${item.nome}" loading="lazy">
       <div class="card-body">
         <div class="tags"><span class="tag">${item.genero || "-"}</span><span class="tag">${item.categoria || "-"}</span></div>
         <h3>${item.nome || item.id}</h3>
