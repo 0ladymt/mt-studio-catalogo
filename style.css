@@ -1997,3 +1997,58 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
  .mt-intro__caption { top:24px; left:20px; font-size:.6rem; letter-spacing:.12em; }
 }
 @media (prefers-reduced-motion:reduce) { .mt-intro,.mt-intro__signature { transition:none; } }
+
+/* Grupo 4 — Rafa & Joy e Sobre. Seletores restritos às áreas autorizadas. */
+#mtHuman { isolation:isolate; grid-template-columns:minmax(0,.95fr) minmax(0,1fr); gap:clamp(24px,4vw,56px); }
+#mtHuman .mt-human__photo { width:min(100%,370px); margin-inline-end:-24px; }
+#mtHuman .mt-human__photo::before { inset:30% -12% 7% 5%; opacity:.28; transform:rotate(-12deg); }
+#mtHuman .mt-human__photo::after { inset:91% 0 0; background:linear-gradient(transparent,#160e1d); }
+#mtHuman .mt-human__copy { position:relative; z-index:3; min-width:0; max-width:450px; }
+#mtHuman .mt-human__copy p { max-width:38ch; }
+#mtHuman .mt-portrait-heart { top:18%; right:1%; opacity:.75; }
+#page-sobre { position:relative; isolation:isolate; }
+#page-sobre .mt-about { grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:clamp(28px,4vw,64px); padding-block:clamp(48px,6vw,88px) 0; }
+#page-sobre .mt-about__visual { width:min(100%,390px); margin-inline-end:-20px; isolation:isolate; }
+#page-sobre .mt-about__visual::before { inset:30% -10% 6% 4%; opacity:.28; transform:rotate(-12deg); }
+#page-sobre .mt-about__copy { position:relative; min-width:0; z-index:2; max-width:620px; }
+#page-sobre .mt-about__copy h2 { font-size:clamp(2.65rem,4.5vw,4.9rem); line-height:1.06; margin-block:18px 28px; }
+#page-sobre .mt-about__copy p { max-width:54ch; line-height:1.85; }
+#page-sobre .mt-about__copy .mt-button { margin-top:10px; max-width:100%; white-space:normal; }
+#page-sobre .mt-about-detail { position:relative; border-top:0; margin-top:clamp(60px,7vw,100px); padding-top:40px; }
+#page-sobre .mt-about-detail::before { content:""; position:absolute; top:0; left:0; width:min(260px,60%); height:20px; background:url("assets/brand/brush.svg") left center/contain no-repeat; opacity:.65; pointer-events:none; }
+#page-sobre .mt-page-head { margin-bottom:clamp(28px,4vw,48px); }
+#page-sobre .mt-page-head h2 { font-size:clamp(2.35rem,4vw,4rem); line-height:1.1; overflow-wrap:anywhere; }
+#page-sobre .mt-about-grid { gap:clamp(24px,3.5vw,52px); margin-bottom:clamp(64px,8vw,108px); }
+#page-sobre .mt-about-grid article { border-top:0; padding:0; background:none; min-width:0; }
+#page-sobre .mt-about-grid article::before { content:""; display:block; width:48px; height:8px; margin-bottom:22px; background:url("assets/brand/underline.svg") left center/contain no-repeat; opacity:.7; }
+#page-sobre .mt-about-grid h3 { font-size:clamp(1.6rem,2.1vw,2.2rem); line-height:1.15; margin-bottom:18px; }
+#page-sobre .mt-about-grid p { font-size:.9rem; line-height:1.85; }
+#page-sobre .mt-about-steps { gap:0 48px; counter-reset:mt-process; }
+#page-sobre .mt-about-steps span { min-width:0; padding:26px 0; border-bottom:1px solid #78628555; line-height:1.8; }
+#page-sobre .mt-about-mission { position:relative; max-width:800px; margin-top:clamp(56px,7vw,96px); padding:30px 0 0; border:0; font-size:clamp(1.05rem,1.6vw,1.3rem); line-height:1.9; }
+#page-sobre .mt-about-mission::before { content:""; position:absolute; top:0; left:0; width:100px; height:10px; background:url("assets/brand/underline.svg") left center/contain no-repeat; }
+#page-sobre .mt-about-mission strong { display:block; font-family:var(--display); font-size:1.8rem; color:var(--text); margin-bottom:12px; }
+#page-sobre .mt-about-detail p,#page-sobre .mt-about-steps span,#page-sobre .mt-about-mission { overflow-wrap:break-word; }
+@media(max-width:900px) {
+ #page-sobre .mt-about { gap:28px; }
+ #page-sobre .mt-about-grid { grid-template-columns:minmax(0,1fr); max-width:620px; gap:32px; }
+}
+@media(max-width:760px) {
+ #mtHuman,#page-sobre .mt-about { grid-template-columns:minmax(0,1fr); gap:24px; }
+ #mtHuman .mt-human__photo,#page-sobre .mt-about__visual { width:min(100%,300px); margin-inline:0; }
+ #mtHuman .mt-human__copy { max-width:100%; }
+ #page-sobre .mt-about { padding-top:40px; }
+ #page-sobre .mt-about-detail { margin-top:60px; padding-top:36px; }
+ #page-sobre .mt-about-steps { grid-template-columns:minmax(0,1fr); }
+ #page-sobre .mt-about__copy h2 { font-size:clamp(2.25rem,8.5vw,3.5rem); }
+ #page-sobre .mt-about-mission { margin-top:56px; }
+}
+@media(max-width:360px) {
+ #mtHuman .mt-human__photo,#page-sobre .mt-about__visual { width:min(100%,260px); }
+ #mtHuman .mt-human__copy h2 { font-size:2.65rem; }
+ #page-sobre .mt-about__copy h2 { font-size:2.25rem; }
+ #page-sobre .mt-about__copy .mt-button { padding-inline:14px; font-size:.78rem; }
+}
+/* Contém apenas o overspray das pinceladas; retrato e texto mantêm sua área. */
+#mtHuman,#page-sobre { overflow-x:clip; }
+@media(max-width:360px) { #page-sobre .mt-page-head h2 { font-size:2rem; overflow-wrap:normal; } }
