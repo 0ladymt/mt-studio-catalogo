@@ -10,7 +10,7 @@
       content="Roupas, uniformes e texturização para FiveM. Conheça os projetos da MT Studio, explore o catálogo 3D e crie com a gente."
     />
     <meta name="theme-color" content="#080808" />
-    <link rel="stylesheet" href="style.css?v=20261004-grupo4" />
+    <link rel="stylesheet" href="style.css?v=20261004-grupo5" />
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
@@ -249,6 +249,7 @@
       </section>
       <section id="page-loja" class="page">
         <div class="mt-page-shell mt-shop">
+          <div class="shop-release"><span>COLEÇÕES AUTORAIS</span><span>Novidades em breve</span></div>
           <div class="mt-page-head">
             <div>
               <span class="mt-overline">MT Studio / Loja</span>
@@ -282,7 +283,10 @@
                 identidade da sua cidade são atendidas pelo Discord.
               </p>
             </div>
-            <div id="mtShopDrafts" class="mt-shop-drafts"></div>
+            <div class="shop-toolbar"><div><h3>EXPLORE A COLEÇÃO.</h3><p id="shopProductCount" role="status">Preparando a vitrine…</p></div><div id="shopCategoryFilters" class="shop-filters" role="group" aria-label="Filtrar produtos por categoria"><button type="button" data-shop-category="" aria-pressed="true">Todos</button><button type="button" data-shop-category="Roupas" aria-pressed="false">Roupas</button><button type="button" data-shop-category="Uniformes" aria-pressed="false">Uniformes</button><button type="button" data-shop-category="Acessórios" aria-pressed="false">Acessórios</button><button type="button" data-shop-category="Props" aria-pressed="false">Props</button></div></div>
+            <div id="shopLoading" class="shop-loading" role="status"><span></span><span></span><span></span><p>Preparando a vitrine…</p></div>
+            <div id="mtShopDrafts" class="mt-shop-drafts" aria-busy="true"></div>
+            <p id="shopNoResults" class="shop-no-results" hidden>Nenhum produto nesta categoria. Experimente outra categoria ou volte para “Todos”.</p>
             <div id="shopEmpty" class="shop-empty">
               <img
                 id="mtShopPhoto"
@@ -616,7 +620,9 @@
             navegador. Publicação, login seguro, Pix e entrega automática exigem
             backend e não estão habilitados.
           </p>
+          <div class="mt-admin-summary"><div><strong id="adminProductCount">0</strong><span>Produtos locais</span></div><div><strong id="adminFeaturedCount">0</strong><span>Em destaque</span></div><a class="mt-button mt-button--outline" href="#loja" data-page-link="loja">Ver prévia da loja ↗</a></div>
           <form id="mtProductForm" class="mt-admin-form">
+            <h3 id="productFormTitle">ADICIONAR PRODUTO.</h3>
             <label
               >Nome do produto<input
                 name="name"
@@ -632,8 +638,11 @@
             ><label
               >Imagem (caminho no site)<input
                 name="image"
-                placeholder="assets/produtos/exemplo.jpg" /></label
-            ><label
+                placeholder="assets/produtos/exemplo.jpg" /></label>
+            <label>Ou selecionar imagem<input id="productImageUpload" type="file" accept="image/png,image/jpeg,image/webp" /><small>PNG, JPG ou WebP até 1 MB. Salva somente neste navegador.</small></label>
+            <div id="adminImagePreview" class="admin-image-preview" hidden></div>
+            <button type="button" id="clearProductImage" class="admin-image-clear">Remover imagem</button>
+            <label
               >Categoria<select name="category">
                 <option>Roupas</option>
                 <option>Uniformes</option>
@@ -652,7 +661,12 @@
                 <option value="unavailable">Indisponível</option>
               </select></label
             ><label
-              >Descrição<textarea
+              >Status local<select name="status"><option value="draft">Rascunho</option><option value="preview">Pronto para prévia</option><option value="archived">Arquivado (fora da vitrine)</option></select></label>
+            <label>Arquivo do produto (referência)<input name="productFile" maxlength="300" placeholder="Nome ou caminho do pacote .zip" /><small>Apenas referência; não realiza upload ou entrega.</small></label>
+            <label>Selecionar arquivo de referência<input id="productFileUpload" type="file" /><small>Registra nome e tamanho. O arquivo permanece no seu computador.</small><span id="productFileInfo"></span></label>
+            <label class="admin-check"><input name="featured" type="checkbox" /> Destacar na vitrine</label>
+            <label>Estoque (opcional)<input name="stock" type="number" min="0" step="1" placeholder="Sem limite / não se aplica" /><small>Em branco para produto digital sem limite.</small></label>
+            <label class="admin-description">Descrição<textarea
                 name="description"
                 maxlength="1000"
                 rows="4"
@@ -667,6 +681,7 @@
             </div>
             <p id="draftStatus" role="status"></p>
           </form>
+          <div class="mt-admin-list-head"><h3>SEUS PRODUTOS.</h3><p>Edite, organize e exporte seus rascunhos.</p></div>
           <div class="mt-admin-actions">
             <button id="mtExportProducts" type="button">Exportar JSON</button
             ><label class="mt-admin-import"
@@ -822,7 +837,7 @@
     <script src="projetos-data.js"></script>
     <script src="site.js" defer></script>
     <script src="intro.js?v=20260929-intro-identity" defer></script>
-    <script src="mt-store-drafts.js" defer></script>
+    <script src="mt-store-drafts.js?v=20261004-grupo5" defer></script>
     <script type="module" src="app.js"></script>
   </body>
 </html>

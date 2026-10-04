@@ -10,8 +10,19 @@
     unavailable: "Indisponível",
   };
   const categories = ["Roupas", "Uniformes", "Acessórios", "Props"];
-  let products = [];
-  const safeImage = (s) =>
+  let products = [], categoryFilter = "", selectedImage = "", fileMeta = null, readVersion = 0, uploadPending = false, storageReadable = true;
+  const states = {draft:"Rascunho",preview:"Pronto para prévia",archived:"Arquivado"};
+  const node = (tag, cls, text) => { const el=document.createElement(tag); if(cls) el.className=cls; if(text !== undefined) el.textContent=text; return el; };
+  const imagePreview = document.getElementById("adminImagePreview");
+  function showImage(src) {
+    imagePreview.replaceChildren(); imagePreview.hidden=!src;
+    if(!src) return;
+    const img=new Image();img.alt="Prévia da imagem do produto";img.src=src;
+    img.onerror=()=>imagePreview.replaceChildren(node("p","","Imagem não encontrada. Confira o caminho."));imagePreview.append(img);
+  }
+  const safeDataImage = (s) => typeof s === "string" && s.length <= 1500000 && /^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(s);
+
+  const safeImage = (s) => safeDataImage(s) ? s :
     typeof s === "string" &&
     /^assets\/[a-zA-Z0-9_\-/ .%\u00C0-\u024F]+\.(png|jpe?g|webp)$/i.test(s) &&
     !s.includes("..")
@@ -28,6 +39,7 @@
       Number(p.price) <= 0
     )
       throw Error("Produto inválido");
+    if (p.stock !== "" && p.stock != null && (!Number.isSafeInteger(Number(p.stock)) || Number(p.stock)<0)) throw Error("Stock invalid");
     return {
       id: String(p.id || `mt-${Date.now()}-${i}`),
       name: p.name.trim().slice(0, 120),
@@ -39,22 +51,28 @@
       availability: Object.hasOwn(availability, p.availability)
         ? p.availability
         : "coming",
-      status: "draft",
+      status: Object.hasOwn(states,p.status) ? p.status : "draft",
+      featured: p.featured === true || p.featured === "on",
+      stock: p.stock === "" || p.stock == null ? null : Number(p.stock),
+      productFile: typeof p.productFile === "string" ? p.productFile.trim().slice(0,300) : "",
+      fileMeta: p.fileMeta && typeof p.fileMeta.name === "string" ? {name:p.fileMeta.name.slice(0,200),size:Math.max(0,Number(p.fileMeta.size)||0)} : null,
     };
   }
   try {
     const stored = JSON.parse(localStorage.getItem(key) || "[]");
     if (Array.isArray(stored)) products = stored.map(normalize);
   } catch {
+    storageReadable = false;
     status.textContent =
       "Não foi possível ler os rascunhos salvos. Você pode importar uma cópia.";
   }
   const money = (n) =>
     n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  function save(next) {
+  function save(next, recovered = false) {
+    if (!storageReadable && !recovered) {status.textContent="Os dados salvos não puderam ser lidos. Exporte a cópia original antes de importar uma lista válida.";return false;}
     try {
       localStorage.setItem(key, JSON.stringify(next));
-      products = next;
+      products = next; storageReadable = true;
       render();
       status.textContent = "Rascunhos salvos somente neste navegador.";
       return true;
@@ -67,6 +85,9 @@
   function reset() {
     form.reset();
     delete form.dataset.edit;
+    selectedImage="";fileMeta=null;uploadPending=false;readVersion++;showImage("");
+    document.getElementById("productFileInfo").textContent="";
+    document.getElementById("productFormTitle").textContent="ADICIONAR PRODUTO.";
     document.getElementById("cancelProductEdit").hidden = true;
   }
   document.getElementById("cancelProductEdit").onclick = reset;
@@ -74,7 +95,15 @@
     list.replaceChildren();
     const shop = document.getElementById("mtShopDrafts");
     shop.replaceChildren();
-    document.getElementById("shopEmpty").hidden = products.length > 0;
+    const cards=new Map();
+    const visible=products.filter(p=>p.status!=="archived");
+    const filtered=visible.filter(p=>!categoryFilter||p.category===categoryFilter).sort((a,b)=>Number(b.featured)-Number(a.featured));
+    document.getElementById("shopEmpty").hidden = visible.length > 0;
+    document.getElementById("shopNoResults").hidden = !visible.length || filtered.length > 0;
+    document.getElementById("shopProductCount").textContent = visible.length ? `${filtered.length} ${filtered.length===1?"produto na prévia local":"produtos na prévia local"}` : "Coleção em preparação · novidades em breve";
+    document.getElementById("adminProductCount").textContent=products.length;
+    document.getElementById("adminFeaturedCount").textContent=products.filter(p=>p.featured).length;
+    shop.setAttribute("aria-busy","false");document.getElementById("shopLoading").hidden=true;
     document.getElementById("localDraftNotice").hidden = !products.length;
     if (!products.length) {
       const empty = document.createElement("p");
@@ -85,6 +114,8 @@
     products.forEach((p) => {
       const card = document.createElement("article");
       card.className = "mt-shop-draft";
+      const media=node("div","product-media");
+      if(p.featured) media.append(node("span","product-badge","Destaque"));
       if (p.image) {
         const img = new Image();
         img.src = p.image;
@@ -96,12 +127,12 @@
           empty.textContent = "Imagem não encontrada";
           img.replaceWith(empty);
         };
-        card.append(img);
+        media.append(img);
       } else {
         const empty = document.createElement("div");
         empty.className = "product-no-image";
         empty.textContent = "Produto sem imagem";
-        card.append(empty);
+        media.append(empty);
       }
       const tag = document.createElement("small");
       tag.textContent = `${p.category} · ${p.kind === "custom" ? "Encomenda" : "Produto pronto"}`;
@@ -112,12 +143,13 @@
       const desc = document.createElement("p");
       desc.textContent = p.description;
       const note = document.createElement("small");
-      note.textContent = `${availability[p.availability]} · rascunho local`;
+      note.textContent = `${p.stock===0 ? "Sem estoque" : availability[p.availability]} · prévia local`;
+      const body=node("div","product-body");
       const purchase = document.createElement("button");
-      purchase.textContent = "Compra ainda indisponível";
+      purchase.textContent = p.stock===0 || p.availability==="unavailable" ? "Indisponível" : "Em breve";
       purchase.disabled = true;
-      card.append(tag, name, price, desc, note, purchase);
-      shop.append(card);
+      body.append(tag, name, price, desc, note, purchase);card.append(media,body);
+      cards.set(p.id,card);
       const row = document.createElement("article");
       row.className = "mt-draft";
       const title = document.createElement("strong");
@@ -125,7 +157,8 @@
       const value = document.createElement("span");
       value.textContent = money(p.price);
       const info = document.createElement("p");
-      info.textContent = `${p.category} / ${availability[p.availability]} — ${p.description}`;
+      info.textContent = `${p.category} · ${states[p.status]} · ${availability[p.availability]}${p.featured?" · Destaque":""}${p.stock!==null?` · Estoque: ${p.stock}`:""} — ${p.description}`;
+      const reference=node("small","product-file-reference",p.fileMeta ? `Arquivo: ${p.fileMeta.name} (${Math.ceil(p.fileMeta.size/1024)} KB) · referência local` : p.productFile ? `Arquivo: ${p.productFile}` : "Arquivo ainda não informado");
       const edit = document.createElement("button");
       edit.type = "button";
       edit.textContent = "Editar";
@@ -138,8 +171,16 @@
           "category",
           "kind",
           "availability",
+          "status",
+          "productFile",
+          "stock",
         ])
-          form.elements[field].value = p[field];
+          form.elements[field].value = p[field] ?? "";
+        selectedImage=safeDataImage(p.image) ? p.image : "";if(selectedImage)form.elements.image.value="";
+        form.elements.featured.checked=p.featured;fileMeta=p.fileMeta;readVersion++;uploadPending=false;
+        document.getElementById("productImageUpload").value="";document.getElementById("productFileUpload").value="";
+        document.getElementById("productFileInfo").textContent=fileMeta?.name||"";
+        showImage(p.image);document.getElementById("productFormTitle").textContent="EDITAR PRODUTO.";
         form.dataset.edit = p.id;
         document.getElementById("cancelProductEdit").hidden = false;
         form.elements.name.focus();
@@ -156,17 +197,21 @@
             reset();
         }
       };
-      row.append(title, value, info, edit, remove);
+      row.append(title, value, info, reference, edit, remove);
       list.append(row);
     });
+    filtered.forEach(p=>shop.append(cards.get(p.id)));
   }
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    if(uploadPending){status.textContent="Aguarde a leitura da imagem antes de salvar.";return;}
     try {
       const raw = Object.fromEntries(new FormData(form)),
         item = normalize(
           {
             ...raw,
+            image:selectedImage || raw.image.trim(),
+            fileMeta,
             id:
               form.dataset.edit ||
               `mt-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -184,12 +229,12 @@
       if (save(next)) reset();
     } catch {
       status.textContent =
-        "Confira o nome, a descrição e o preço maior que zero.";
+        "Confira nome, descrição, preço positivo e estoque inteiro maior ou igual a zero.";
     }
   });
   document.getElementById("mtExportProducts").onclick = () => {
     const url = URL.createObjectURL(
-        new Blob([JSON.stringify(products, null, 2)], {
+        new Blob([storageReadable ? JSON.stringify(products, null, 2) : localStorage.getItem(key) || "[]"], {
           type: "application/json",
         }),
       ),
@@ -212,11 +257,11 @@
         if (new Set(next.map((p) => p.id)).size !== next.length)
           throw Error("duplicate");
         if (
-          products.length &&
+          (products.length || !storageReadable) &&
           !confirm("Substituir os rascunhos locais pelo arquivo importado?")
         )
           return;
-        if (save(next)) reset();
+        if (save(next, true)) reset();
       } catch {
         status.textContent =
           "Arquivo inválido. Importe uma lista de produtos com nome, descrição e preço positivo; os rascunhos atuais foram mantidos.";
@@ -224,5 +269,31 @@
         e.target.value = "";
       }
     });
-  render();
+  document.getElementById("shopCategoryFilters").addEventListener("click",e=>{
+    const button=e.target.closest("[data-shop-category]");if(!button)return;
+    categoryFilter=button.dataset.shopCategory;
+    document.querySelectorAll("[data-shop-category]").forEach(b=>b.setAttribute("aria-pressed",String(b===button)));render();
+  });
+  form.elements.image.addEventListener("input",()=>{selectedImage="";readVersion++;uploadPending=false;showImage(safeImage(form.elements.image.value.trim()));});
+  document.getElementById("productImageUpload").addEventListener("change",async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1000000){status.textContent="Escolha PNG, JPG ou WebP até 1 MB.";e.target.value="";return;}
+    const version=++readVersion;uploadPending=true;
+    try {
+      const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});
+      await new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=reject;img.src=data;});
+      if(version!==readVersion)return;
+      selectedImage=data;form.elements.image.value="";showImage(data);status.textContent="Imagem pronta para salvar localmente.";
+    } catch {if(version===readVersion)status.textContent="Não foi possível ler a imagem. A imagem anterior foi preservada.";}
+    finally {if(version===readVersion)uploadPending=false;}
+  });
+  document.getElementById("clearProductImage").addEventListener("click",()=>{
+    selectedImage="";readVersion++;uploadPending=false;form.elements.image.value="";document.getElementById("productImageUpload").value="";showImage("");
+  });
+  form.elements.productFile.addEventListener("input",()=>{fileMeta=null;document.getElementById("productFileInfo").textContent="";});
+  document.getElementById("productFileUpload").addEventListener("change",e=>{
+    const file=e.target.files?.[0];if(!file)return;fileMeta={name:file.name,size:file.size};form.elements.productFile.value=file.name;
+    document.getElementById("productFileInfo").textContent=`${file.name} · somente referência`;
+  });
+  requestAnimationFrame(render);
 })();
