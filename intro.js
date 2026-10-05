@@ -5,58 +5,96 @@
   let closeActive = null;
   // Hand-plotted spray gestures following the supplied mural's asymmetric wings.
   // Each cubic is a nozzle trajectory, not a silhouette, bitmap or reveal mask.
+  // Sweeping nozzle passes: broad pigment masses, hooked black cuts and
+  // fractured white slashes measured against the supplied mural (1000 units).
   const gestures = [
-    ["#100e14",58,[490,510,370,265,165,135,75,130]],
-    ["#100e14",48,[75,130,28,306,205,478,475,520]],
-    ["#100e14",65,[515,510,655,270,885,145,934,60]],
-    ["#100e14",51,[934,60,979,318,813,482,530,525]],
-    ["#100e14",48,[485,540,220,405,135,470,161,677]],
-    ["#100e14",57,[161,677,230,940,346,785,491,553]],
-    ["#100e14",56,[523,543,745,394,900,430,830,654]],
-    ["#100e14",50,[830,654,815,927,665,826,516,556]],
-    ["#70209c",38,[481,504,295,308,174,195,116,188]],
-    ["#a320ff",52,[116,188,108,378,304,444,476,515]],
-    ["#70209c",34,[523,498,690,284,841,191,899,126]],
-    ["#a320ff",57,[899,126,925,361,744,437,535,514]],
-    ["#a320ff",48,[475,536,282,443,172,497,211,624]],
-    ["#8022b5",42,[211,624,257,816,356,741,483,552]],
-    ["#a320ff",52,[536,533,735,430,843,451,793,608]],
-    ["#8022b5",40,[793,608,792,836,658,744,525,551]],
-    ["#121016",29,[471,508,355,352,230,274,214,280]],
-    ["#121016",31,[214,280,168,327,387,452,480,521]],
-    ["#121016",33,[533,510,700,316,826,271,836,296]],
-    ["#121016",27,[836,296,843,338,676,452,534,527]],
-    ["#17111c",28,[478,549,285,526,306,685,266,706]],
-    ["#17111c",32,[530,546,763,521,680,692,759,741]],
-    ["#eee7f2",12,[463,488,295,322,84,155,80,171]],
-    ["#eee7f2",16,[80,171,91,264,315,372,465,502]],
-    ["#eee7f2",14,[542,490,713,286,902,147,907,161]],
-    ["#eee7f2",13,[907,161,928,257,729,375,543,509]],
-    ["#e7d9ed",12,[464,544,233,500,220,551,239,596]],
-    ["#e7d9ed",11,[239,596,258,749,385,648,471,557]],
-    ["#e7d9ed",14,[548,543,805,463,832,505,784,551]],
-    ["#e7d9ed",10,[784,551,791,698,653,620,543,554]],
-    ["#0c0b10",29,[506,444,471,512,524,609,503,699]],
-    ["#522164",44,[473,507,346,355,275,386,364,463]],
-    ["#d88bff",25,[464,510,343,432,326,392,345,393]],
-    ["#130e19",22,[466,524,323,461,200,408,134,316]],
-    ["#d88bff",27,[539,510,694,407,721,358,682,376]],
-    ["#130e19",24,[546,522,769,452,813,394,839,351]],
-    ["#522164",49,[477,555,383,629,406,699,307,800]],
-    ["#d88bff",30,[469,562,315,597,326,688,352,656]],
-    ["#130e19",23,[460,579,303,715,216,845,148,916]],
-    ["#522164",52,[541,556,644,620,618,717,786,822]],
-    ["#d88bff",31,[548,567,727,592,701,673,674,637]],
-    ["#130e19",26,[556,585,664,715,742,790,804,856]],
-    ["#e7d9ed",7,[460,541,358,485,295,494,325,525]],
-    ["#e7d9ed",7,[554,537,719,454,756,474,717,508]],
-    ["#e7d9ed",8,[506,475,490,524,512,563,501,600]],
-    ["#100e14",7,[495,450,463,350,397,214,382,242]],
-    ["#100e14",7,[516,451,562,343,620,213,634,240]],
+    // Upper left: wide outward fan with a torn, hooked leading edge.
+    ["#09080c",90,[478,498,350,294,100,106,68,126]],
+    ["#09080c",100,[68,126,56,285,150,413,465,504]],
+    ["#7130a1",85,[470,486,329,302,130,165,110,178]],
+    ["#a45cd0",76,[110,178,110,300,289,387,470,493]],
+    ["#d4c7dc",30,[466,479,250,267,118,131,70,137]],
+    ["#d4c7dc",34,[70,137,66,250,158,334,239,365]],
+    ["#0b090e",58,[475,494,314,322,125,248,149,230]],
+    ["#0b090e",48,[149,230,187,166,290,227,353,302]],
+    ["#0b090e",60,[465,501,321,401,221,380,184,397]],
+    ["#b880db",49,[470,494,371,409,315,362,294,378]],
+    ["#0b090e",28,[294,378,306,312,359,368,409,425]],
+    ["#eee5ee",18,[460,495,319,423,175,363,101,323]],
+    ["#0b090e",40,[101,323,63,305,93,363,147,395]],
+    ["#8950b4",28,[172,269,133,212,119,158,89,158]],
+    // Upper right: taller wing, open fan, asymmetric black hooks.
+    ["#09080c",108,[527,493,659,272,879,107,943,52]],
+    ["#09080c",100,[943,52,960,255,867,378,537,500]],
+    ["#7933aa",92,[536,483,682,288,878,138,918,112]],
+    ["#ab63d2",78,[918,112,929,278,735,394,540,492]],
+    ["#d8ccdf",29,[542,476,706,285,895,154,940,114]],
+    ["#d8ccdf",38,[940,114,950,191,889,268,813,328]],
+    ["#0b090e",65,[535,497,750,300,892,170,912,199]],
+    ["#0b090e",48,[912,199,917,257,837,295,850,356]],
+    ["#0b090e",66,[541,501,755,408,883,364,931,318]],
+    ["#bf8cdd",43,[546,495,668,398,734,347,709,336]],
+    ["#0b090e",27,[709,336,770,288,749,367,690,410]],
+    ["#eee5ee",18,[550,498,722,410,845,356,943,365]],
+    ["#0b090e",41,[943,365,913,381,925,428,941,459]],
+    // Lower left: broad scalloped lobe, several deep calligraphic cuts.
+    ["#09080c",112,[470,524,235,470,112,432,99,470]],
+    ["#09080c",109,[99,470,70,706,217,832,114,912]],
+    ["#7934a8",94,[459,534,267,510,166,467,156,513]],
+    ["#ae65d3",90,[156,513,126,665,243,791,198,857]],
+    ["#7d3aaa",79,[450,555,339,640,261,838,161,931]],
+    ["#dacfe0",32,[448,543,308,565,164,536,138,479]],
+    ["#dacfe0",32,[138,479,147,641,188,701,195,738]],
+    ["#0c090e",63,[451,546,315,565,218,604,232,671]],
+    ["#0c090e",65,[232,671,236,722,335,686,386,616]],
+    ["#bd8bd9",57,[452,553,373,606,300,650,297,697]],
+    ["#0b090e",51,[459,557,403,722,340,821,298,786]],
+    ["#0b090e",44,[298,786,263,735,286,805,237,832]],
+    ["#ded3e2",22,[450,551,349,664,238,777,255,810]],
+    ["#0b090e",42,[255,810,234,862,147,940,94,969]],
+    ["#8b44b8",35,[227,737,206,815,206,865,171,889]],
+    // Lower right: full rounded mass with a sharp folded bottom edge.
+    ["#09080c",106,[540,523,753,442,898,416,929,464]],
+    ["#09080c",111,[929,464,895,652,787,797,829,923]],
+    ["#7932a7",95,[547,535,719,475,851,463,868,490]],
+    ["#b16bd8",96,[868,490,902,664,754,806,784,876]],
+    ["#7a37a3",79,[556,559,648,654,733,820,831,940]],
+    ["#ddd1e3",32,[555,541,735,548,840,467,865,483]],
+    ["#ddd1e3",29,[865,483,915,511,847,596,841,648]],
+    ["#0c090e",70,[552,549,726,536,833,552,798,611]],
+    ["#0c090e",66,[798,611,766,651,697,634,638,588]],
+    ["#be89de",61,[554,555,659,608,716,677,728,722]],
+    ["#0b090e",56,[553,561,590,741,683,858,724,822]],
+    ["#0b090e",49,[724,822,769,775,756,860,809,887]],
+    ["#ddd0e2",25,[558,557,655,701,765,785,753,819]],
+    ["#0b090e",38,[753,819,830,821,813,895,865,959]],
+    ["#8b45b5",31,[832,657,773,739,798,839,827,878]],
+    // Broad lateral lobes and angular folds join the fans into a mural.
+    ["#09080c",74,[461,499,274,367,87,290,91,378]],
+    ["#a268c9",66,[453,507,261,412,141,337,145,404]],
+    ["#d6c8dd",24,[442,505,292,428,160,399,100,365]],
+    ["#09080c",54,[100,365,147,445,283,430,402,489]],
+    ["#09080c",85,[455,555,284,611,112,618,158,745]],
+    ["#9b56c5",78,[449,565,302,626,196,643,229,726]],
+    ["#d6c8dd",24,[435,567,274,661,180,658,189,729]],
+    ["#09080c",53,[189,729,276,824,348,677,428,591]],
+    ["#09080c",78,[553,500,772,364,919,283,918,365]],
+    ["#a369cc",67,[560,508,760,414,876,334,873,402]],
+    ["#d6c8dd",23,[566,503,752,433,860,395,932,349]],
+    ["#09080c",55,[932,349,867,451,751,432,607,488]],
+    ["#09080c",86,[557,555,718,608,884,633,823,772]],
+    ["#9c58c7",75,[564,566,721,636,809,667,786,740]],
+    ["#d6c8dd",24,[575,570,729,671,845,675,824,745]],
+    ["#09080c",53,[824,745,735,850,655,686,585,593]],
+    // Body and antennae are painted last, with heavy black and worn highlights.
+    ["#09080c",48,[501,409,488,486,526,608,508,743]],
+    ["#ddd4df",20,[502,439,496,481,509,525,503,570]],
+    ["#b290c5",10,[503,572,498,616,509,654,507,687]],
+    ["#09080c",13,[493,408,459,280,412,199,393,221]],
+    ["#09080c",13,[516,410,564,274,612,196,632,214]],
   ];
   const paintDuration = 3500, settleDuration = 180;
-  // Finish each wing with layered paint before moving the nozzle to the next.
-  const paintOrder = [0,1,8,9,16,17,22,23,31,32,33,2,3,10,11,18,19,24,25,34,35,4,5,12,13,20,26,27,36,37,38,6,7,14,15,21,28,29,39,40,41,42,43,30,44,45,46];
+  const paintOrder = gestures.map((_, index) => index);
   function preparePaint() {
     let seed=290926;
     const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
@@ -71,14 +109,22 @@
         const pressure=(.2+.8*Math.pow(Math.sin(Math.PI*t),.6))*(.86+.14*Math.sin(n*.13+g));
         // Broad colour passes and broken fine highlights share the same nozzle path.
         const coverage=.72+.28*Math.sin(n*.097+g*1.8)**2;
-        const radius=width*pressure*(g<8?2.6:g<16?2.45:1.15);
+        const radius=width*pressure*.72;
         const wobbleX=Math.sin(n*.113+g)*2.8+Math.sin(n*.043)*3.2;
         const wobbleY=Math.cos(n*.087+g)*3.3;
-        const highlight=g>=22&&g<=29;
+        const highlight=color.startsWith("#d")||color.startsWith("#e");
         const breakup=Math.sin(Math.floor(n/6)*127.1+g*311.7)*43758.5453;
         const skipHighlight=highlight&&breakup-Math.floor(breakup)>.82;
         const time=(pass+Math.pow(t,.88))/paintOrder.length;
-        for(let j=0;j<30;j++){
+        // Dense wet pigment, deposited at the moving nozzle rather than revealed.
+        // Overlapping elliptical droplets build substantial, irregular paint.
+        for(let j=0;j<10;j++){
+          const angle=random()*Math.PI*2,dist=Math.sqrt(random())*radius*.38;
+          const px=x+wobbleX+Math.cos(angle)*dist,py=y+wobbleY+Math.sin(angle)*dist;
+          if(skipHighlight&&j>5)continue;
+          dabs.push({x:px,y:py,r:radius*(.18+random()*.24),color,alpha:.3+random()*.4,aspect:.55+random()*.6,rotation:random()*Math.PI,time});
+        }
+        for(let j=0;j<14;j++){
           const angle=random()*Math.PI*2,dist=random()**.72*radius*.52;
           const px=x+wobbleX+Math.cos(angle)*dist,py=y+wobbleY+Math.sin(angle)*dist;
           // Stationary wall pores break coverage, even on overlapping passes.
@@ -87,19 +133,24 @@
           dabs.push({x:px,y:py,r:.35+random()**2*3.6,color,
             alpha:(.24+random()*.59)*coverage*(highlight ? .72 : 1),aspect:.6+random()*.65,rotation:random()*Math.PI,time});
         }
-        for(let j=0;j<4;j++){
+        for(let j=0;j<9;j++){
           const angle=random()*Math.PI*2,dist=radius*(.4+random()*.55);
-          dabs.push({x:x+Math.cos(angle)*dist,y:y+Math.sin(angle)*dist,r:.25+random()*.7,color,alpha:.04+random()*.14,time});
+          dabs.push({x:x+Math.cos(angle)*dist,y:y+Math.sin(angle)*dist,r:.25+random()*.7,color,alpha:.10+random()*.22,time});
         }
-        if((n===80||n===185)&&g<16&&g%3===0){
-          drips.push({x,y:y+radius*.3,color,start:time,length:40+random()*125,width:1.2+random()*2.7,lean:random()*7-3.5});
+        if((n===70||n===175)&&width>25&&g%4===0){
+          drips.push({x,y:y+radius*.3,color,start:time,length:55+random()*175,width:1.7+random()*5.5,lean:random()*7-3.5});
           for(let j=0;j<24;j++){
             const angle=random()*Math.PI*2,dist=radius*(.6+random()*1.2);
-            dabs.push({x:x+Math.cos(angle)*dist,y:y+Math.sin(angle)*dist,r:.7+random()**3*4.5,color,alpha:.3+random()*.5,time});
+            dabs.push({x:x+Math.cos(angle)*dist,y:y+Math.sin(angle)*dist,r:1.2+random()**3*9,color,alpha:.3+random()*.5,time});
           }
         }
       }
     });
+    // Surface wear is applied to deposited paint only, never a butterfly mask.
+    for(let n=0;n<52000;n++){
+      dabs.push({x:random()*1000,y:random()*1000,r:.25+random()**3*1.9,color:"#000",alpha:.3+random()*.6,time:.86+random()*.14,erase:true});
+    }
+    dabs.sort((a,b)=>a.time-b.time);
     return {dabs,drips};
   }
   async function play() {
@@ -175,10 +226,17 @@
         const i=(y*w+x)*4,fine=hash(x*3,y*5);
         const grain=(fine-.5)*5+(relief(x,y,170)-.5)*7+(relief(x,y,39)-.5)*3;
         const light=7*Math.max(0,1-Math.hypot((x-w*.47)/w,(y-h*.39)/h)*1.4);
-        const pore=fine>.987?-7:0;
-        noise.data[i]=23+grain+light+pore;noise.data[i+1]=22+grain+light+pore;noise.data[i+2]=26+grain+light+pore;noise.data[i+3]=255;
+        const pore=fine>.975?-9:0;
+        noise.data[i]=27+grain+light+pore;noise.data[i+1]=26+grain+light+pore;noise.data[i+2]=30+grain+light+pore;noise.data[i+3]=255;
       }
       wc.putImageData(noise,0,0);
+      // Sparse plaster fractures at native resolution, never a tiled pattern.
+      for(let n=0;n<14;n++){
+        const x=hash(n,71)*w,y=hash(n,93)*h,length=40+hash(n,12)*140;
+        wc.beginPath();wc.moveTo(x,y);
+        for(let k=1;k<=7;k++)wc.lineTo(x+(hash(n,k)-.5)*18+k*2,y+k*length/7);
+        wc.lineWidth=.6+hash(n,41);wc.strokeStyle="rgba(4,3,6,.16)";wc.stroke();
+      }
     }
     let width,
       height,
@@ -195,7 +253,7 @@
       output.height = height * ratio;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       buildWall(width,height);
-      side = Math.min(width * 0.86, height * 0.74, 760);
+      side = Math.min(width * 0.90, height * 0.76, 880);
       left = (width - side) / 2;
       top = (height - side) / 2 - height*.045;
       draw();
@@ -224,6 +282,7 @@
       const progress = Math.min(1, (now - start) / paintDuration);
       while (index < dabs.length && dabs[index].time <= progress) {
         const d = dabs[index++];
+        pc.globalCompositeOperation=d.erase?"destination-out":"source-over";
         pc.fillStyle = d.color;pc.globalAlpha=d.alpha;
         pc.beginPath();pc.ellipse(d.x,d.y,d.r,d.r*(d.aspect||1),d.rotation||0,0,Math.PI*2);pc.fill();
       }
