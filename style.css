@@ -2564,3 +2564,15 @@ body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-r
 @media(max-width:760px) {
   #page-sobre .about-title-end::after { width:48px; height:18px; right:calc(14px + .12em); }
 }
+
+/* Redes only: underline the word and keep the lower margin on the same surface. */
+#page-redes .center-title h2 > span::after {
+  width:100px; height:26px; left:calc((100% - 54px)/2); right:auto;
+  bottom:-.26em; transform:translateX(-50%);
+}
+#content:has(> #page-redes.active) { display:flow-root; }
+body:has(#page-redes.active) { background:var(--mt-public-surface); background-attachment:fixed; }
+body:has(#page-redes.active) .mt-wall-marks { display:none; }
+@media(max-width:760px) {
+  #page-redes .center-title h2 > span::after { width:76px; height:22px; left:calc((100% - 38px)/2); }
+}
