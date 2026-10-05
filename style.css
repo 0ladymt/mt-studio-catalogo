@@ -2605,3 +2605,20 @@ body:has(#page-home.active) .mt-wall-marks { display:none; }
   #page-sobre .mt-about__visual { width:min(100%,360px); }
   #page-redes .center-title h2 > span::after { right:38px; }
 }
+
+/* Final Home details and mission title placement; no content/card changes. */
+#page-home .mt-cta > .mt-overline::before { content:none; }
+#page-home .mt-cta::after { right:24px; }
+body:has(#page-home.active) > footer { position:relative; }
+body:has(#page-home.active) > footer::before {
+  content:""; position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:min(1280px,calc(100% - 80px)); height:1px; background:#ffffff12;
+}
+#page-sobre .mt-about-mission > strong { align-self:center; justify-self:center; text-align:center; }
+@media(max-width:1000px) {
+  body:has(#page-home.active) > footer::before { width:calc(100% - 60px); }
+}
+@media(max-width:760px) {
+  #page-home .mt-cta::after { right:18px; }
+  body:has(#page-home.active) > footer::before { width:calc(100% - 36px); }
+}
