@@ -2552,3 +2552,15 @@ body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-r
 @media(max-width:760px) {
   #page-catalogo .catalog-title-end::after { transform:translateX(calc(-50% - 8px - .32em)) translateY(.55em) scale(1.5); }
 }
+
+/* Sobre: title-bound paint and a restrained purple mission feature. */
+#page-sobre .about-title-end::after {
+  width:64px; height:22px; right:calc(20px + .12em); bottom:-.36em;
+}
+#page-sobre .mt-about-mission {
+  padding:clamp(24px,3vw,40px); border:1px solid #b98ad12e; border-radius:4px;
+  background:linear-gradient(115deg,#321c45,#21162f);
+}
+@media(max-width:760px) {
+  #page-sobre .about-title-end::after { width:48px; height:18px; right:calc(14px + .12em); }
+}
