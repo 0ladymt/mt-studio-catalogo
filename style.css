@@ -2499,3 +2499,26 @@ body {
   #page-home #mtHuman .mt-human__copy { max-width:100%; }
   #page-home #mtHuman .mt-human__copy h2 { font-size:clamp(2.8rem,9vw,3.6rem); }
 }
+
+/* Rafa & Joy feature and its lower edge; all other Home blocks stay intact. */
+#page-home #mtHuman {
+  grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+  min-height:640px; padding-block:64px;
+  border-block:1px solid #ffffff12;
+  background:radial-gradient(ellipse at 26% 52%,#713c9420,transparent 60%);
+}
+#page-home #mtHuman .mt-human__photo { width:min(100%,560px); }
+#page-home #mtHuman .mt-human__copy { max-width:460px; }
+#page-home #mtHuman + .mt-cta::before { content:none; }
+/* Same viewport-aligned public surface, including the shared footer. */
+body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer {
+  background:var(--mt-public-surface); background-attachment:fixed; border-top:0;
+}
+.mt-footer-links { display:flex; justify-content:center; flex-wrap:wrap; gap:12px 28px; }
+.mt-footer-links a { color:var(--muted); text-decoration:none; }
+.mt-footer-links a:hover,.mt-footer-links a:focus-visible { color:var(--text); }
+@media(max-width:760px) {
+  #page-home #mtHuman { grid-template-columns:minmax(0,1fr); min-height:0; padding-block:40px 48px; gap:24px; }
+  #page-home #mtHuman .mt-human__photo { width:min(100%,400px); }
+  #page-home #mtHuman .mt-human__copy { max-width:100%; }
+}
