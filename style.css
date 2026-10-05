@@ -2479,3 +2479,16 @@ body {
   background:url("assets/brand/drips.svg") center top/contain no-repeat;
   opacity:.9; pointer-events:none;
 }
+
+/* Approved transparent portrait: Home Rafa & Joy block only. */
+#page-home #mtHuman { padding-block:clamp(36px,4vw,56px) var(--home-gap); gap:clamp(28px,4vw,56px); }
+#page-home #mtHuman .mt-human__photo { width:min(100%,440px); }
+#page-home #mtRafaJoy { mask:none; -webkit-mask:none; }
+#page-home #mtHuman::before,
+#page-home #mtHuman::after,
+#page-home #mtHuman .mt-title-end::after,
+#page-home #mtHuman .mt-human__photo::before,
+#page-home #mtHuman .mt-human__photo::after { content:none; }
+@media(max-width:760px) {
+  #page-home #mtHuman .mt-human__photo { width:min(100%,340px); }
+}
