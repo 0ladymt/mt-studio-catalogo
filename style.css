@@ -2576,3 +2576,11 @@ body:has(#page-redes.active) .mt-wall-marks { display:none; }
 @media(max-width:760px) {
   #page-redes .center-title h2 > span::after { width:76px; height:22px; left:calc((100% - 38px)/2); }
 }
+
+/* Projetos only: larger signature, consistent photo covers and continuous surface. */
+#page-projetos .mt-projects-crown { width:88px; height:68px; }
+#page-projetos .project-card img,
+#page-projetos .project-card:first-child img { aspect-ratio:16/9; object-fit:cover; object-position:center; max-height:none; }
+#content:has(> #page-projetos.active) { display:flow-root; }
+body:has(#page-projetos.active) { background:var(--mt-public-surface); background-attachment:fixed; }
+body:has(#page-projetos.active) .mt-wall-marks { display:none; }
