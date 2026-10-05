@@ -95,6 +95,7 @@
   ];
   const paintDuration = 4400, settleDuration = 180;
   let cachedPaint = null, cachedTag = null;
+  const tagDuration = 900;
   const paintOrder = gestures.map((_, index) => index);
   function preparePaint() {
     if (cachedPaint) return cachedPaint;
@@ -155,6 +156,57 @@
     dabs.sort((a,b)=>a.time-b.time);
     return cachedPaint = {dabs,drips};
   }
+  function prepareTag() {
+    if (cachedTag) return cachedTag;
+    // Handwritten MT / STUDIO: individual moving nozzle passes, not an image
+    // reveal. Coordinates are local to the tag, with a slight rising baseline.
+    const strokes = [
+      ["#ddd1e3",7,[22,93,29,61,35,29,40,17]],
+      ["#ddd1e3",7,[40,17,47,34,48,45,53,57]],
+      ["#ddd1e3",7,[53,57,66,35,79,20,89,9]],
+      ["#ddd1e3",7,[89,9,85,34,84,63,83,83]],
+      ["#ddd1e3",8,[98,20,137,10,174,8,199,4]],
+      ["#ddd1e3",8,[150,12,144,39,135,65,130,82]],
+      ["#a45cd0",4,[18,99,70,96,139,88,195,78]],
+      // S
+      ["#b880db",4,[39,121,6,106,4,132,24,135]],
+      ["#b880db",4,[24,135,46,139,25,165,8,150]],
+      // T
+      ["#b880db",4,[41,116,50,113,63,112,73,110]],
+      ["#b880db",4,[58,113,57,130,51,149,49,154]],
+      // U
+      ["#b880db",4,[82,110,67,161,100,157,108,106]],
+      // D
+      ["#b880db",4,[119,105,114,120,110,142,108,149]],
+      ["#b880db",4,[119,105,151,94,151,139,108,149]],
+      // I
+      ["#b880db",4,[158,99,154,114,150,132,147,141]],
+      // O
+      ["#b880db",4,[183,95,151,102,155,151,181,133]],
+      ["#b880db",4,[181,133,202,116,201,88,183,95]],
+      ["#a45cd0",5,[9,173,55,161,141,153,207,147]],
+      ["#a45cd0",2,[177,157,179,163,179,173,181,181]],
+    ];
+    let seed=4917; const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+    const marks=[];
+    strokes.forEach(([color,width,p],pass)=>{
+      for(let n=0;n<=75;n++){
+        const t=n/75,u=1-t;
+        const x=u*u*u*p[0]+3*u*u*t*p[2]+3*u*t*t*p[4]+t*t*t*p[6];
+        const y=u*u*u*p[1]+3*u*u*t*p[3]+3*u*t*t*p[5]+t*t*t*p[7];
+        const time=(pass+t)/strokes.length;
+        for(let k=0;k<5;k++){
+          const a=random()*Math.PI*2,r=random()*width*.45;
+          marks.push({x:x+Math.cos(a)*r,y:y+Math.sin(a)*r,r:width*(.16+random()*.24),alpha:.3+random()*.5,color,time});
+        }
+        for(let k=0;k<2;k++){
+          const a=random()*Math.PI*2,r=width*(.4+random());
+          marks.push({x:x+Math.cos(a)*r,y:y+Math.sin(a)*r,r:.15+random()*.4,alpha:.12+random()*.2,color,time});
+        }
+      }
+    });
+    return cachedTag=marks;
+  }
   async function play() {
     if (reduced.matches) return;
     closeActive?.();
@@ -165,40 +217,7 @@
     root.setAttribute("aria-modal", "true");
     root.setAttribute("aria-label", "Borboleta da MT Studio sendo pintada");
     root.innerHTML =
-      '<canvas aria-label="Borboleta pintada por traços de spray"></canvas><span class="mt-intro__caption">UM TRAÇO. UMA IDENTIDADE.</span><div class="mt-intro__signature" style="transform:translate(-50%,0);transition:opacity .45s"><img src="assets/brand/signature.svg?v=20260928-2" alt="MT Studio"></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
-    // Texture the approved lettering once; reuse it on replay. This does not
-    // sample or reveal a finished butterfly: only the existing signature asset.
-    const signature = root.querySelector(".mt-intro__signature img");
-    function paintTag() {
-      if (finished) return;
-      if (cachedTag) { signature.src = cachedTag; return; }
-      const tag = document.createElement("canvas");
-      tag.width = 820; tag.height = 420;
-      const tc = tag.getContext("2d");
-      let seed = 4917;
-      const random = () => ((seed = (Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
-      // Thin overspray follows the official mark, rather than a floating glow.
-      tc.globalAlpha = .10;
-      for (let n=0;n<12;n++) tc.drawImage(signature,22+(random()-.5)*9,18+(random()-.5)*7,775,360);
-      tc.globalAlpha = .92; tc.drawImage(signature,22,18,775,360);
-      tc.globalCompositeOperation = "destination-out";
-      for (let n=0;n<4800;n++) {
-        tc.globalAlpha = .25+random()*.55;
-        tc.beginPath(); tc.arc(random()*820,random()*390,.3+random()**3*2.5,0,Math.PI*2); tc.fill();
-      }
-      tc.globalCompositeOperation = "source-over";
-      // Restrained runs underneath the lettering and purple underline.
-      for (const [x,y,length,color] of [[276,242,36,"#ddd1e3"],[435,301,27,"#ddd1e3"],[613,329,53,"#a45cd0"],[720,335,30,"#a45cd0"]]) {
-        tc.strokeStyle=color; tc.lineWidth=1.4; tc.globalAlpha=.65;
-        tc.beginPath(); tc.moveTo(x,y); tc.quadraticCurveTo(x+2,y+length*.7,x+1,y+length); tc.stroke();
-      }
-      for(let n=0;n<80;n++) {
-        tc.globalAlpha=.12+random()*.22; tc.fillStyle=n%3?"#cdbddd":"#a45cd0";
-        tc.beginPath(); tc.arc(60+random()*710,280+random()*93,.4+random()*1.2,0,Math.PI*2); tc.fill();
-      }
-      cachedTag = tag.toDataURL(); signature.src = cachedTag;
-    }
-    signature.addEventListener?.("load",paintTag,{once:true});
+      '<canvas aria-label="Borboleta pintada por traços de spray"></canvas><span class="mt-intro__caption">UM TRAÇO. UMA IDENTIDADE.</span><span class="mt-intro__signature" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">MT STUDIO — assinatura pintada na parede</span><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
     const siblings = [...document.body.children].filter(
       (el) => !["SCRIPT"].includes(el.tagName),
     );
@@ -245,6 +264,9 @@
     const pc = pigment.getContext("2d");
     pc.translate(pigmentMargin, pigmentMargin);
     const {dabs,drips}=preparePaint();
+    const tag=document.createElement("canvas"); tag.width=230;tag.height=200;
+    const tc=tag.getContext("2d"),tagMarks=prepareTag();
+    let tagIndex=0,tagStart=null;
     // Native-resolution, non-tiled concrete. Smooth multiscale relief and fine
     // aggregate are generated for this viewport; no stretched texture image.
     const wall=document.createElement("canvas"),wc=wall.getContext("2d");
@@ -309,9 +331,24 @@
         ctx.beginPath();ctx.ellipse(d.x+d.lean*.7,d.y+length,d.width*.65,d.width,0,0,Math.PI*2);ctx.fillStyle=d.color;ctx.fill();
       }
       ctx.restore();
+      // Same wall canvas and coordinate system: the tag sits by the right wing.
+      ctx.drawImage(tag,left+side*.70,top+side*.76,side*.29,side*.252);
     }
     window.addEventListener("resize", resize);
     resize();
+    function signatureFrame(now) {
+      if(finished)return;
+      if(tagStart===null)tagStart=now;
+      const progress=Math.min(1,(now-tagStart)/tagDuration);
+      const deadline=performance.now()+4;
+      while(tagIndex<tagMarks.length && tagMarks[tagIndex].time<=progress && performance.now()<deadline){
+        const d=tagMarks[tagIndex++];tc.fillStyle=d.color;tc.globalAlpha=d.alpha;
+        tc.beginPath();tc.arc(d.x,d.y,d.r,0,Math.PI*2);tc.fill();
+      }
+      draw();
+      if(progress<1 || tagIndex<tagMarks.length)raf=requestAnimationFrame(signatureFrame);
+      else timeout=setTimeout(finish,650);
+    }
     function frame(now) {
       if (finished) return;
       const progress = Math.min(1, (now - start) / paintDuration);
@@ -332,7 +369,7 @@
         timeout = setTimeout(()=>{
           if(finished)return;
           root.classList.add("is-signed");
-          timeout=setTimeout(finish,950);
+          raf=requestAnimationFrame(signatureFrame);
         },settleDuration);
       }
     }
