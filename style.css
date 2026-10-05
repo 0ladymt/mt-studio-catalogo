@@ -2609,16 +2609,22 @@ body:has(#page-home.active) .mt-wall-marks { display:none; }
 /* Final Home details and mission title placement; no content/card changes. */
 #page-home .mt-cta > .mt-overline::before { content:none; }
 #page-home .mt-cta::after { right:24px; }
-body:has(#page-home.active) > footer { position:relative; }
-body:has(#page-home.active) > footer::before {
+body:has(:is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer { position:relative; }
+body:has(:is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer::before {
   content:""; position:absolute; top:0; left:50%; transform:translateX(-50%);
   width:min(1280px,calc(100% - 80px)); height:1px; background:#ffffff12;
 }
 #page-sobre .mt-about-mission > strong { align-self:center; justify-self:center; text-align:center; }
 @media(max-width:1000px) {
-  body:has(#page-home.active) > footer::before { width:calc(100% - 60px); }
+  body:has(:is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer::before { width:calc(100% - 60px); }
 }
 @media(max-width:760px) {
   #page-home .mt-cta::after { right:18px; }
-  body:has(#page-home.active) > footer::before { width:calc(100% - 36px); }
+  body:has(:is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer::before { width:calc(100% - 36px); }
 }
+
+/* Catalog lower margin stays on the approved public surface. */
+#content:has(> #page-catalogo.active) { display:flow-root; }
+body:has(#page-catalogo.active) { background:var(--mt-public-surface); background-attachment:fixed; }
+body:has(#page-catalogo.active) .mt-wall-marks { display:none; }
+#page-sobre .mt-about-mission > strong { font-size:clamp(2rem,3vw,3rem); }
