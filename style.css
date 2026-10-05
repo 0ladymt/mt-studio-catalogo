@@ -2629,41 +2629,29 @@ body:has(#page-catalogo.active) { background:var(--mt-public-surface); backgroun
 body:has(#page-catalogo.active) .mt-wall-marks { display:none; }
 #page-sobre .mt-about-mission > strong { font-size:clamp(2rem,3vw,3rem); }
 
-/* Approved page artwork: native files, no repetition, no stretching or filters.
-   Each fixed rail shows the matching outer edge of the same image. The protected
-   content area and footer share one continuous dark surface. */
-body:has(#page-home.active) { --mt-page-art:url("assets/backgrounds/home.png"); }
-body:has(#page-loja.active) { --mt-page-art:url("assets/backgrounds/loja.png"); }
-body:has(#page-catalogo.active) { --mt-page-art:url("assets/backgrounds/catalogo.png"); }
-body:has(#page-sobre.active) { --mt-page-art:url("assets/backgrounds/sobre.png"); }
-body:has(#page-redes.active) { --mt-page-art:url("assets/backgrounds/redes.png"); }
-body:has(#page-projetos.active) { --mt-page-art:url("assets/backgrounds/projetos.png"); }
-body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) {
-  background:#0b090f;
-}
+/* Approved ink extracted from the source art. One continuous surface; sparse
+   document-bound compositions, outside the protected content width. */
+body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) { background:#0b090f; }
 #content:has(> :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) { background:transparent; }
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer { background:transparent; }
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) .mt-wall-marks { display:none; }
-body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active)::before,
-body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active)::after {
-  content:""; position:fixed; top:0; bottom:0; z-index:-1; pointer-events:none;
-  width:clamp(32px,calc((100vw - 1280px)/2 - 16px),240px);
-  background-image:var(--mt-page-art); background-repeat:no-repeat;
-  background-size:auto min(100vh,1672px);
+.mt-background-art { display:none; position:absolute; inset:0; z-index:-1; overflow:clip; pointer-events:none; }
+body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > .mt-background-art { display:block; }
+.mt-background-page { display:none; position:absolute; inset:0; pointer-events:none; }
+body:has(#page-home.active) .mt-background-page[data-page="home"],
+body:has(#page-loja.active) .mt-background-page[data-page="loja"],
+body:has(#page-catalogo.active) .mt-background-page[data-page="catalogo"],
+body:has(#page-sobre.active) .mt-background-page[data-page="sobre"],
+body:has(#page-redes.active) .mt-background-page[data-page="redes"],
+body:has(#page-projetos.active) .mt-background-page[data-page="projetos"] { display:block; }
+.mt-background-ink {
+  --art-width:min(var(--art-size),clamp(32px,calc((100vw - 1280px)/2 - 16px),160px));
+  position:absolute; top:var(--art-top); width:var(--art-width); height:auto;
+  pointer-events:none; user-select:none;
 }
-body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active)::before {
-  left:0; background-position:left top;
-  mask-image:linear-gradient(to right,#000 calc(100% - 20px),transparent);
-}
-body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active)::after {
-  right:0; background-position:right top;
-  mask-image:linear-gradient(to left,#000 calc(100% - 20px),transparent);
-}
+.mt-background-ink--left { left:max(8px,calc((100% - 1280px)/2 - var(--art-width) - 16px)); }
+.mt-background-ink--right { right:max(8px,calc((100% - 1280px)/2 - var(--art-width) - 16px)); }
 @media(max-width:1000px) {
-  /* On compact viewports the artwork yields to the existing content gutters. */
-  body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active)::before,
-  body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active)::after { display:none; }
+  /* Compact screens preserve the approved content spacing and clear surface. */
+  body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > .mt-background-art { display:none; }
 }
-
-/* The Home CTA caption starts at 24px: keep its left edge unobstructed. */
-body:has(#content > #page-home.active)::before { width:24px; }
