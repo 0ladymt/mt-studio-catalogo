@@ -2465,3 +2465,6 @@ body {
 @media(max-width:760px) {
   #page-home .mt-section > .mt-split { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Home portfolio caption: preserve crown and remove only the leading mark. */
+#page-home .mt-section:has(> #mtHomeProjects) > .mt-page-head .mt-overline::before { content:none; }

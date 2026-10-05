@@ -89,7 +89,7 @@
     const img = document.getElementById(id);
     img.src = source(chosen(name));
   }
-  const selected = ["kings", "alemanha", "shelby", "montenegro"];
+  const selected = ["polícia lisboa", "alemanha", "shelby", "montenegro"];
   selected.forEach((name) => {
     const project = chosen(name),
       a = document.createElement("a");
