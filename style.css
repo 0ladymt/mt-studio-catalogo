@@ -2468,3 +2468,14 @@ body {
 
 /* Home portfolio caption: preserve crown and remove only the leading mark. */
 #page-home .mt-section:has(> #mtHomeProjects) > .mt-page-head .mt-overline::before { content:none; }
+
+/* Home catalogue preview only: tighter transition and title-bound paint. */
+#page-home .mt-editorial--carousel { border-top:0; padding-top:clamp(16px,2vw,28px); margin-top:-24px; }
+#page-home .mt-editorial--carousel::before { content:none; }
+#page-home .mt-editorial--carousel .mt-overline { position:relative; width:fit-content; margin-bottom:34px; }
+#page-home .mt-editorial--carousel .mt-overline::before { content:none; }
+#page-home .mt-editorial--carousel .mt-overline::after {
+  content:""; position:absolute; right:-14px; top:100%; width:58px; height:36px;
+  background:url("assets/brand/drips.svg") center top/contain no-repeat;
+  opacity:.9; pointer-events:none;
+}
