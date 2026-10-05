@@ -2543,3 +2543,12 @@ body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-r
 #page-loja .slot-line--name { width:76%; height:15px; }
 #page-loja .slot-line--price { width:33%; }
 #page-loja .shop-slot .slot-action { background:#ffffff03; border-color:#ffffff0a; margin-top:8px; }
+
+/* Catalog hero: enlarged paint anchored below the final O, without reflow. */
+#page-catalogo .catalog-title-end::after {
+  transform:translateX(calc(-50% - 10px - .32em)) translateY(.55em) scale(1.5);
+  transform-origin:center;
+}
+@media(max-width:760px) {
+  #page-catalogo .catalog-title-end::after { transform:translateX(calc(-50% - 8px - .32em)) translateY(.55em) scale(1.5); }
+}
