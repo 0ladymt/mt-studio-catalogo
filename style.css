@@ -2409,15 +2409,14 @@ body {
 #page-home .mt-home-hero { isolation:isolate; }
 #page-home .mt-home-hero::before {
   content:""; position:absolute; inset:0 calc((100vw - 100%)/-2); z-index:-1;
-  background:radial-gradient(ellipse at 83% 30%,#7736a021,transparent 47%),
-             radial-gradient(ellipse at 10% 85%,#60278015,transparent 43%),#111115;
+  background:transparent;
   pointer-events:none;
 }
 #page-home .mt-home-hero .mt-overline::after { content:none; }
-#page-home .mt-home-hero h2 span { display:inline-block; }
+#page-home .mt-home-hero h2 span { display:inline-block; padding-right:.55em; font-size:.84em; }
 #page-home .mt-home-hero h2 span::after {
-  position:absolute; display:block; right:0; bottom:-22px;
-  width:clamp(76px,24%,130px); height:20px; margin:0;
+  position:absolute; display:block; left:calc(100% - .55em); bottom:.12em;
+  width:.48em; height:.19em; margin:0;
   background-size:100% 100%; transform:rotate(-3deg);
 }
 #page-home .mt-strip {
@@ -2436,5 +2435,21 @@ body {
   #page-home .mt-strip { padding:22px 20px; gap:18px 16px; font-size:.58rem; letter-spacing:.055em; }
   #page-home .mt-strip > span { padding-right:14px; }
   #page-home .mt-strip i { font-size:.55rem; }
-  #page-home .mt-home-hero h2 span::after { bottom:-18px; height:16px; }
+  #page-home .mt-home-hero h2 span::after { bottom:.12em; height:.19em; }
+}
+
+/* Shared public-page surface; header, footer, admin and intro keep their finish. */
+:root { --mt-public-surface:radial-gradient(ellipse at 83% 20%,#7736a021,transparent 47%),radial-gradient(ellipse at 10% 85%,#60278015,transparent 43%),#111115; }
+#content:has(> :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) {
+  background:var(--mt-public-surface); background-attachment:fixed;
+}
+#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos { background:transparent; }
+#page-home::before,#page-home .mt-home-hero::before { content:none; }
+/* Separators occupy the middle of each flexible gap, independent of text width. */
+#page-home .mt-strip { display:grid; grid-template-columns:auto 1fr auto 1fr auto 1fr auto; gap:0; }
+#page-home .mt-strip > span,#page-home .mt-strip > span:last-child { padding:0; flex:initial; text-align:center; }
+#page-home .mt-strip i { position:static; transform:none; text-align:center; }
+@media(max-width:900px) {
+  #page-home .mt-strip { grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr); row-gap:8px; }
+  #page-home .mt-strip > i:nth-child(4) { grid-column:1/-1; }
 }
