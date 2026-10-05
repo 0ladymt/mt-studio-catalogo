@@ -2522,3 +2522,13 @@ body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-r
   #page-home #mtHuman .mt-human__photo { width:min(100%,400px); }
   #page-home #mtHuman .mt-human__copy { max-width:100%; }
 }
+
+/* Loja: title finishing mark and clean top caption only. */
+#page-loja .mt-shop > .mt-page-head .mt-overline::after { content:none; }
+#page-loja .shop-title-end::after {
+  width:clamp(38px,4.2vw,58px); height:22px; margin-left:4px;
+  transform:rotate(-9deg); vertical-align:middle;
+}
+@media(max-width:760px) {
+  #page-loja .shop-title-end::after { width:38px; height:17px; margin-left:4px; }
+}
