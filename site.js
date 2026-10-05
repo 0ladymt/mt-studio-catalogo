@@ -84,7 +84,6 @@
     ["mtHeroPhoto", "kings"],
     ["mtReadyPhoto", "shadows"],
     ["mtCustomPhoto", "shelby"],
-    ["mtShopPhoto", "shadows"],
   ]) {
     const img = document.getElementById(id);
     img.src = source(chosen(name));

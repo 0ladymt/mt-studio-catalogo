@@ -2532,3 +2532,14 @@ body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-r
 @media(max-width:760px) {
   #page-loja .shop-title-end::after { width:38px; height:17px; margin-left:4px; }
 }
+
+/* Loja collection: neutral slots share the real product card/grid. */
+#page-loja .mt-shop-preview > .mt-page-head .mt-overline::after { content:none; }
+#page-loja .shop-slot { pointer-events:none; }
+#page-loja .shop-slot .product-media { background:#19191e; border-bottom:1px solid #ffffff08; }
+#page-loja .shop-slot .product-body { gap:18px; }
+#page-loja .slot-line { display:block; height:10px; border-radius:2px; background:#ffffff09; }
+#page-loja .slot-line--category { width:26%; height:7px; }
+#page-loja .slot-line--name { width:76%; height:15px; }
+#page-loja .slot-line--price { width:33%; }
+#page-loja .shop-slot .slot-action { background:#ffffff03; border-color:#ffffff0a; margin-top:8px; }

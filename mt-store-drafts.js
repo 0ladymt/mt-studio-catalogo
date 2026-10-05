@@ -97,8 +97,7 @@
     shop.replaceChildren();
     const cards=new Map();
     const visible=products.filter(p=>p.status!=="archived");
-    const filtered=visible.filter(p=>!categoryFilter||p.category===categoryFilter).sort((a,b)=>Number(b.featured)-Number(a.featured));
-    document.getElementById("shopEmpty").hidden = visible.length > 0;
+    const filtered=visible.filter(p=>!categoryFilter||({Uniformes:"Packs", "Acessórios":"Variados"}[p.category] || p.category)===categoryFilter).sort((a,b)=>Number(b.featured)-Number(a.featured));
     document.getElementById("shopNoResults").hidden = !visible.length || filtered.length > 0;
     document.getElementById("shopProductCount").textContent = visible.length ? `${filtered.length} ${filtered.length===1?"produto na prévia local":"produtos na prévia local"}` : "Coleção em preparação · novidades em breve";
     document.getElementById("adminProductCount").textContent=products.length;
@@ -135,7 +134,7 @@
         media.append(empty);
       }
       const tag = document.createElement("small");
-      tag.textContent = `${p.category} · ${p.kind === "custom" ? "Encomenda" : "Produto pronto"}`;
+      tag.textContent = `${({Uniformes:"Packs", "Acessórios":"Variados"}[p.category] || p.category)} · ${p.kind === "custom" ? "Encomenda" : "Produto pronto"}`;
       const name = document.createElement("h4");
       name.textContent = p.name;
       const price = document.createElement("strong");
@@ -201,6 +200,18 @@
       list.append(row);
     });
     filtered.forEach(p=>shop.append(cards.get(p.id)));
+    if (!visible.length) {
+      shop.setAttribute("aria-label", "Vitrine de produtos em preparação");
+      for (let i=0; i<6; i++) {
+        const slot=node("article","mt-shop-draft shop-slot");
+        slot.setAttribute("aria-hidden","true");
+        const media=node("div","product-media");
+        const body=node("div","product-body");
+        for (const part of ["category","name","price"]) body.append(node("span",`slot-line slot-line--${part}`));
+        const action=node("button","slot-action"); action.disabled=true; action.tabIndex=-1;
+        body.append(action); slot.append(media,body); shop.append(slot);
+      }
+    } else shop.removeAttribute("aria-label");
   }
   form.addEventListener("submit", (e) => {
     e.preventDefault();
