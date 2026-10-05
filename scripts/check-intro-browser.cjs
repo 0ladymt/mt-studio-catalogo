@@ -38,6 +38,7 @@ const root = path.resolve(__dirname, '..');
       await page.waitForFunction(()=>document.querySelector('.mt-intro')?.classList.contains('is-signed'));
       await page.waitForTimeout(350);
       assert.ok(Number(await page.locator('.mt-intro__signature').evaluate(el=>getComputedStyle(el).opacity))>.5,'signature visible only after paint');
+      assert.equal(await page.locator('.mt-intro__signature img').evaluate(el=>el.src.startsWith('data:image/png') && el.complete && el.naturalWidth===820),true,'official signature receives native paint wear');
       await page.screenshot({path:`/tmp/mt-7g-${width}-signed.png`});
       await page.waitForSelector('.mt-intro',{state:'detached'});
       assert.equal(await replay.evaluate(el=>el===document.activeElement),true);

@@ -93,15 +93,17 @@
     ["#09080c",13,[493,408,459,280,412,199,393,221]],
     ["#09080c",13,[516,410,564,274,612,196,632,214]],
   ];
-  const paintDuration = 3500, settleDuration = 180;
+  const paintDuration = 4400, settleDuration = 180;
+  let cachedPaint = null, cachedTag = null;
   const paintOrder = gestures.map((_, index) => index);
   function preparePaint() {
+    if (cachedPaint) return cachedPaint;
     let seed=290926;
     const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
     const dabs=[],drips=[];
     paintOrder.forEach((gestureIndex,pass)=>{
       const g=gestureIndex,[color,width,p]=gestures[g];
-      const count=240;
+      const count=120;
       for(let n=0;n<=count;n++){
         const t=n/count,u=1-t;
         const x=u*u*u*p[0]+3*u*u*t*p[2]+3*u*t*t*p[4]+t*t*t*p[6];
@@ -118,13 +120,13 @@
         const time=(pass+Math.pow(t,.88))/paintOrder.length;
         // Dense wet pigment, deposited at the moving nozzle rather than revealed.
         // Overlapping elliptical droplets build substantial, irregular paint.
-        for(let j=0;j<10;j++){
+        for(let j=0;j<6;j++){
           const angle=random()*Math.PI*2,dist=Math.sqrt(random())*radius*.38;
           const px=x+wobbleX+Math.cos(angle)*dist,py=y+wobbleY+Math.sin(angle)*dist;
           if(skipHighlight&&j>5)continue;
-          dabs.push({x:px,y:py,r:radius*(.18+random()*.24),color,alpha:.3+random()*.4,aspect:.55+random()*.6,rotation:random()*Math.PI,time});
+          dabs.push({x:px,y:py,r:radius*(.24+random()*.28),color,alpha:.42+random()*.4,aspect:.55+random()*.6,rotation:random()*Math.PI,time});
         }
-        for(let j=0;j<14;j++){
+        for(let j=0;j<5;j++){
           const angle=random()*Math.PI*2,dist=random()**.72*radius*.52;
           const px=x+wobbleX+Math.cos(angle)*dist,py=y+wobbleY+Math.sin(angle)*dist;
           // Stationary wall pores break coverage, even on overlapping passes.
@@ -133,11 +135,11 @@
           dabs.push({x:px,y:py,r:.35+random()**2*3.6,color,
             alpha:(.24+random()*.59)*coverage*(highlight ? .72 : 1),aspect:.6+random()*.65,rotation:random()*Math.PI,time});
         }
-        for(let j=0;j<9;j++){
+        for(let j=0;j<4;j++){
           const angle=random()*Math.PI*2,dist=radius*(.4+random()*.55);
           dabs.push({x:x+Math.cos(angle)*dist,y:y+Math.sin(angle)*dist,r:.25+random()*.7,color,alpha:.10+random()*.22,time});
         }
-        if((n===70||n===175)&&width>25&&g%4===0){
+        if((n===35||n===87)&&width>25&&g%4===0){
           drips.push({x,y:y+radius*.3,color,start:time,length:55+random()*175,width:1.7+random()*5.5,lean:random()*7-3.5});
           for(let j=0;j<24;j++){
             const angle=random()*Math.PI*2,dist=radius*(.6+random()*1.2);
@@ -147,11 +149,11 @@
       }
     });
     // Surface wear is applied to deposited paint only, never a butterfly mask.
-    for(let n=0;n<52000;n++){
-      dabs.push({x:random()*1000,y:random()*1000,r:.25+random()**3*1.9,color:"#000",alpha:.3+random()*.6,time:.86+random()*.14,erase:true});
+    for(let n=0;n<10000;n++){
+      dabs.push({x:random()*1000,y:random()*1000,r:.25+random()**3*1.9,color:"#000",alpha:.3+random()*.6,time:random(),erase:true});
     }
     dabs.sort((a,b)=>a.time-b.time);
-    return {dabs,drips};
+    return cachedPaint = {dabs,drips};
   }
   async function play() {
     if (reduced.matches) return;
@@ -163,7 +165,40 @@
     root.setAttribute("aria-modal", "true");
     root.setAttribute("aria-label", "Borboleta da MT Studio sendo pintada");
     root.innerHTML =
-      '<canvas aria-label="Borboleta pintada por traços de spray"></canvas><span class="mt-intro__caption">UM TRAÇO. UMA IDENTIDADE.</span><div class="mt-intro__signature"><img src="assets/brand/signature.svg?v=20260928-2" alt="MT Studio"></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
+      '<canvas aria-label="Borboleta pintada por traços de spray"></canvas><span class="mt-intro__caption">UM TRAÇO. UMA IDENTIDADE.</span><div class="mt-intro__signature" style="transform:translate(-50%,0);transition:opacity .45s"><img src="assets/brand/signature.svg?v=20260928-2" alt="MT Studio"></div><button class="mt-intro__skip" type="button">Pular abertura ↗</button>';
+    // Texture the approved lettering once; reuse it on replay. This does not
+    // sample or reveal a finished butterfly: only the existing signature asset.
+    const signature = root.querySelector(".mt-intro__signature img");
+    function paintTag() {
+      if (finished) return;
+      if (cachedTag) { signature.src = cachedTag; return; }
+      const tag = document.createElement("canvas");
+      tag.width = 820; tag.height = 420;
+      const tc = tag.getContext("2d");
+      let seed = 4917;
+      const random = () => ((seed = (Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+      // Thin overspray follows the official mark, rather than a floating glow.
+      tc.globalAlpha = .10;
+      for (let n=0;n<12;n++) tc.drawImage(signature,22+(random()-.5)*9,18+(random()-.5)*7,775,360);
+      tc.globalAlpha = .92; tc.drawImage(signature,22,18,775,360);
+      tc.globalCompositeOperation = "destination-out";
+      for (let n=0;n<4800;n++) {
+        tc.globalAlpha = .25+random()*.55;
+        tc.beginPath(); tc.arc(random()*820,random()*390,.3+random()**3*2.5,0,Math.PI*2); tc.fill();
+      }
+      tc.globalCompositeOperation = "source-over";
+      // Restrained runs underneath the lettering and purple underline.
+      for (const [x,y,length,color] of [[276,242,36,"#ddd1e3"],[435,301,27,"#ddd1e3"],[613,329,53,"#a45cd0"],[720,335,30,"#a45cd0"]]) {
+        tc.strokeStyle=color; tc.lineWidth=1.4; tc.globalAlpha=.65;
+        tc.beginPath(); tc.moveTo(x,y); tc.quadraticCurveTo(x+2,y+length*.7,x+1,y+length); tc.stroke();
+      }
+      for(let n=0;n<80;n++) {
+        tc.globalAlpha=.12+random()*.22; tc.fillStyle=n%3?"#cdbddd":"#a45cd0";
+        tc.beginPath(); tc.arc(60+random()*710,280+random()*93,.4+random()*1.2,0,Math.PI*2); tc.fill();
+      }
+      cachedTag = tag.toDataURL(); signature.src = cachedTag;
+    }
+    signature.addEventListener?.("load",paintTag,{once:true});
     const siblings = [...document.body.children].filter(
       (el) => !["SCRIPT"].includes(el.tagName),
     );
@@ -252,7 +287,7 @@
       output.width = width * ratio;
       output.height = height * ratio;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      buildWall(width,height);
+      buildWall(Math.ceil(width*.65),Math.ceil(height*.65));
       side = Math.min(width * 0.90, height * 0.76, 880);
       left = (width - side) / 2;
       top = (height - side) / 2 - height*.045;
@@ -280,20 +315,24 @@
     function frame(now) {
       if (finished) return;
       const progress = Math.min(1, (now - start) / paintDuration);
-      while (index < dabs.length && dabs[index].time <= progress) {
+      // Bound a frame's pigment work; delayed frames catch up without a burst.
+      const deadline = performance.now() + 5;
+      let painted = 0;
+      while (index < dabs.length && dabs[index].time <= progress && painted < 1400 && performance.now() < deadline) {
+        painted++;
         const d = dabs[index++];
         pc.globalCompositeOperation=d.erase?"destination-out":"source-over";
         pc.fillStyle = d.color;pc.globalAlpha=d.alpha;
         pc.beginPath();pc.ellipse(d.x,d.y,d.r,d.r*(d.aspect||1),d.rotation||0,0,Math.PI*2);pc.fill();
       }
       draw();
-      if (progress < 1) {
+      if (progress < 1 || index < dabs.length) {
         raf = requestAnimationFrame(frame);
       } else {
         timeout = setTimeout(()=>{
           if(finished)return;
           root.classList.add("is-signed");
-          timeout=setTimeout(finish,850);
+          timeout=setTimeout(finish,950);
         },settleDuration);
       }
     }

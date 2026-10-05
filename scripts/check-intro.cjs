@@ -15,15 +15,15 @@ function run(w,h,reduced=false){
 }
 fs.mkdirSync('/tmp/mt-intro-qa',{recursive:true});
 const q=run(1366,768);assert(q.root);assert(q.replay.inert);
-for(const t of [700,1800,3520,3650,3750]){q.advance(t);fs.writeFileSync('/tmp/mt-intro-qa/frame-'+t+'.png',q.root.canvas.toBuffer('image/png'));if(t<3680)assert(!q.root.classList.contains('is-signed'));else assert(q.root.classList.contains('is-signed'));}
+for(const t of [700,1800,4350,4500,4700]){q.advance(t);fs.writeFileSync('/tmp/mt-intro-qa/frame-'+t+'.png',q.root.canvas.toBuffer('image/png'));if(t<4580)assert(!q.root.classList.contains('is-signed'));else assert(q.root.classList.contains('is-signed'));}
 const pigment=q.paintCanvases[0],size=pigment.width;const pixels=pigment.getContext('2d').getImageData(0,0,size,size).data;
 for(let n=0;n<size;n++)for(const [x,y] of [[n,0],[n,size-1],[0,n],[size-1,n]])assert.equal(pixels[(y*size+x)*4+3],0,'Pigment canvas must retain transparent boundaries');
 q.advance(9800);assert(q.root.removed);assert(!q.replay.inert);assert.equal(q.body.style.overflow,'');assert.equal(q.focus,q.replay);
-const tablet=run(768,1024);tablet.advance(3650);fs.writeFileSync('/tmp/mt-intro-qa/tablet.png',tablet.root.canvas.toBuffer('image/png'));tablet.root.button.onclick();tablet.advance(8200);assert(tablet.root.removed);
-const mobile=run(390,844);mobile.advance(3650);fs.writeFileSync('/tmp/mt-intro-qa/mobile.png',mobile.root.canvas.toBuffer('image/png'));mobile.root.button.onclick();mobile.advance(8200);assert(mobile.root.removed);
+const tablet=run(768,1024);tablet.advance(4700);fs.writeFileSync('/tmp/mt-intro-qa/tablet.png',tablet.root.canvas.toBuffer('image/png'));tablet.root.button.onclick();tablet.advance(8200);assert(tablet.root.removed);
+const mobile=run(390,844);mobile.advance(4700);fs.writeFileSync('/tmp/mt-intro-qa/mobile.png',mobile.root.canvas.toBuffer('image/png'));mobile.root.button.onclick();mobile.advance(8200);assert(mobile.root.removed);
 const esc=run(1366,768);esc.advance(1000);esc.listeners.keydown({key:'Escape'});esc.advance(1600);assert(esc.root.removed);
 const reduced=run(390,844,true);assert(!reduced.root);reduced.replay.click();assert(!reduced.root);
 const change=run(390,844);change.media.matches=true;change.media.change();change.advance(600);assert(change.root.removed);
 assert(!/graffiti\.(svg|png)|reference\.decode|clip\(|getImageData/.test(code));
-const crypto=require('crypto');const frames=[700,1800,3520].map(t=>fs.readFileSync('/tmp/mt-intro-qa/frame-'+t+'.png'));assert.equal(new Set(frames.map(b=>crypto.createHash('sha256').update(b).digest('hex'))).size,3,'Painting must change progressively');
+const crypto=require('crypto');const frames=[700,1800,4350].map(t=>fs.readFileSync('/tmp/mt-intro-qa/frame-'+t+'.png'));assert.equal(new Set(frames.map(b=>crypto.createHash('sha256').update(b).digest('hex'))).size,3,'Painting must change progressively');
 console.log('PASSOU: construção progressiva, intervalo, encerramento, pular, Escape, redução de movimento, foco e inert. Canvas desktop/tablet/mobile gerados; quadros intermediários distintos. Simulação DOM, não navegador.');
