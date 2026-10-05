@@ -2629,8 +2629,8 @@ body:has(#page-catalogo.active) { background:var(--mt-public-surface); backgroun
 body:has(#page-catalogo.active) .mt-wall-marks { display:none; }
 #page-sobre .mt-about-mission > strong { font-size:clamp(2rem,3vw,3rem); }
 
-/* Approved ink extracted from the source art. One continuous surface; sparse
-   document-bound compositions, outside the protected content width. */
+/* Intact compositions extracted from approved art, not isolated stickers.
+   Each group keeps its native ink relationships and scrolls with the document. */
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) { background:#0b090f; }
 #content:has(> :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) { background:transparent; }
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > footer { background:transparent; }
@@ -2644,13 +2644,26 @@ body:has(#page-catalogo.active) .mt-background-page[data-page="catalogo"],
 body:has(#page-sobre.active) .mt-background-page[data-page="sobre"],
 body:has(#page-redes.active) .mt-background-page[data-page="redes"],
 body:has(#page-projetos.active) .mt-background-page[data-page="projetos"] { display:block; }
-.mt-background-ink {
-  --art-width:min(var(--art-size),clamp(32px,calc((100vw - 1280px)/2 - 16px),160px));
-  position:absolute; top:var(--art-top); width:var(--art-width); height:auto;
-  pointer-events:none; user-select:none;
+/* At 1440px the unchanged 1280px content leaves an 80px outer margin.
+   Larger native groups bleed off the viewport, yielding to the protected content
+   rather than shrinking all marks into tiny icons. Wider screens show more art. */
+.mt-background-group {
+  --group-size:clamp(var(--art-size),calc((100vw - 1280px)/2 - 16px),280px);
+  --group-gutter:max(0px,calc((100vw - 1280px)/2 - 8px));
+  position:absolute; top:var(--art-top,auto); bottom:var(--art-bottom,auto);
+  width:min(var(--group-size),var(--group-gutter));
+  overflow:clip; pointer-events:none; user-select:none;
 }
-.mt-background-ink--left { left:max(8px,calc((100% - 1280px)/2 - var(--art-width) - 16px)); }
-.mt-background-ink--right { right:max(8px,calc((100% - 1280px)/2 - var(--art-width) - 16px)); }
+.mt-background-group img { display:block; width:var(--group-size); max-width:none; height:auto; pointer-events:none; }
+.mt-background-group--left {
+  left:max(0px,calc((100% - 1280px)/2 - var(--group-size) - 16px));
+  mask-image:linear-gradient(to right,#000 calc(100% - 18px),transparent);
+}
+.mt-background-group--right {
+  right:max(0px,calc((100% - 1280px)/2 - var(--group-size) - 16px));
+  mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent);
+}
+.mt-background-group--right img { margin-left:calc(min(var(--group-size),var(--group-gutter)) - var(--group-size)); }
 @media(max-width:1000px) {
   /* Compact screens preserve the approved content spacing and clear surface. */
   body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > .mt-background-art { display:none; }
