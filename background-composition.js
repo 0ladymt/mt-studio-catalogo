@@ -12,9 +12,9 @@
     // Home art direction: three complete compositions, each named for its
     // content section. Choice, catalogue and portrait deliberately stay quiet.
     home: [
-      { ...ink('.mt-home-hero','top',8,'home-hero','left',210,.9,-32), composed: true },
-      { ...ink('.mt-section:has(#mtHomeProjects)','top',34,'home-closing','right',165,.56,-35), composed: true },
-      { ...ink('.mt-cta','top',-18,'home-butterflies','right',185,.82,-36), composed: true },
+      { ...ink('.mt-home-hero','top',-16,'home-hero','left',210,.9,-32), composed: true, softTop: true },
+      { ...ink('.mt-section:has(#mtHomeProjects)','top',34,'home-closing','right',210,.56,-60), composed: true },
+      { ...ink('.mt-cta','top',-18,'home-butterflies','right',215,.82,-60), composed: true, placementWidth: 185 },
     ],
     loja: [
       ink('.mt-page-head','top',18,'loja-crown','left',65,.78,1,-7),
@@ -100,6 +100,7 @@
       const element = document.createElement('div');
       element.className = spec.composed ? `mt-home-moment mt-home-moment--${spec.side}` : `mt-background-fragment mt-background-fragment--${spec.side}`;
       element.dataset.anchor = spec.selector || 'catalogue-row';
+      if (spec.softTop) element.classList.add('mt-home-moment--soft-top');
       const image = document.createElement('img'); image.src = spec.composed ? `assets/backgrounds/groups/${spec.asset}.png` : source(spec.asset); image.alt = '';
       image.addEventListener('load', schedule, { once: true });
       element.append(image); layer.append(element);
@@ -121,7 +122,8 @@
       const width = entry.width * Math.min(entry.composed ? 1.25 : 1.65, Math.max(1, (innerWidth - 1280) / 700));
       const height = width * (image.naturalHeight / image.naturalWidth || 1);
       const boundary = anchor.getBoundingClientRect()[entry.edge] + scrollY;
-      const top = Math.max(start, Math.min(boundary + entry.offset, end - height - 18));
+      const placementHeight = entry.placementWidth ? height * entry.placementWidth / entry.width : height;
+      const top = Math.max(entry.softTop ? start - 28 : start, Math.min(boundary + entry.offset, end - placementHeight - 18));
       element.style.cssText = `--ink-top:${top}px;--ink-width:${width}px;--ink-height:${height}px;--ink-opacity:${entry.opacity};--ink-inset:${entry.inset}px;--ink-angle:${entry.angle}deg`;
     }
   }

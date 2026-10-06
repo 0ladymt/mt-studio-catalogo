@@ -2731,3 +2731,6 @@ body:has(#page-home.active) .mt-home-moment--left img { left:var(--ink-inset); }
 body:has(#page-home.active) .mt-home-moment--right img { right:var(--ink-inset); }
 body:has(#page-home.active) .mt-home-moment--left { mask-image:linear-gradient(to right,#000 calc(100% - 12px),transparent); }
 body:has(#page-home.active) .mt-home-moment--right { mask-image:linear-gradient(to left,#000 calc(100% - 12px),transparent); }
+
+/* Soft ink entry at the hero's upper edge; no change to the artwork itself. */
+body:has(#page-home.active) .mt-home-moment--soft-top img { mask-image:linear-gradient(to bottom,transparent,#000 24px); }
