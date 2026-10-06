@@ -2711,3 +2711,23 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   #page-home #mtHuman { padding-block:32px; }
   #page-home .mt-cta { padding-top:48px; }
 }
+
+/* Home only: complete ink moments tied to hero, portfolio and closing CTA.
+   Exterior clipping lets the native composition emerge from the viewport edge;
+   no vertical frame, individual filler icons, or changes to content geometry. */
+body:has(#page-home.active) .mt-home-moment {
+  position:absolute; top:var(--ink-top);
+  width:max(0px,calc((100vw - 1280px)/2 - 12px));
+  height:var(--ink-height); overflow:hidden;
+  pointer-events:none; user-select:none;
+}
+body:has(#page-home.active) .mt-home-moment--left { left:0; }
+body:has(#page-home.active) .mt-home-moment--right { right:0; }
+body:has(#page-home.active) .mt-home-moment img {
+  position:absolute; top:0; width:var(--ink-width); max-width:none;
+  height:auto; opacity:var(--ink-opacity); pointer-events:none;
+}
+body:has(#page-home.active) .mt-home-moment--left img { left:var(--ink-inset); }
+body:has(#page-home.active) .mt-home-moment--right img { right:var(--ink-inset); }
+body:has(#page-home.active) .mt-home-moment--left { mask-image:linear-gradient(to right,#000 calc(100% - 12px),transparent); }
+body:has(#page-home.active) .mt-home-moment--right { mask-image:linear-gradient(to left,#000 calc(100% - 12px),transparent); }

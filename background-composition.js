@@ -9,23 +9,12 @@
   const ink = (selector, edge, offset, asset, side, width, opacity, inset = -10, angle = 0) =>
     ({ selector, edge, offset, asset, side, width, opacity, inset, angle });
   const plans = {
+    // Home art direction: three complete compositions, each named for its
+    // content section. Choice, catalogue and portrait deliberately stay quiet.
     home: [
-      ink('.mt-home-hero','top',22,'home-brush','left',170,.78,-46),
-      ink('.mt-home-hero','top',82,'home-crown','left',68,.88,3,-9),
-      ink('.mt-home-hero','bottom',-220,'home-butterfly-purple','right',120,.78,-32),
-      ink('.mt-strip','bottom',24,'home-heart','left',31,.5,12),
-      ink('.mt-split','top',110,'home-brush','right',105,.38,-28),
-      ink('.mt-split','bottom',-68,'home-butterfly-white','left',66,.52,-15),
-      ink('.mt-section:has(#mtHomeProjects)','top',55,'home-brush','left',130,.48,-50),
-      ink('#mtHomeProjects','bottom',-220,'home-heart','right',32,.45,9),
-      ink('.mt-editorial--carousel','top',65,'home-brush','right',115,.48,-34),
-      ink('.mt-editorial--carousel','bottom',-60,'home-crown','left',48,.45,-8,-12),
-      ink('#mtHuman','top',108,'home-butterfly-white','right',68,.58,-8),
-      ink('#mtHuman','bottom',-110,'home-brush','left',135,.48,-45),
-      ink('.mt-cta','top',25,'home-heart','left',34,.5,10),
-      ink('.mt-cta','bottom',-330,'home-brush','right',170,.66,-44),
-      ink('.mt-cta','bottom',-220,'home-butterfly-purple','right',110,.85,-26),
-      ink('.mt-cta','bottom',-100,'home-butterfly-white','left',78,.7,-15),
+      { ...ink('.mt-home-hero','top',8,'home-hero','left',210,.9,-32), composed: true },
+      { ...ink('.mt-section:has(#mtHomeProjects)','top',34,'home-closing','right',165,.56,-35), composed: true },
+      { ...ink('.mt-cta','top',-18,'home-butterflies','right',185,.82,-36), composed: true },
     ],
     loja: [
       ink('.mt-page-head','top',18,'loja-crown','left',65,.78,1,-7),
@@ -109,9 +98,9 @@
       const anchor = spec.anchor || page.querySelector(spec.selector);
       if (!anchor) return [];
       const element = document.createElement('div');
-      element.className = `mt-background-fragment mt-background-fragment--${spec.side}`;
+      element.className = spec.composed ? `mt-home-moment mt-home-moment--${spec.side}` : `mt-background-fragment mt-background-fragment--${spec.side}`;
       element.dataset.anchor = spec.selector || 'catalogue-row';
-      const image = document.createElement('img'); image.src = source(spec.asset); image.alt = '';
+      const image = document.createElement('img'); image.src = spec.composed ? `assets/backgrounds/groups/${spec.asset}.png` : source(spec.asset); image.alt = '';
       image.addEventListener('load', schedule, { once: true });
       element.append(image); layer.append(element);
       return [{ ...spec, anchor, element, image }];
@@ -129,7 +118,7 @@
     art.style.height = `${end}px`;
     for (const entry of entries) {
       const { anchor, element, image } = entry;
-      const width = entry.width * Math.min(1.65, Math.max(1, (innerWidth - 1280) / 700));
+      const width = entry.width * Math.min(entry.composed ? 1.25 : 1.65, Math.max(1, (innerWidth - 1280) / 700));
       const height = width * (image.naturalHeight / image.naturalWidth || 1);
       const boundary = anchor.getBoundingClientRect()[entry.edge] + scrollY;
       const top = Math.max(start, Math.min(boundary + entry.offset, end - height - 18));
