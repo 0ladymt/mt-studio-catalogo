@@ -17,12 +17,8 @@
       { ...ink('.mt-cta','top',-18,'home-butterflies','right',215,.82,-82), composed: true, placementWidth: 185 },
     ],
     loja: [
-      ink('.mt-page-head','top',18,'loja-crown','left',65,.78,1,-7),
-      ink('.mt-page-head','bottom',-55,'loja-stroke','right',110,.45,-35),
-      ink('.shop-collections','bottom',-45,'loja-heart','left',31,.45,12),
-      ink('.mt-shop-preview','top',95,'loja-stroke','left',94,.35,-30),
-      ink('.mt-shop-preview','bottom',-280,'loja-heart','right',34,.42,10),
-      ink('.mt-shop-preview','bottom',-140,'loja-stroke','right',145,.55,-50),
+      { ...ink('.mt-page-head','top',-16,'loja-hero','left',230,.82,-29), composed: true, softTop: true },
+      { ...ink('.mt-shop-preview','bottom',-610,'loja-collection','right',275,.72,-90), composed: true, footerFinish: true },
     ],
     sobre: [
       ink('.mt-about','top',22,'sobre-brush','left',162,.75,-55),
@@ -123,7 +119,7 @@
       const height = width * (image.naturalHeight / image.naturalWidth || 1);
       const boundary = anchor.getBoundingClientRect()[entry.edge] + scrollY;
       const placementHeight = entry.placementWidth ? height * entry.placementWidth / entry.width : height;
-      const top = Math.max(entry.softTop ? start - 28 : start, Math.min(boundary + entry.offset, end - placementHeight - 18));
+      const top = entry.footerFinish ? end - height - 18 : Math.max(entry.softTop ? start - 28 : start, Math.min(boundary + entry.offset, end - placementHeight - 18));
       element.style.cssText = `--ink-top:${top}px;--ink-width:${width}px;--ink-height:${height}px;--ink-opacity:${entry.opacity};--ink-inset:${entry.inset}px;--ink-angle:${entry.angle}deg`;
     }
   }

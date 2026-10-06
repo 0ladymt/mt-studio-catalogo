@@ -2734,3 +2734,24 @@ body:has(#page-home.active) .mt-home-moment--right { mask-image:linear-gradient(
 
 /* Soft ink entry at the hero's upper edge; no change to the artwork itself. */
 body:has(#page-home.active) .mt-home-moment--soft-top img { mask-image:linear-gradient(to bottom,transparent,#000 24px); }
+
+/* Loja only: opening and collection closing; middle remains clear. */
+body:has(#page-loja.active) .mt-home-moment {
+  position:absolute; top:var(--ink-top);
+  width:max(0px,calc((100vw - 1280px)/2 - 12px));
+  height:var(--ink-height); overflow:hidden;
+  pointer-events:none; user-select:none;
+}
+body:has(#page-loja.active) .mt-home-moment--left { left:0; }
+body:has(#page-loja.active) .mt-home-moment--right { right:0; }
+body:has(#page-loja.active) .mt-home-moment img {
+  position:absolute; top:0; width:var(--ink-width); max-width:none;
+  height:auto; opacity:var(--ink-opacity); pointer-events:none;
+}
+body:has(#page-loja.active) .mt-home-moment--left img { left:var(--ink-inset); }
+body:has(#page-loja.active) .mt-home-moment--right img { right:var(--ink-inset); }
+body:has(#page-loja.active) .mt-home-moment--left { mask-image:linear-gradient(to right,#000 calc(100% - 12px),transparent); }
+body:has(#page-loja.active) .mt-home-moment--right { mask-image:linear-gradient(to left,#000 calc(100% - 12px),transparent); }
+
+/* Soft ink entry at the hero's upper edge; no change to the artwork itself. */
+body:has(#page-loja.active) .mt-home-moment--soft-top img { mask-image:linear-gradient(to bottom,transparent,#000 24px); }
