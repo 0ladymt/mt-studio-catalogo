@@ -2711,3 +2711,24 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-footer__brand img { width:174px; }
   .mt-footer__bottom { flex-direction:column; gap:10px; margin-top:32px; line-height:1.7; }
 }
+
+/* Requested spacing and colour refinements; content grids and footer unchanged. */
+#page-home .mt-section:has(> .mt-split) { padding-block:clamp(48px,4.5vw,64px) 40px; }
+#page-home .mt-section:has(> #mtHomeProjects) { padding-block:32px 48px; }
+#page-home .mt-editorial--carousel { padding-block:28px 48px; margin-top:0; }
+#page-home #mtHuman { padding-block:40px 32px; }
+#page-home .mt-cta { padding-top:64px; }
+#page-home .mt-cta::after { content:none; }
+#page-loja .mt-shop > .mt-page-head > p { justify-self:end; }
+#page-sobre .mt-about-mission { background:var(--purple); color:#fff; }
+#page-redes .social-icon { color:var(--purple); }
+@media(max-width:1000px) {
+  #page-loja .mt-shop > .mt-page-head > p { justify-self:start; }
+}
+@media(max-width:760px) {
+  #page-home .mt-section:has(> .mt-split) { padding-block:48px 32px; }
+  #page-home .mt-section:has(> #mtHomeProjects) { padding-block:32px 36px; }
+  #page-home .mt-editorial--carousel { padding-block:24px 32px; }
+  #page-home #mtHuman { padding-block:32px; }
+  #page-home .mt-cta { padding-top:48px; }
+}
