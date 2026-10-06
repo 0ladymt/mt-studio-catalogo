@@ -13,8 +13,8 @@
     // content section. Choice, catalogue and portrait deliberately stay quiet.
     home: [
       { ...ink('.mt-home-hero','top',-16,'home-hero','left',210,.9,-32), composed: true, softTop: true },
-      { ...ink('.mt-section:has(#mtHomeProjects)','top',34,'home-closing','right',210,.56,-60), composed: true },
-      { ...ink('.mt-cta','top',-18,'home-butterflies','right',215,.82,-60), composed: true, placementWidth: 185 },
+      { ...ink('.mt-section:has(#mtHomeProjects)','top',34,'home-closing','right',284,.56,-90), composed: true },
+      { ...ink('.mt-cta','top',-18,'home-butterflies','right',215,.82,-82), composed: true, placementWidth: 185 },
     ],
     loja: [
       ink('.mt-page-head','top',18,'loja-crown','left',65,.78,1,-7),
