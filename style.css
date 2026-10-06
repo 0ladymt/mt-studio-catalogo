@@ -2629,55 +2629,34 @@ body:has(#page-catalogo.active) { background:var(--mt-public-surface); backgroun
 body:has(#page-catalogo.active) .mt-wall-marks { display:none; }
 #page-sobre .mt-about-mission > strong { font-size:clamp(2rem,3vw,3rem); }
 
-/* Intact compositions extracted from approved art, not isolated stickers.
-   Each group keeps its native ink relationships and scrolls with the document. */
+/* Approved transparent fragments, anchored to content boundaries. The exterior
+   lanes never change content geometry; ink may bleed through viewport edges. */
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) { background:#0b090f; }
 #content:has(> :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) { background:transparent; }
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) .mt-wall-marks { display:none; }
 .mt-background-art { display:none; position:absolute; inset:0; z-index:-1; overflow:clip; pointer-events:none; }
 body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > .mt-background-art { display:block; }
-.mt-background-page { display:none; position:absolute; inset:0; pointer-events:none; }
-body:has(#page-home.active) .mt-background-page[data-page="home"],
-body:has(#page-loja.active) .mt-background-page[data-page="loja"],
-body:has(#page-catalogo.active) .mt-background-page[data-page="catalogo"],
-body:has(#page-sobre.active) .mt-background-page[data-page="sobre"],
-body:has(#page-redes.active) .mt-background-page[data-page="redes"],
-body:has(#page-projetos.active) .mt-background-page[data-page="projetos"] { display:block; }
-/* At 1440px the unchanged 1280px content leaves an 80px outer margin.
-   Larger native groups bleed off the viewport, yielding to the protected content
-   rather than shrinking all marks into tiny icons. Wider screens show more art. */
-.mt-background-group {
-  --group-size:clamp(var(--art-size),calc((100vw - 1280px)/2 - 16px),280px);
-  --group-gutter:max(0px,calc((100vw - 1280px)/2 - 8px));
-  position:absolute; top:var(--art-top,auto); bottom:var(--art-bottom,auto);
-  width:min(var(--group-size),var(--group-gutter));
-  overflow:clip; pointer-events:none; user-select:none;
+.mt-background-page { position:absolute; inset:0; pointer-events:none; }
+.mt-background-fragment {
+  --ink-lane:max(0px,calc((100vw - 1280px)/2 - 12px));
+  position:absolute; top:var(--ink-top); width:var(--ink-lane);
+  height:var(--ink-height); overflow:clip; pointer-events:none; user-select:none;
 }
-.mt-background-group img { display:block; width:var(--group-size); max-width:none; height:auto; pointer-events:none; }
-.mt-background-group--left {
-  left:max(0px,calc((100% - 1280px)/2 - var(--group-size) - 16px));
-  mask-image:linear-gradient(to right,#000 calc(100% - 18px),transparent);
+.mt-background-fragment--left { left:0; }
+.mt-background-fragment--right { right:0; }
+.mt-background-fragment img {
+  position:absolute; top:0; width:var(--ink-width); height:auto;
+  max-width:none; pointer-events:none; transform:rotate(var(--ink-angle,0deg));
+  opacity:var(--ink-opacity,.65);
 }
-.mt-background-group--right {
-  right:max(0px,calc((100% - 1280px)/2 - var(--group-size) - 16px));
-  mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent);
-}
-.mt-background-group--right img { margin-left:calc(min(var(--group-size),var(--group-gutter)) - var(--group-size)); }
-@media(max-width:1000px) {
-  /* Compact screens preserve the approved content spacing and clear surface. */
-  body:has(#content > :is(#page-home,#page-loja,#page-catalogo,#page-sobre,#page-redes,#page-projetos).active) > .mt-background-art { display:none; }
+.mt-background-fragment--left img { left:var(--ink-inset,0px); }
+.mt-background-fragment--right img { right:var(--ink-inset,0px); }
+@media(max-width:1300px) {
+  /* There is no safe exterior lane at compact widths. Existing content stays
+     untouched instead of squeezing desktop artwork between text and screen. */
+  body:has(#content > .page.active) > .mt-background-art { display:none; }
 }
 
-/* Opening / development / closing are anchored to actual page sections. Ink
-   dissolves into the same surface; the quieter middle leaves content in charge. */
-.mt-background-group { opacity:.84; }
-.mt-background-group[data-region="opening"] { opacity:.94; }
-.mt-background-group[data-region="development"] { opacity:.48; }
-.mt-background-group[data-region="closing"] { opacity:.78; }
-.mt-background-group[hidden] { display:none; }
-.mt-background-group img {
-  mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 84%,transparent);
-}
 /* Institutional footer: deliberately distinct plum/graphite finish, no texture. */
 body > footer.mt-footer,
 body:has(#content > .page.active) > footer.mt-footer {
