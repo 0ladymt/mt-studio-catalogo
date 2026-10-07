@@ -78,6 +78,8 @@
       .split("/")
       .map(encodeURIComponent)
       .join("/");
+  const imageSource = (path = "") =>
+    path.split("/").map(encodeURIComponent).join("/");
   const chosen = (name) =>
     projects.find((p) => p.titulo.toLowerCase().includes(name)) || projects[0];
   for (const [id, name] of [
@@ -101,6 +103,133 @@
     img.alt = project.titulo;
     img.loading = "lazy";
     frame.append(img);
+    const photos = [...new Set([project.capa, ...(project.fotos || [])].filter(Boolean))];
+    let currentPhoto = Math.max(0, photos.indexOf(project.capa));
+    let changingPhoto = false;
+    let suppressProjectClick = false;
+    let touchStart = null;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    if (photos.length > 1) {
+      frame.classList.add("mt-project__gallery");
+      frame.setAttribute("aria-label", `${project.titulo}: galeria com ${photos.length} imagens`);
+      img.classList.add("mt-project__gallery-layer", "is-active");
+      const standby = new Image();
+      standby.className = "mt-project__gallery-layer";
+      standby.alt = "";
+      standby.setAttribute("aria-hidden", "true");
+      frame.append(standby);
+      let activeLayer = img;
+      let standbyLayer = standby;
+      const counter = document.createElement("span");
+      counter.className = "mt-project__counter";
+      const updateCounter = () => {
+        counter.textContent = `${String(currentPhoto + 1).padStart(2, "0")} / ${String(photos.length).padStart(2, "0")}`;
+      };
+      updateCounter();
+      frame.append(counter);
+
+      const photoCache = new Map();
+      const preloadPhoto = (index) => {
+        if (index < 0 || index >= photos.length) return Promise.resolve("");
+        if (photoCache.has(index)) return photoCache.get(index);
+        const src = imageSource(photos[index]);
+        const ready = new Promise((resolve, reject) => {
+          const loader = new Image();
+          loader.onload = async () => {
+            try { await loader.decode?.(); } catch (_) { /* The loaded bitmap is still usable. */ }
+            resolve(src);
+          };
+          loader.onerror = reject;
+          loader.src = src;
+        });
+        photoCache.set(index, ready);
+        return ready;
+      };
+      const preloadAround = () => {
+        [currentPhoto - 1, currentPhoto + 1].forEach((index) => {
+          preloadPhoto(index).catch(() => photoCache.delete(index));
+        });
+      };
+      const showPhoto = async (nextIndex, direction) => {
+        if (changingPhoto || nextIndex < 0 || nextIndex >= photos.length) return;
+        changingPhoto = true;
+        let src;
+        try {
+          src = await preloadPhoto(nextIndex);
+        } catch (_) {
+          photoCache.delete(nextIndex);
+          changingPhoto = false;
+          return;
+        }
+        standbyLayer.src = src;
+        standbyLayer.alt = `${project.titulo}, imagem ${nextIndex + 1} de ${photos.length}`;
+        standbyLayer.removeAttribute("aria-hidden");
+        try { await standbyLayer.decode?.(); } catch (_) { /* Already preloaded. */ }
+
+        currentPhoto = nextIndex;
+        updateCounter();
+        const enteringClass = direction > 0 ? "is-entering-forward" : "is-entering-back";
+        standbyLayer.classList.add(enteringClass);
+
+        let finished = false;
+        let finishTimer = 0;
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(finishTimer);
+          activeLayer.classList.remove("is-active");
+          activeLayer.setAttribute("aria-hidden", "true");
+          standbyLayer.classList.remove(enteringClass);
+          const previousLayer = activeLayer;
+          activeLayer = standbyLayer;
+          standbyLayer = previousLayer;
+          changingPhoto = false;
+          preloadAround();
+        };
+
+        if (reducedMotion.matches) {
+          standbyLayer.classList.add("is-active");
+          finish();
+          return;
+        }
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          standbyLayer.classList.add("is-active");
+          standbyLayer.addEventListener("transitionend", finish, { once: true });
+          finishTimer = window.setTimeout(finish, 380);
+        }));
+      };
+
+      frame.addEventListener("wheel", (event) => {
+        if (!event.deltaY) return;
+        const direction = event.deltaY > 0 ? 1 : -1;
+        const nextIndex = currentPhoto + direction;
+        if (nextIndex < 0 || nextIndex >= photos.length) return;
+        event.preventDefault();
+        showPhoto(nextIndex, direction);
+      }, { passive: false });
+
+      frame.addEventListener("touchstart", (event) => {
+        const touch = event.changedTouches[0];
+        touchStart = { x: touch.clientX, y: touch.clientY };
+      }, { passive: true });
+      frame.addEventListener("touchend", (event) => {
+        if (!touchStart) return;
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - touchStart.x;
+        const deltaY = touch.clientY - touchStart.y;
+        touchStart = null;
+        if (Math.abs(deltaX) < 44 || Math.abs(deltaX) < Math.abs(deltaY) * 1.15) return;
+        const direction = deltaX < 0 ? 1 : -1;
+        const nextIndex = currentPhoto + direction;
+        if (nextIndex < 0 || nextIndex >= photos.length) return;
+        event.preventDefault();
+        suppressProjectClick = true;
+        window.setTimeout(() => { suppressProjectClick = false; }, 500);
+        showPhoto(nextIndex, direction);
+      }, { passive: false });
+      preloadAround();
+    }
     const meta = document.createElement("div");
     meta.className = "mt-project__meta";
     const title = document.createElement("h3");
@@ -111,6 +240,11 @@
     meta.append(title, arrow);
     a.append(frame, meta);
     a.addEventListener("click", (e) => {
+      if (suppressProjectClick) {
+        e.preventDefault();
+        suppressProjectClick = false;
+        return;
+      }
       if (window.mtOpenProject) {
         e.preventDefault();
         window.mtOpenProject(projects.indexOf(project));
@@ -118,6 +252,87 @@
     });
     document.getElementById("mtHomeProjects").append(a);
   });
+
+  // Home-only editorial reveals. Classes are attached at runtime so the
+  // content remains fully visible when JavaScript is unavailable.
+  const home = document.getElementById("page-home");
+  const revealItems = [];
+  const markReveal = (elements, options = {}) => {
+    const nodes = elements instanceof Element ? [elements] : [...elements];
+    nodes.filter(Boolean).forEach((element, index) => {
+      element.classList.add("mt-reveal");
+      if (options.from) element.classList.add(`mt-reveal--${options.from}`);
+      element.style.setProperty(
+        "--mt-reveal-delay",
+        `${(options.delay || 0) + index * (options.stagger || 0)}ms`,
+      );
+      revealItems.push(element);
+    });
+  };
+
+  if (home) {
+    markReveal(home.querySelector(".mt-hero-work"), { from: "left", delay: 40 });
+    markReveal(home.querySelectorAll(".mt-home-hero__copy > *"), {
+      delay: 90,
+      stagger: 85,
+    });
+
+    const choiceSection = home.querySelector(".mt-section:has(.mt-split)");
+    markReveal(choiceSection?.querySelectorAll(".mt-page-head .mt-overline, .mt-page-head h2"), {
+      stagger: 75,
+    });
+    markReveal(choiceSection?.querySelectorAll(".mt-feature"), {
+      delay: 90,
+      stagger: 140,
+    });
+
+    const projectsGrid = document.getElementById("mtHomeProjects");
+    const projectsSection = projectsGrid?.closest(".mt-section");
+    markReveal(projectsSection?.querySelectorAll(".mt-page-head .mt-overline, .mt-page-head h2, .mt-page-head > .mt-button"), {
+      stagger: 75,
+    });
+    markReveal(projectsGrid?.querySelectorAll(".mt-project"), {
+      delay: 70,
+      stagger: 110,
+    });
+
+    const editorial = home.querySelector(".mt-editorial--carousel");
+    markReveal(editorial?.querySelector(".mt-editorial__visual"), { from: "left" });
+    markReveal(editorial?.querySelectorAll(".mt-editorial__copy > *"), {
+      delay: 80,
+      stagger: 85,
+    });
+
+    const human = document.getElementById("mtHuman");
+    markReveal(human?.querySelector(".mt-human__photo"), { from: "left" });
+    markReveal(human?.querySelectorAll(".mt-human__copy > *"), {
+      delay: 80,
+      stagger: 90,
+    });
+
+    markReveal(home.querySelectorAll(".mt-cta > *"), { stagger: 90 });
+    home.classList.add("mt-reveal-ready");
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reduceMotion.matches || !("IntersectionObserver" in window)) {
+      revealItems.forEach((item) => item.classList.add("is-revealed"));
+    } else {
+      const revealObserver = new IntersectionObserver(
+        (entries, observer) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("is-revealed");
+            observer.unobserve(entry.target);
+          });
+        },
+        { rootMargin: "0px 0px -10%", threshold: 0.08 },
+      );
+      revealItems.forEach((item) => revealObserver.observe(item));
+      home.addEventListener("focusin", (event) => {
+        event.target.closest(".mt-reveal")?.classList.add("is-revealed");
+      });
+    }
+  }
   // Shared keyboard handling for existing gallery and model dialogs.
   let previousFocus = null;
   const dialogs = [
