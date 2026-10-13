@@ -2936,3 +2936,82 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   #page-home .mt-strip__group[aria-hidden="true"] { display:none; }
   #page-home .mt-strip__group span { white-space:normal; line-height:1.35; }
 }
+
+/* Loja — etapa 1: abertura editorial e cards de categoria. */
+#page-loja .mt-shop > .shop-release,
+#page-loja .mt-shop > .mt-page-head {
+  display:grid;
+  grid-template-columns:minmax(0,1.38fr) minmax(250px,.62fr);
+  column-gap:clamp(44px,7vw,112px);
+}
+#page-loja .mt-shop > .shop-release {
+  align-items:center;
+  margin-bottom:clamp(24px,2.5vw,34px);
+  padding-bottom:18px;
+  border-bottom:1px solid color-mix(in srgb,var(--mt-purple) 18%,transparent);
+}
+#page-loja .shop-release span:first-child { letter-spacing:.16em; font-weight:600; }
+#page-loja .shop-release span:last-child {
+  justify-self:start;
+  border-color:var(--mt-purple-45);
+  background:color-mix(in srgb,var(--mt-purple) 5%,transparent);
+  color:#e3c8f2;
+}
+#page-loja .mt-shop > .mt-page-head { align-items:end; margin-bottom:clamp(30px,3.5vw,44px); }
+#page-loja .mt-shop > .mt-page-head > div { min-width:0; }
+#page-loja .mt-shop > .mt-page-head .mt-overline { margin-bottom:22px; }
+#page-loja .mt-shop > .mt-page-head h2 { max-width:830px; letter-spacing:-.022em; }
+#page-loja .mt-shop > .mt-page-head h2::after { width:132px; height:14px; margin-top:18px; opacity:.7; }
+#page-loja .mt-shop > .mt-page-head > p {
+  align-self:end; max-width:34ch; margin:0 0 14px; padding-left:22px;
+  border-left:1px solid var(--mt-purple-45); color:#cbc5cf;
+}
+#page-loja .shop-mode { padding-block:18px; margin-bottom:34px; }
+#page-loja .shop-mode a { text-underline-offset:5px; transition:color .2s ease; }
+#page-loja .shop-mode a:hover { color:#fff; }
+#page-loja .shop-collections { align-items:stretch; }
+#page-loja .shop-collections a {
+  display:flex; flex-direction:column; min-height:188px; border-color:#48404f;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--mt-purple) 6%,#1a181e) 0%,#141217 68%,#111014 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  transition:transform .24s cubic-bezier(.22,1,.36,1),border-color .24s ease,background-color .24s ease;
+}
+#page-loja .shop-collections a::after {
+  width:108px; height:48px; right:-6px; bottom:-7px; opacity:.22;
+  transition:opacity .24s ease,transform .24s cubic-bezier(.22,1,.36,1);
+}
+#page-loja .shop-collections a > span { color:var(--mt-purple); font-size:.68rem; font-weight:600; letter-spacing:.12em; }
+#page-loja .shop-collections strong {
+  display:block; margin-block:22px 14px; letter-spacing:-.015em;
+  transition:color .24s ease,transform .24s cubic-bezier(.22,1,.36,1);
+}
+#page-loja .shop-collections small { display:block; margin-top:auto; color:#c2bcc7; line-height:1.55; }
+#page-loja .shop-collections a:hover {
+  transform:translateY(-2px); border-color:var(--mt-purple);
+  background:linear-gradient(145deg,color-mix(in srgb,var(--mt-purple) 10%,#1a181e) 0%,#17131b 68%,#111014 100%);
+}
+#page-loja .shop-collections a:hover strong { color:#fff; transform:translateX(3px); }
+#page-loja .shop-collections a:hover::after { opacity:.34; transform:translateX(-3px); }
+@media (max-width:900px) {
+  #page-loja .mt-shop > .shop-release,
+  #page-loja .mt-shop > .mt-page-head { grid-template-columns:minmax(0,1fr); }
+  #page-loja .shop-release { grid-template-columns:minmax(0,1fr) auto !important; }
+  #page-loja .mt-shop > .mt-page-head > p { max-width:54ch; margin:24px 0 0 clamp(24px,6vw,52px); }
+  #page-loja .shop-collections a { min-height:180px; padding-inline:22px; }
+  #page-loja .shop-collections strong { font-size:clamp(1.55rem,3.4vw,2rem); }
+}
+@media (max-width:760px) {
+  #page-loja .mt-shop > .shop-release { padding-bottom:15px; margin-bottom:30px; }
+  #page-loja .mt-shop > .mt-page-head .mt-overline { margin-bottom:18px; }
+  #page-loja .mt-shop > .mt-page-head h2 { letter-spacing:-.018em; }
+  #page-loja .mt-shop > .mt-page-head > p { margin:24px 0 0; padding-left:0; border-left:0; }
+  #page-loja .shop-mode { padding-block:20px; margin-bottom:36px; }
+  #page-loja .shop-collections a { min-height:168px; padding:26px 24px; }
+  #page-loja .shop-collections strong { font-size:clamp(1.8rem,8vw,2.2rem); }
+}
+@media (prefers-reduced-motion:reduce) {
+  #page-loja .shop-mode a,
+  #page-loja .shop-collections a,
+  #page-loja .shop-collections strong,
+  #page-loja .shop-collections a::after { transition:none; }
+}
