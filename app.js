@@ -83,7 +83,15 @@ const gender = $("gender");
 const category = $("category");
 const catalogResultCount = $("catalogResultCount");
 const catalogResultStatus = $("catalogResultStatus");
+const catalogLoadMore = $("catalogLoadMore");
+const catalogLoadMoreButton = catalogLoadMore.querySelector("button");
+const catalogRenderedCount = $("catalogRenderedCount");
 let catalogResultAnnouncement;
+const CATALOG_BATCH_SIZE = 24;
+let filteredCatalog = [];
+let renderedCatalogCount = 0;
+let catalogRenderGeneration = 0;
+let catalogLoadObserver;
 
 function setCatalogControlsDisabled(disabled) {
   [search, gender, category].forEach((control) => {
@@ -275,49 +283,105 @@ function itemMatches(item) {
   );
 }
 
+function createCatalogCard(item, resultIndex) {
+  const card = document.createElement("article");
+  card.className = "card";
+  card.dataset.resultIndex = resultIndex;
+  card.innerHTML = `
+    <img class="thumb" src="${fixPath(item.preview).replace("assets/previews/", "assets/catalog-previews/")}?v=20261004-7d" alt="${item.nome}" loading="lazy">
+    <div class="card-body">
+      <div class="tags"><span class="tag">${item.genero || "-"}</span><span class="tag">${item.categoria || "-"}</span></div>
+      <h3>${item.nome || item.id}</h3>
+      <details class="meta"><summary>Referência da peça</summary><div>YDD: ${item.ydd || "-"}</div><div>YTD: ${item.ytd || "-"}</div></details>
+      <div class="actions"><button class="btn-3d" type="button">Ver 3D</button><button class="btn-copy" type="button">Copiar código</button></div>
+    </div>
+  `;
+  return card;
+}
+
+function updateCatalogLoadMore() {
+  const hasMore = renderedCatalogCount < filteredCatalog.length;
+  catalogLoadMore.hidden = !hasMore;
+  catalogRenderedCount.textContent = hasMore
+    ? `${renderedCatalogCount} de ${filteredCatalog.length} modelos exibidos`
+    : "";
+  if (hasMore) catalogLoadObserver?.observe(catalogLoadMore);
+  else catalogLoadObserver?.unobserve(catalogLoadMore);
+}
+
+function renderNextCatalogBatch(generation = catalogRenderGeneration) {
+  if (generation !== catalogRenderGeneration) return;
+  const nextCount = Math.min(
+    renderedCatalogCount + CATALOG_BATCH_SIZE,
+    filteredCatalog.length,
+  );
+  if (nextCount === renderedCatalogCount) return;
+
+  const fragment = document.createDocumentFragment();
+  for (let index = renderedCatalogCount; index < nextCount; index += 1) {
+    fragment.appendChild(createCatalogCard(filteredCatalog[index], index));
+  }
+  grid.appendChild(fragment);
+  renderedCatalogCount = nextCount;
+  updateCatalogLoadMore();
+}
+
 function renderGrid() {
-  const items = catalogo.filter(itemMatches);
-  const resultMessage = `${items.length} ${items.length === 1 ? "modelo encontrado" : "modelos encontrados"}`;
+  catalogRenderGeneration += 1;
+  catalogLoadObserver?.unobserve(catalogLoadMore);
+  filteredCatalog = catalogo.filter(itemMatches);
+  renderedCatalogCount = 0;
+  const resultMessage = `${filteredCatalog.length} ${filteredCatalog.length === 1 ? "modelo encontrado" : "modelos encontrados"}`;
   catalogResultCount.textContent = resultMessage;
   clearTimeout(catalogResultAnnouncement);
   catalogResultAnnouncement = setTimeout(() => {
     catalogResultStatus.textContent = resultMessage;
   }, 450);
   grid.innerHTML = "";
-  empty.hidden = items.length > 0;
-
-  items.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "card";
-    card.innerHTML = `
-      <img class="thumb" src="${fixPath(item.preview).replace("assets/previews/", "assets/catalog-previews/")}?v=20261004-7d" alt="${item.nome}" loading="lazy">
-      <div class="card-body">
-        <div class="tags"><span class="tag">${item.genero || "-"}</span><span class="tag">${item.categoria || "-"}</span></div>
-        <h3>${item.nome || item.id}</h3>
-        <details class="meta"><summary>Referência da peça</summary><div>YDD: ${item.ydd || "-"}</div><div>YTD: ${item.ytd || "-"}</div></details>
-        <div class="actions"><button class="btn-3d" type="button">Ver 3D</button><button class="btn-copy" type="button">Copiar código</button></div>
-      </div>
-    `;
-    card
-      .querySelector(".btn-3d")
-      .addEventListener("click", () => openViewer(item));
-    card.querySelector(".btn-copy").addEventListener("click", async () => {
-      const code = `${item.nome} | ${item.genero} | ${item.categoria} | ${item.ydd}`;
-      try {
-        await navigator.clipboard.writeText(code);
-      } catch {
-        window.prompt("Copie a referência da peça:", code);
-        return;
-      }
-      card.querySelector(".btn-copy").textContent = "Copiado!";
-      setTimeout(
-        () => (card.querySelector(".btn-copy").textContent = "Copiar código"),
-        1200,
-      );
-    });
-    grid.appendChild(card);
-  });
+  empty.hidden = filteredCatalog.length > 0;
+  catalogLoadMore.hidden = true;
+  catalogRenderedCount.textContent = "";
+  renderNextCatalogBatch(catalogRenderGeneration);
 }
+
+catalogLoadObserver = new IntersectionObserver(
+  (entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      renderNextCatalogBatch();
+    }
+  },
+  { rootMargin: "700px 0px" },
+);
+
+catalogLoadMoreButton.addEventListener("click", () => {
+  renderNextCatalogBatch();
+});
+
+grid.addEventListener("click", async (event) => {
+  const button = event.target.closest(".btn-3d, .btn-copy");
+  if (!button || !grid.contains(button)) return;
+  const card = button.closest(".card");
+  const item = filteredCatalog[Number(card?.dataset.resultIndex)];
+  if (!item) return;
+
+  if (button.classList.contains("btn-3d")) {
+    openViewer(item);
+    return;
+  }
+
+  const code = `${item.nome} | ${item.genero} | ${item.categoria} | ${item.ydd}`;
+  try {
+    await navigator.clipboard.writeText(code);
+  } catch {
+    window.prompt("Copie a referência da peça:", code);
+    return;
+  }
+  if (!button.isConnected) return;
+  button.textContent = "Copiado!";
+  setTimeout(() => {
+    if (button.isConnected) button.textContent = "Copiar código";
+  }, 1200);
+});
 
 search.addEventListener("input", renderGrid);
 gender.addEventListener("change", renderGrid);
@@ -407,7 +471,7 @@ function resetViewerSettings() {
 
 function openViewer(item) {
   if (document.getElementById("page-catalogo").classList.contains("active")) {
-    setupPalette(); catalogViewer.open(item, catalogo.filter(itemMatches)); return;
+    setupPalette(); catalogViewer.open(item, filteredCatalog); return;
   }
   $("modalTitle").textContent = `${item.nome || item.id}`;
   $("modalSubtitle").textContent =
