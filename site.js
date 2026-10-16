@@ -253,13 +253,16 @@
     document.getElementById("mtHomeProjects").append(a);
   });
 
-  // Home-only editorial reveals. Classes are attached at runtime so the
+  // Progressive editorial reveals. Classes are attached at runtime so the
   // content remains fully visible when JavaScript is unavailable.
   const home = document.getElementById("page-home");
+  const store = document.getElementById("page-loja");
   const revealItems = [];
   const markReveal = (elements, options = {}) => {
+    if (!elements) return [];
     const nodes = elements instanceof Element ? [elements] : [...elements];
-    nodes.filter(Boolean).forEach((element, index) => {
+    const marked = nodes.filter(Boolean);
+    marked.forEach((element, index) => {
       element.classList.add("mt-reveal");
       if (options.from) element.classList.add(`mt-reveal--${options.from}`);
       element.style.setProperty(
@@ -268,6 +271,7 @@
       );
       revealItems.push(element);
     });
+    return marked;
   };
 
   if (home) {
@@ -311,27 +315,76 @@
     });
 
     markReveal(home.querySelectorAll(".mt-cta > *"), { stagger: 90 });
-    home.classList.add("mt-reveal-ready");
+  }
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reduceMotion.matches || !("IntersectionObserver" in window)) {
-      revealItems.forEach((item) => item.classList.add("is-revealed"));
-    } else {
-      const revealObserver = new IntersectionObserver(
+  let storeProductsRevealed = false;
+  const storeGrid = store?.querySelector("#mtShopDrafts");
+  if (store) {
+    markReveal(store.querySelector(".shop-release"));
+    markReveal(store.querySelectorAll(".mt-shop > .mt-page-head .mt-overline, .mt-shop > .mt-page-head h2, .mt-shop > .mt-page-head > p"), {
+      delay: 40,
+      stagger: 75,
+    });
+    markReveal(store.querySelector(".shop-mode"), { delay: 40 });
+    markReveal(store.querySelectorAll(".shop-collections > a"), {
+      delay: 40,
+      stagger: 90,
+    });
+    markReveal(store.querySelectorAll(".mt-shop-preview > .mt-page-head .mt-overline, .mt-shop-preview > .mt-page-head h3, .mt-shop-preview > .mt-page-head > p"), {
+      stagger: 75,
+    });
+    markReveal(store.querySelector(".shop-toolbar > div:first-child"));
+    markReveal(store.querySelector("#shopCategoryFilters"), { delay: 80 });
+    markReveal(store.querySelector("#shopEmptyCollection"));
+    markReveal(store.querySelector("#shopNoResults"));
+    markReveal(store.querySelector("#shopLoadError"));
+    markReveal(store.querySelector("#localDraftNotice"));
+  }
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const revealObserver = !reduceMotion.matches && "IntersectionObserver" in window
+    ? new IntersectionObserver(
         (entries, observer) => {
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
             entry.target.classList.add("is-revealed");
+            if (entry.target.matches("#page-loja .mt-shop-draft"))
+              storeProductsRevealed = true;
             observer.unobserve(entry.target);
           });
         },
         { rootMargin: "0px 0px -10%", threshold: 0.08 },
-      );
-      revealItems.forEach((item) => revealObserver.observe(item));
-      home.addEventListener("focusin", (event) => {
-        event.target.closest(".mt-reveal")?.classList.add("is-revealed");
-      });
-    }
+      )
+    : null;
+
+  [home, store].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
+  if (revealObserver) revealItems.forEach((item) => revealObserver.observe(item));
+  else revealItems.forEach((item) => item.classList.add("is-revealed"));
+
+  [home, store].filter(Boolean).forEach((page) => {
+    page.addEventListener("focusin", (event) => {
+      const item = event.target.closest(".mt-reveal");
+      if (!item) return;
+      item.classList.add("is-revealed");
+      revealObserver?.unobserve(item);
+    });
+  });
+
+  if (storeGrid) {
+    const registerStoreCards = (cards) => {
+      const fresh = [...cards].filter((card) => !card.classList.contains("mt-reveal"));
+      if (!fresh.length) return;
+      markReveal(fresh, { delay: 40, stagger: 90 });
+      if (storeProductsRevealed || !revealObserver) {
+        fresh.forEach((card) => card.classList.add("is-revealed"));
+      } else {
+        fresh.forEach((card) => revealObserver.observe(card));
+      }
+    };
+    registerStoreCards(storeGrid.querySelectorAll(".mt-shop-draft"));
+    new MutationObserver(() =>
+      registerStoreCards(storeGrid.querySelectorAll(".mt-shop-draft")),
+    ).observe(storeGrid, { childList: true });
   }
   // Shared keyboard handling for existing gallery and model dialogs.
   let previousFocus = null;
