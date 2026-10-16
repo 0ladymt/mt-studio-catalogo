@@ -142,6 +142,7 @@ button:focus:not(:focus-visible) {
 .mt-page-shell,
 .hero,
 .controls,
+.catalog-results-summary,
 .grid,
 .projects-page,
 .socials-page {
@@ -1280,6 +1281,7 @@ footer p {
   .mt-page-shell,
   .hero,
   .controls,
+  .catalog-results-summary,
   .grid,
   .projects-page,
   .socials-page {
@@ -1401,6 +1403,7 @@ footer p {
   .mt-page-shell,
   .hero,
   .controls,
+  .catalog-results-summary,
   .grid,
   .projects-page,
   .socials-page {
@@ -1922,10 +1925,15 @@ body{position:relative;isolation:isolate}
 #page-catalogo .stat { min-width:0; border-color:#38353e; padding:15px 0 14px; }
 #page-catalogo .stat strong { font-size:2.5rem; line-height:1; margin-bottom:7px; }
 #page-catalogo .stat span { display:block; overflow-wrap:anywhere; line-height:1.6; }
-#page-catalogo .controls { grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr)); align-items:end; gap:20px; padding:24px 0 30px; border-top:1px solid #38353e; margin-bottom:8px; }
-#page-catalogo .controls label { min-width:0; font-size:.78rem; letter-spacing:.02em; }
-#page-catalogo .controls input,#page-catalogo .controls select { min-height:50px; background:#1d1c22; border-color:#45414d; border-radius:3px; font-size:.875rem; padding:12px; }
-#page-catalogo .controls input:focus-visible,#page-catalogo .controls select:focus-visible { outline:2px solid var(--lilac); outline-offset:3px; }
+#page-catalogo .controls { grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr)); align-items:end; gap:20px; padding:24px 0 22px; border-top:1px solid #38353e; margin-bottom:0; }
+#page-catalogo .controls label { min-width:0; color:#c2bcc7; font-size:.72rem; font-weight:600; letter-spacing:.055em; }
+#page-catalogo .controls input,#page-catalogo .controls select { min-height:50px; margin-top:9px; background:#1b1a20; border:1px solid #45414d; border-radius:3px; color:#f6f3f8; font-size:.875rem; padding:12px 14px; transition:background-color .18s ease,border-color .18s ease,color .18s ease; }
+#page-catalogo .controls input::placeholder { color:#89828f; opacity:1; }
+#page-catalogo .controls input:hover,#page-catalogo .controls select:hover { background:#201e25; border-color:#675d6f; }
+#page-catalogo .controls input:focus-visible,#page-catalogo .controls select:focus-visible { background:#211d26; border-color:var(--mt-purple); outline:2px solid var(--mt-purple); outline-offset:3px; }
+#page-catalogo .catalog-results-summary { display:flex; justify-content:flex-end; align-items:center; min-height:35px; padding-bottom:12px; border-bottom:1px solid #2f2c34; }
+#page-catalogo #catalogResultCount { color:#aaa3b0; font-size:.72rem; font-weight:600; letter-spacing:.045em; text-transform:uppercase; }
+#page-catalogo .catalog-result-status { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 #page-catalogo .grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:32px 24px; padding-top:20px; }
 #page-catalogo .card { display:flex; flex-direction:column; border:1px solid #36343c; background:#19181e; border-radius:4px; overflow:hidden; transition:border-color .18s ease; }
 #page-catalogo .card:hover { border-color:var(--mt-purple); }
@@ -1967,9 +1975,10 @@ body{position:relative;isolation:isolate}
  #page-catalogo .stat { padding:13px 0 12px; }
  #page-catalogo .stat strong { font-size:2.2rem; margin-bottom:6px; }
  #page-catalogo .stat span { font-size:.75rem; line-height:1.45; }
- #page-catalogo .controls { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 12px; padding-top:20px; }
+ #page-catalogo .controls { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 12px; padding-top:20px; padding-bottom:18px; }
  #page-catalogo .controls label:first-child { grid-column:1/-1; }
  #page-catalogo .controls select { font-size:.78rem; padding:10px 6px; }
+ #page-catalogo .catalog-results-summary { justify-content:flex-start; min-height:32px; padding-bottom:10px; }
  #page-catalogo .grid { gap:18px 12px; }
  #page-catalogo .card-body { padding:15px 12px; }
  #page-catalogo .card h3 { font-size:1.65rem; }

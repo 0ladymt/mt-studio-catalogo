@@ -55,6 +55,9 @@ const empty = $("empty");
 const search = $("search");
 const gender = $("gender");
 const category = $("category");
+const catalogResultCount = $("catalogResultCount");
+const catalogResultStatus = $("catalogResultStatus");
+let catalogResultAnnouncement;
 
 function fixPath(path) {
   return String(path || "")
@@ -231,6 +234,12 @@ function itemMatches(item) {
 
 function renderGrid() {
   const items = catalogo.filter(itemMatches);
+  const resultMessage = `${items.length} ${items.length === 1 ? "modelo encontrado" : "modelos encontrados"}`;
+  catalogResultCount.textContent = resultMessage;
+  clearTimeout(catalogResultAnnouncement);
+  catalogResultAnnouncement = setTimeout(() => {
+    catalogResultStatus.textContent = resultMessage;
+  }, 450);
   grid.innerHTML = "";
   empty.style.display = items.length ? "none" : "block";
 
