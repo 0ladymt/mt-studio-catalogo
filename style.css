@@ -1913,16 +1913,16 @@ body{position:relative;isolation:isolate}
 
 /* Grupo 3 — vitrine do catálogo. Regras restritas à página e ao seu modal. */
 #page-catalogo { background:linear-gradient(180deg,#151419 0,#101014 650px,#111114 100%); }
-#page-catalogo .hero { grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:clamp(28px,5vw,64px); padding-block:72px 46px; }
-#page-catalogo .hero-card { min-width:0; }
-#page-catalogo .hero-card h2 { max-width:700px; font-size:clamp(2.6rem,5vw,5rem); line-height:1.04; padding-bottom:24px; position:relative; }
+#page-catalogo .hero { grid-template-columns:minmax(0,1.35fr) minmax(360px,.85fr); align-items:end; gap:clamp(48px,6vw,88px); padding-block:68px 38px; }
+#page-catalogo .hero-card { min-width:0; padding-right:clamp(0px,2vw,24px); }
+#page-catalogo .hero-card h2 { max-width:660px; font-size:clamp(3.25rem,4.75vw,4.75rem); line-height:1.02; letter-spacing:-.035em; padding-bottom:24px; position:relative; }
 #page-catalogo .hero-card h2::after { content:""; position:absolute; left:0; bottom:0; width:150px; height:13px; background:url('assets/brand/underline.svg') center/contain no-repeat; opacity:.65; }
-#page-catalogo .hero-card p { max-width:550px; font-size:.94rem; line-height:1.8; }
-#page-catalogo .stats { gap:14px 22px; }
-#page-catalogo .stat { min-width:0; border-color:#38353e; padding:12px 0; }
-#page-catalogo .stat strong { font-size:2.5rem; }
+#page-catalogo .hero-card p { max-width:520px; margin-top:26px; font-size:.94rem; line-height:1.75; }
+#page-catalogo .stats { align-self:end; gap:0 24px; padding-bottom:2px; }
+#page-catalogo .stat { min-width:0; border-color:#38353e; padding:15px 0 14px; }
+#page-catalogo .stat strong { font-size:2.5rem; line-height:1; margin-bottom:7px; }
 #page-catalogo .stat span { display:block; overflow-wrap:anywhere; line-height:1.6; }
-#page-catalogo .controls { grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr)); align-items:end; gap:20px; padding:22px 0 30px; border-top:1px solid #38353e; margin-bottom:8px; }
+#page-catalogo .controls { grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr)); align-items:end; gap:20px; padding:24px 0 30px; border-top:1px solid #38353e; margin-bottom:8px; }
 #page-catalogo .controls label { min-width:0; font-size:.78rem; letter-spacing:.02em; }
 #page-catalogo .controls input,#page-catalogo .controls select { min-height:50px; background:#1d1c22; border-color:#45414d; border-radius:3px; font-size:.875rem; padding:12px; }
 #page-catalogo .controls input:focus-visible,#page-catalogo .controls select:focus-visible { outline:2px solid var(--lilac); outline-offset:3px; }
@@ -1952,15 +1952,22 @@ body{position:relative;isolation:isolate}
 #modal.catalog-viewer button:disabled { opacity:.55; cursor:wait; }
 #modal.catalog-viewer button:focus-visible,#modal.catalog-viewer input:focus-visible { outline:2px solid var(--lilac); outline-offset:3px; }
 @media (max-width:1000px) {
- #page-catalogo .hero { grid-template-columns:1fr; gap:24px; padding-block:48px 30px; }
- #page-catalogo .stats { grid-template-columns:repeat(4,minmax(0,1fr)); }
+ #page-catalogo .hero { grid-template-columns:1fr; align-items:start; gap:34px; padding-block:52px 30px; }
+ #page-catalogo .hero-card { padding-right:0; }
+ #page-catalogo .hero-card h2 { max-width:720px; }
+ #page-catalogo .hero-card p { margin-top:22px; }
+ #page-catalogo .stats { grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; padding-bottom:0; }
  #page-catalogo .grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
 }
 @media (max-width:600px) {
- #page-catalogo .hero { padding-block:36px 22px; }
- #page-catalogo .hero-card h2 { font-size:2.65rem; }
- #page-catalogo .stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 20px; }
- #page-catalogo .controls { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 12px; }
+ #page-catalogo .hero { gap:28px; padding-block:38px 24px; }
+ #page-catalogo .hero-card h2 { max-width:360px; font-size:clamp(2.35rem,11vw,2.65rem); line-height:1.04; letter-spacing:-.03em; }
+ #page-catalogo .hero-card p { max-width:350px; margin-top:20px; font-size:.9rem; line-height:1.7; }
+ #page-catalogo .stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 20px; }
+ #page-catalogo .stat { padding:13px 0 12px; }
+ #page-catalogo .stat strong { font-size:2.2rem; margin-bottom:6px; }
+ #page-catalogo .stat span { font-size:.75rem; line-height:1.45; }
+ #page-catalogo .controls { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 12px; padding-top:20px; }
  #page-catalogo .controls label:first-child { grid-column:1/-1; }
  #page-catalogo .controls select { font-size:.78rem; padding:10px 6px; }
  #page-catalogo .grid { gap:18px 12px; }
