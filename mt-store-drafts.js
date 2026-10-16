@@ -99,11 +99,17 @@
     const noResults = document.getElementById("shopNoResults");
     const loadError = document.getElementById("shopLoadError");
     const productCount = document.getElementById("shopProductCount");
+    const shopFilters = document.getElementById("shopCategoryFilters");
     shop.replaceChildren();
     const cards=new Map();
     const visible=products.filter(p=>p.status!=="archived");
+    if (storageReadable && !visible.length && categoryFilter) {
+      categoryFilter = "";
+      shopFilters.querySelectorAll("[data-shop-category]").forEach(button=>button.setAttribute("aria-pressed",String(!button.dataset.shopCategory)));
+    }
     const filtered=visible.filter(p=>!categoryFilter||({Uniformes:"Packs", "Acessórios":"Variados"}[p.category] || p.category)===categoryFilter).sort((a,b)=>Number(b.featured)-Number(a.featured));
     loading.hidden = true;
+    shopFilters.hidden = !storageReadable || !visible.length;
     emptyCollection.hidden = !storageReadable || visible.length > 0;
     noResults.hidden = !storageReadable || !visible.length || filtered.length > 0;
     loadError.hidden = storageReadable;
