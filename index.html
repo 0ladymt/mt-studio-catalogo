@@ -294,9 +294,14 @@
               </p>
             </div>
             <div class="shop-toolbar"><div><h3>EXPLORE A COLEÇÃO.</h3><p id="shopProductCount" role="status">Preparando a vitrine…</p></div><div id="shopCategoryFilters" class="shop-filters" role="group" aria-label="Filtrar produtos por categoria"><button type="button" data-shop-category="" aria-pressed="true">Todos</button><button type="button" data-shop-category="Roupas" aria-pressed="false">Roupas</button><button type="button" data-shop-category="Packs" aria-pressed="false">Packs</button><button type="button" data-shop-category="Variados" aria-pressed="false">Variados</button><button type="button" data-shop-category="Props" aria-pressed="false">Props</button></div></div>
-            <div id="shopLoading" class="shop-loading" role="status"><span></span><span></span><span></span><p>Preparando a vitrine…</p></div>
+            <div id="shopLoading" class="shop-loading" role="status" aria-label="Preparando a vitrine"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span><p>Preparando a vitrine…</p></div>
             <div id="mtShopDrafts" class="mt-shop-drafts" aria-busy="true"></div>
+            <div id="shopEmptyCollection" class="shop-empty-collection" role="status" hidden>
+              <span>COLEÇÃO EM PREPARAÇÃO</span>
+              <p>Novidades em breve.</p>
+            </div>
             <p id="shopNoResults" class="shop-no-results" hidden>Nenhum produto nesta categoria. Experimente outra categoria ou volte para “Todos”.</p>
+            <p id="shopLoadError" class="shop-load-error" role="alert" hidden>Não foi possível carregar a vitrine neste navegador. Tente recarregar a página.</p>
             <p id="localDraftNotice" class="mt-admin-note" hidden>
               Prévia de rascunhos deste navegador. Estes produtos não estão
               publicados nem disponíveis para compra.

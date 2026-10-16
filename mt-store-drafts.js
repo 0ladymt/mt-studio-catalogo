@@ -94,15 +94,27 @@
   function render() {
     list.replaceChildren();
     const shop = document.getElementById("mtShopDrafts");
+    const loading = document.getElementById("shopLoading");
+    const emptyCollection = document.getElementById("shopEmptyCollection");
+    const noResults = document.getElementById("shopNoResults");
+    const loadError = document.getElementById("shopLoadError");
+    const productCount = document.getElementById("shopProductCount");
     shop.replaceChildren();
     const cards=new Map();
     const visible=products.filter(p=>p.status!=="archived");
     const filtered=visible.filter(p=>!categoryFilter||({Uniformes:"Packs", "Acessórios":"Variados"}[p.category] || p.category)===categoryFilter).sort((a,b)=>Number(b.featured)-Number(a.featured));
-    document.getElementById("shopNoResults").hidden = !visible.length || filtered.length > 0;
-    document.getElementById("shopProductCount").textContent = visible.length ? `${filtered.length} ${filtered.length===1?"produto na prévia local":"produtos na prévia local"}` : "Coleção em preparação · novidades em breve";
+    loading.hidden = true;
+    emptyCollection.hidden = !storageReadable || visible.length > 0;
+    noResults.hidden = !storageReadable || !visible.length || filtered.length > 0;
+    loadError.hidden = storageReadable;
+    productCount.textContent = !storageReadable
+      ? "Vitrine indisponível no momento"
+      : visible.length
+        ? `${filtered.length} ${filtered.length===1?"produto na prévia local":"produtos na prévia local"}`
+        : "Coleção em preparação · novidades em breve";
     document.getElementById("adminProductCount").textContent=products.length;
     document.getElementById("adminFeaturedCount").textContent=products.filter(p=>p.featured).length;
-    shop.setAttribute("aria-busy","false");document.getElementById("shopLoading").hidden=true;
+    shop.setAttribute("aria-busy","false");
     document.getElementById("localDraftNotice").hidden = !products.length;
     if (!products.length) {
       const empty = document.createElement("p");
@@ -200,18 +212,9 @@
       list.append(row);
     });
     filtered.forEach(p=>shop.append(cards.get(p.id)));
-    if (!visible.length) {
-      shop.setAttribute("aria-label", "Vitrine de produtos em preparação");
-      for (let i=0; i<6; i++) {
-        const slot=node("article","mt-shop-draft shop-slot");
-        slot.setAttribute("aria-hidden","true");
-        const media=node("div","product-media");
-        const body=node("div","product-body");
-        for (const part of ["category","name","price"]) body.append(node("span",`slot-line slot-line--${part}`));
-        const action=node("button","slot-action"); action.disabled=true; action.tabIndex=-1;
-        body.append(action); slot.append(media,body); shop.append(slot);
-      }
-    } else shop.removeAttribute("aria-label");
+    if (!storageReadable) shop.setAttribute("aria-label", "Vitrine indisponível");
+    else if (!visible.length) shop.setAttribute("aria-label", "Vitrine de produtos em preparação");
+    else shop.removeAttribute("aria-label");
   }
   form.addEventListener("submit", (e) => {
     e.preventDefault();
