@@ -28,7 +28,26 @@ const COLORS = [
   ["Branco gelo", 0xf2f2f2],
 ];
 
-const catalogo = Array.isArray(window.CATALOGO_MT) ? window.CATALOGO_MT : [];
+const catalogSource = window.CATALOGO_MT;
+const catalogSourceValid =
+  Array.isArray(catalogSource) &&
+  catalogSource.every(
+    (item) =>
+      item &&
+      typeof item === "object" &&
+      typeof item.id === "string" &&
+      typeof item.nome === "string" &&
+      typeof item.genero === "string" &&
+      typeof item.categoria === "string" &&
+      typeof item.preview === "string" &&
+      typeof item.obj === "string",
+  );
+const catalogDataState = !catalogSourceValid
+  ? "error"
+  : catalogSource.length
+    ? "ready"
+    : "empty";
+const catalogo = catalogDataState === "ready" ? catalogSource : [];
 const projetos = Array.isArray(window.PROJETOS_MT) ? window.PROJETOS_MT : [];
 
 const $ = (id) => document.getElementById(id);
@@ -52,12 +71,36 @@ function recoverImage(image, localPath) {
 
 const grid = $("grid");
 const empty = $("empty");
+const catalogPage = $("page-catalogo");
+const catalogLoading = $("catalogLoading");
+const catalogEmpty = $("catalogEmpty");
+const catalogError = $("catalogError");
+const catalogResultSummary = document.querySelector(
+  "#page-catalogo .catalog-results-summary",
+);
 const search = $("search");
 const gender = $("gender");
 const category = $("category");
 const catalogResultCount = $("catalogResultCount");
 const catalogResultStatus = $("catalogResultStatus");
 let catalogResultAnnouncement;
+
+function setCatalogControlsDisabled(disabled) {
+  [search, gender, category].forEach((control) => {
+    control.disabled = disabled;
+  });
+}
+
+function finishCatalogInitialization(state) {
+  catalogPage.removeAttribute("aria-busy");
+  catalogLoading.hidden = true;
+  catalogEmpty.hidden = state !== "empty";
+  catalogError.hidden = state !== "error";
+  empty.hidden = true;
+  grid.hidden = state !== "ready";
+  catalogResultSummary.hidden = state !== "ready";
+  setCatalogControlsDisabled(state !== "ready");
+}
 
 function fixPath(path) {
   return String(path || "")
@@ -241,7 +284,7 @@ function renderGrid() {
     catalogResultStatus.textContent = resultMessage;
   }, 450);
   grid.innerHTML = "";
-  empty.style.display = items.length ? "none" : "block";
+  empty.hidden = items.length > 0;
 
   items.forEach((item) => {
     const card = document.createElement("article");
@@ -751,10 +794,15 @@ window.mtOpenProject = openProject;
 
 setupLinks();
 
-fillFilters();
-updateStats();
 renderProjects();
-renderGrid();
+if (catalogDataState === "ready") {
+  fillFilters();
+  updateStats();
+  renderGrid();
+} else if (catalogDataState === "empty") {
+  updateStats();
+}
+finishCatalogInitialization(catalogDataState);
 mountModelCarousel("homeModelTrack", "homeModelCarousel", 0);
 
 requestAnimationFrame(animateModelCarousels);

@@ -309,7 +309,7 @@
           </section>
         </div>
       </section>
-      <section id="page-catalogo" class="page">
+      <section id="page-catalogo" class="page" aria-busy="true">
         <section class="hero">
           <div class="hero-card">
             <h2>Escolha o modelo ideal para sua <span class="catalog-title-end">criação</span></h2>
@@ -321,16 +321,16 @@
 
           <div class="stats">
             <div class="stat">
-              <strong id="statTotal">0</strong><span>modelos no catálogo</span>
+              <strong id="statTotal">—</strong><span>modelos no catálogo</span>
             </div>
             <div class="stat">
-              <strong id="statCategorias">0</strong><span>categorias</span>
+              <strong id="statCategorias">—</strong><span>categorias</span>
             </div>
             <div class="stat">
-              <strong id="statFeminino">0</strong><span>femininos</span>
+              <strong id="statFeminino">—</strong><span>femininos</span>
             </div>
             <div class="stat">
-              <strong id="statMasculino">0</strong><span>masculinos</span>
+              <strong id="statMasculino">—</strong><span>masculinos</span>
             </div>
           </div>
         </section>
@@ -341,21 +341,22 @@
               id="search"
               type="search"
               placeholder="Nome, código ou categoria"
+              disabled
           /></label>
           <label
-            >Gênero<select id="gender">
+            >Gênero<select id="gender" disabled>
               <option value="">Todos os gêneros</option>
             </select></label
           >
           <label
-            >Categoria<select id="category">
+            >Categoria<select id="category" disabled>
               <option value="">Todas categorias</option>
             </select></label
           >
         </section>
 
-        <div class="catalog-results-summary">
-          <p id="catalogResultCount">360 modelos encontrados</p>
+        <div class="catalog-results-summary" hidden>
+          <p id="catalogResultCount"></p>
           <span
             id="catalogResultStatus"
             class="catalog-result-status"
@@ -366,9 +367,22 @@
         </div>
 
         <div class="catalog-results">
-          <div id="grid" class="grid"></div>
-          <div id="empty" class="empty">
-            Nenhum modelo encontrado com esse filtro.
+          <div id="catalogLoading" class="catalog-state" role="status">
+            <strong>Preparando catálogo.</strong>
+            <span>Organizando modelos e filtros.</span>
+          </div>
+          <div id="catalogEmpty" class="catalog-state" role="status" hidden>
+            <strong>Catálogo em preparação.</strong>
+            <span>Ainda não existem modelos disponíveis nesta coleção.</span>
+          </div>
+          <div id="catalogError" class="catalog-state catalog-state--error" role="alert" hidden>
+            <strong>Catálogo indisponível.</strong>
+            <span>Não foi possível carregar os dados. Atualize a página e tente novamente.</span>
+          </div>
+          <div id="grid" class="grid" hidden></div>
+          <div id="empty" class="empty" hidden>
+            <strong>Nenhum modelo encontrado.</strong>
+            <span>Ajuste a pesquisa ou selecione outros filtros.</span>
           </div>
         </div>
       </section>
