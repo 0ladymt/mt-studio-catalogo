@@ -2890,6 +2890,20 @@ body:has(#page-home.active) .mt-wall-marks { display:none; }
     transform:translate3d(0,0,0);
     will-change:auto;
   }
+  #page-sobre.mt-reveal-ready .mt-reveal {
+    opacity:0;
+    transform:translate3d(0,16px,0);
+    transition:
+      opacity 520ms cubic-bezier(.22,1,.36,1),
+      transform 580ms cubic-bezier(.22,1,.36,1);
+    transition-delay:var(--mt-reveal-delay,0ms);
+    will-change:opacity,transform;
+  }
+  #page-sobre.mt-reveal-ready .mt-reveal.is-revealed {
+    opacity:1;
+    transform:translate3d(0,0,0);
+    will-change:auto;
+  }
   #modal.catalog-viewer.open {
     animation:mt-catalog-modal-overlay-in 180ms ease-out both;
   }
@@ -2900,7 +2914,8 @@ body:has(#page-home.active) .mt-wall-marks { display:none; }
 @media (prefers-reduced-motion:reduce) {
   #page-home .mt-reveal,
   #page-loja .mt-reveal,
-  #page-catalogo .mt-reveal {
+  #page-catalogo .mt-reveal,
+  #page-sobre .mt-reveal {
     opacity:1 !important;
     transform:none !important;
     transition:none !important;

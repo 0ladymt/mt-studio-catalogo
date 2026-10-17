@@ -258,6 +258,7 @@
   const home = document.getElementById("page-home");
   const store = document.getElementById("page-loja");
   const catalog = document.getElementById("page-catalogo");
+  const about = document.getElementById("page-sobre");
   const revealItems = [];
   const markReveal = (elements, options = {}) => {
     if (!elements) return [];
@@ -360,6 +361,27 @@
     markReveal(catalog.querySelector("#empty"));
   }
 
+  if (about) {
+    markReveal(about.querySelector(".mt-about__visual"));
+    markReveal(about.querySelectorAll(".mt-about__copy > *"), {
+      delay: 60,
+      stagger: 75,
+    });
+
+    const aboutHeads = about.querySelectorAll(".mt-about-detail > .mt-page-head");
+    markReveal(aboutHeads[0]);
+    markReveal(about.querySelectorAll(".mt-about-grid > article"), {
+      delay: 70,
+      stagger: 80,
+    });
+    markReveal(aboutHeads[1]);
+    markReveal(about.querySelectorAll(".mt-about-steps > span"), {
+      delay: 70,
+      stagger: 80,
+    });
+    markReveal(about.querySelector(".mt-about-mission"), { delay: 40 });
+  }
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const revealObserver = !reduceMotion.matches && typeof window.IntersectionObserver === "function"
     ? new IntersectionObserver(
@@ -376,11 +398,11 @@
       )
     : null;
 
-  [home, store, catalog].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
+  [home, store, catalog, about].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
   if (revealObserver) revealItems.forEach((item) => revealObserver.observe(item));
   else revealItems.forEach((item) => item.classList.add("is-revealed"));
 
-  [home, store, catalog].filter(Boolean).forEach((page) => {
+  [home, store, catalog, about].filter(Boolean).forEach((page) => {
     page.addEventListener("focusin", (event) => {
       const item = event.target.closest(".mt-reveal");
       if (!item) return;
