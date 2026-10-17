@@ -2813,10 +2813,18 @@ body:has(#page-home.active) .mt-wall-marks { display:none; }
 #page-sobre .mt-about__visual { width:min(100%,440px); }
 #page-redes .center-title h2 > span::after { left:auto; right:54px; transform:translateX(40%); }
 #page-projetos .mt-projects-crown { width:108px; height:84px; }
+@media(min-width:761px) and (max-width:1000px) {
+  #page-sobre .mt-about {
+    grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);
+    gap:28px;
+  }
+  #page-sobre .mt-about__visual { width:min(100%,360px); }
+}
 @media(max-width:760px) {
   #page-home .mt-cta::after { width:112px; height:88px; right:0; }
   #page-loja .shop-title-end::after { width:52px; height:20px; right:-20px; }
-  #page-sobre .mt-about__visual { width:min(100%,360px); }
+  #page-sobre .mt-about { gap:18px; }
+  #page-sobre .mt-about__visual { width:min(100%,360px); justify-self:center; }
   #page-redes .center-title h2 > span::after { right:38px; }
 }
 
