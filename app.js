@@ -202,6 +202,11 @@ const PROJECT_IMAGE_CACHE_LIMIT = 8;
 const projectImageCache = new Map();
 let projectImageRequest = 0;
 let projectImageTransitionTimer;
+let projectGalleryPhotos = [];
+let projectGalleryDisplayedIndex = -1;
+let projectGalleryRequestedIndex = -1;
+let projectGalleryTitle = "";
+let projectSwipeStart = null;
 
 function cacheProjectImage(src) {
   if (projectImageCache.has(src)) {
@@ -252,6 +257,42 @@ function preloadProjectNeighbors(fotos, index) {
     .forEach((src) => cacheProjectImage(src).catch(() => {}));
 }
 
+function updateProjectNavigation() {
+  const index = Math.max(0, projectGalleryRequestedIndex);
+  const hasPrevious = projectGalleryPhotos.length > 1 && index > 0;
+  const hasNext =
+    projectGalleryPhotos.length > 1 && index < projectGalleryPhotos.length - 1;
+  $("projectPreviousImage").setAttribute(
+    "aria-disabled",
+    String(!hasPrevious),
+  );
+  $("projectNextImage").setAttribute("aria-disabled", String(!hasNext));
+}
+
+function selectProjectImage(index) {
+  if (
+    !$("projectModal").classList.contains("open") ||
+    index < 0 ||
+    index >= projectGalleryPhotos.length
+  ) {
+    return;
+  }
+  projectGalleryRequestedIndex = index;
+  updateProjectNavigation();
+  const thumb = $("projectThumbs").querySelectorAll(".project-thumb")[index];
+  setProjectImage(
+    projectGalleryPhotos[index],
+    thumb,
+    projectGalleryPhotos,
+    index,
+  );
+}
+
+function navigateProjectImages(direction) {
+  const origin = Math.max(0, projectGalleryRequestedIndex);
+  selectProjectImage(origin + direction);
+}
+
 function setProjectImage(src, thumb, fotos, index) {
   const img = $("projectMainImage");
   const loading = $("projectImageLoading");
@@ -287,9 +328,17 @@ function setProjectImage(src, thumb, fotos, index) {
         modal.querySelector(".project-image-next")?.remove();
         document
           .querySelectorAll(".project-thumb")
-          .forEach((item) => item.classList.remove("active", "pending"));
+          .forEach((item) => {
+            item.classList.remove("active", "pending");
+            item.removeAttribute("aria-current");
+          });
         thumb?.classList.add("active");
+        thumb?.setAttribute("aria-current", "true");
+        projectGalleryDisplayedIndex = index;
+        projectGalleryRequestedIndex = index;
+        img.alt = `${projectGalleryTitle} — foto ${index + 1} de ${fotos.length}`;
         loading?.classList.add("hidden");
+        updateProjectNavigation();
         preloadProjectNeighbors(fotos, index);
       };
 
@@ -315,6 +364,8 @@ function setProjectImage(src, thumb, fotos, index) {
         return;
       }
       thumb?.classList.remove("pending");
+      projectGalleryRequestedIndex = projectGalleryDisplayedIndex;
+      updateProjectNavigation();
       if (loading) {
         loading.textContent = "Não foi possível carregar esta imagem.";
         loading.classList.add("error");
@@ -328,7 +379,14 @@ function openProject(index) {
     Array.isArray(p.fotos) ? p.fotos : p.imagem ? [p.imagem] : []
   ).map(fixPath);
   if (!fotos.length) return;
-  $("projectTitle").textContent = p.titulo || "Projeto MT Studio";
+  projectImageRequest += 1;
+  clearTimeout(projectImageTransitionTimer);
+  $("projectModal").querySelector(".project-image-next")?.remove();
+  projectGalleryPhotos = fotos;
+  projectGalleryDisplayedIndex = -1;
+  projectGalleryRequestedIndex = 0;
+  projectGalleryTitle = p.titulo || "Projeto MT Studio";
+  $("projectTitle").textContent = projectGalleryTitle;
   $("projectDescription").textContent =
     p.descricao || "Projeto produzido pela MT Studio.";
 
@@ -342,7 +400,7 @@ function openProject(index) {
     btn.innerHTML = `<img src="${foto}" alt="" loading="lazy">`;
     recoverImage(btn.querySelector("img"), foto);
     btn.addEventListener("click", () => {
-      setProjectImage(foto, btn, fotos, i);
+      selectProjectImage(i);
     });
     thumbs.appendChild(btn);
   });
@@ -350,7 +408,8 @@ function openProject(index) {
   $("projectModal").classList.add("open");
   $("projectModal").setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
-  setProjectImage(fotos[0], thumbs.querySelector(".project-thumb"), fotos, 0);
+  updateProjectNavigation();
+  selectProjectImage(0);
 }
 
 function closeProject() {
@@ -361,12 +420,81 @@ function closeProject() {
   $("projectModal").setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
   $("projectMainImage").src = "";
+  $("projectMainImage").alt = "";
   $("projectImageLoading")?.classList.add("hidden");
+  projectGalleryPhotos = [];
+  projectGalleryDisplayedIndex = -1;
+  projectGalleryRequestedIndex = -1;
+  projectGalleryTitle = "";
+  projectSwipeStart = null;
+  updateProjectNavigation();
 }
 
 $("closeProjectModal").addEventListener("click", closeProject);
+$("projectPreviousImage").addEventListener("click", () => {
+  if ($("projectPreviousImage").getAttribute("aria-disabled") === "false") {
+    navigateProjectImages(-1);
+  }
+});
+$("projectNextImage").addEventListener("click", () => {
+  if ($("projectNextImage").getAttribute("aria-disabled") === "false") {
+    navigateProjectImages(1);
+  }
+});
 $("projectModal").addEventListener("click", (e) => {
   if (e.target.id === "projectModal") closeProject();
+});
+$("projectModal").addEventListener("keydown", (event) => {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    navigateProjectImages(-1);
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    navigateProjectImages(1);
+  }
+});
+
+const projectLarge = $("projectMainImage").closest(".project-large");
+projectLarge.addEventListener(
+  "pointerdown",
+  (event) => {
+    if (
+      event.pointerType !== "touch" ||
+      !event.isPrimary ||
+      event.target.closest(".project-nav")
+    ) {
+      return;
+    }
+    projectSwipeStart = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  },
+  { passive: true },
+);
+projectLarge.addEventListener(
+  "pointerup",
+  (event) => {
+    if (!projectSwipeStart || event.pointerId !== projectSwipeStart.pointerId) {
+      return;
+    }
+    const deltaX = event.clientX - projectSwipeStart.x;
+    const deltaY = event.clientY - projectSwipeStart.y;
+    projectSwipeStart = null;
+    if (
+      Math.abs(deltaX) < 48 ||
+      Math.abs(deltaX) <= Math.abs(deltaY) * 1.2
+    ) {
+      return;
+    }
+    navigateProjectImages(deltaX < 0 ? 1 : -1);
+  },
+  { passive: true },
+);
+projectLarge.addEventListener("pointercancel", () => {
+  projectSwipeStart = null;
 });
 
 function itemMatches(item) {
