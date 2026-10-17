@@ -3013,7 +3013,41 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 #page-home .mt-cta { padding-top:64px; }
 #page-home .mt-cta::after { content:none; }
 #page-loja .mt-shop > .mt-page-head > p { justify-self:end; }
-#page-sobre .mt-about-mission { background:var(--purple); color:#fff; }
+#page-sobre .mt-about-mission {
+  grid-template-columns:minmax(180px,.38fr) minmax(0,1fr);
+  gap:clamp(28px,4vw,64px);
+  max-width:1040px;
+  padding:clamp(28px,3.5vw,44px) 0 0;
+  border:0;
+  border-top:1px solid #ffffff24;
+  border-radius:0;
+  background:transparent;
+  color:var(--text);
+}
+#page-sobre .mt-about-mission::before {
+  display:block;
+  top:-1px;
+  width:clamp(72px,8vw,112px);
+  height:2px;
+  background:var(--mt-purple);
+}
+#page-sobre .mt-about-mission > strong {
+  align-self:start;
+  justify-self:start;
+  text-align:left;
+  color:var(--mt-purple);
+  font-size:clamp(2rem,2.6vw,2.5rem);
+}
+#page-sobre .mt-about-mission > span {
+  display:block;
+  max-width:48ch;
+}
+@media(max-width:900px) {
+  #page-sobre .mt-about-mission {
+    grid-template-columns:minmax(0,1fr);
+    gap:10px;
+  }
+}
 #page-redes .social-icon { color:var(--purple); }
 @media(max-width:1000px) {
   #page-loja .mt-shop > .mt-page-head > p { justify-self:start; }
@@ -3024,6 +3058,12 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   #page-home .mt-editorial--carousel { padding-block:24px 32px; }
   #page-home #mtHuman { padding-block:32px; }
   #page-home .mt-cta { padding-top:48px; }
+  #page-sobre .mt-about-mission {
+    grid-template-columns:minmax(0,1fr);
+    gap:10px;
+    padding-top:26px;
+  }
+  #page-sobre .mt-about-mission > strong { font-size:clamp(1.9rem,8vw,2.35rem); }
 }
 
 /* Stage 2 / Home: rhythm and finish only. Global surface, compositions,
