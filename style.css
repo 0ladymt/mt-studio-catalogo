@@ -1145,8 +1145,8 @@ textarea {
   top: 12px;
   z-index: 3;
   background: #171717;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   font-size: 1.7rem;
 }
@@ -1632,10 +1632,18 @@ footer p {
   }
   .project-modal-box {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) 190px;
-    height: 94dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: auto;
+    max-height: 94dvh;
+    overflow: hidden;
+  }
+  .project-large {
+    width: 100%;
+    height: min(52dvh, calc(100vw - 22px));
+    min-height: 240px;
   }
   .project-side {
+    min-height: 0;
     padding: 18px;
     border-left: 0;
     border-top: 1px solid var(--line);
