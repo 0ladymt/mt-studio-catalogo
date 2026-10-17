@@ -2820,11 +2820,20 @@ body:has(#page-home.active) .mt-wall-marks { display:none; }
   }
   #page-sobre .mt-about__visual { width:min(100%,360px); }
 }
+@media(min-width:761px) and (max-width:900px) {
+  #page-sobre .mt-about-grid { width:100%; max-width:none; }
+  #page-sobre .mt-about-grid article { padding-inline:14px; }
+  #page-sobre .mt-about-grid article:first-child { padding-left:0; }
+  #page-sobre .mt-about-grid article:last-child { padding-right:0; }
+}
 @media(max-width:760px) {
   #page-home .mt-cta::after { width:112px; height:88px; right:0; }
   #page-loja .shop-title-end::after { width:52px; height:20px; right:-20px; }
   #page-sobre .mt-about { gap:18px; }
   #page-sobre .mt-about__visual { width:min(100%,360px); justify-self:center; }
+  #page-sobre .mt-about-grid article,
+  #page-sobre .mt-about-grid article:first-child,
+  #page-sobre .mt-about-grid article:last-child { padding-block:20px; }
   #page-redes .center-title h2 > span::after { right:38px; }
 }
 
