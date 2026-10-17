@@ -259,6 +259,7 @@
   const store = document.getElementById("page-loja");
   const catalog = document.getElementById("page-catalogo");
   const about = document.getElementById("page-sobre");
+  const social = document.getElementById("page-redes");
   const revealItems = [];
   const markReveal = (elements, options = {}) => {
     if (!elements) return [];
@@ -382,6 +383,15 @@
     markReveal(about.querySelector(".mt-about-mission"), { delay: 40 });
   }
 
+  if (social) {
+    markReveal(social.querySelector(".center-title h2"));
+    markReveal(social.querySelector(".center-title p"), { delay: 80 });
+    markReveal(social.querySelectorAll(".social-list > .social-row"), {
+      delay: 40,
+      stagger: 80,
+    });
+  }
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const revealObserver = !reduceMotion.matches && typeof window.IntersectionObserver === "function"
     ? new IntersectionObserver(
@@ -398,11 +408,11 @@
       )
     : null;
 
-  [home, store, catalog, about].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
+  [home, store, catalog, about, social].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
   if (revealObserver) revealItems.forEach((item) => revealObserver.observe(item));
   else revealItems.forEach((item) => item.classList.add("is-revealed"));
 
-  [home, store, catalog, about].filter(Boolean).forEach((page) => {
+  [home, store, catalog, about, social].filter(Boolean).forEach((page) => {
     page.addEventListener("focusin", (event) => {
       const item = event.target.closest(".mt-reveal");
       if (!item) return;
