@@ -198,20 +198,128 @@ function renderProjects() {
   });
 }
 
-function setProjectImage(src) {
+const PROJECT_IMAGE_CACHE_LIMIT = 8;
+const projectImageCache = new Map();
+let projectImageRequest = 0;
+let projectImageTransitionTimer;
+
+function cacheProjectImage(src) {
+  if (projectImageCache.has(src)) {
+    const cached = projectImageCache.get(src);
+    projectImageCache.delete(src);
+    projectImageCache.set(src, cached);
+    return cached;
+  }
+
+  const promise = new Promise((resolve, reject) => {
+    const preload = new Image();
+    let resolvedSrc = src;
+    let triedFallback = false;
+
+    preload.onload = async () => {
+      try {
+        await preload.decode?.();
+      } catch {
+        // A successful load is enough when decode() is unavailable or rejects.
+      }
+      resolve(resolvedSrc);
+    };
+    preload.onerror = () => {
+      if (!triedFallback) {
+        triedFallback = true;
+        resolvedSrc = IMAGE_FALLBACK_BASE + src.replace(/^\/+/, "");
+        preload.src = resolvedSrc;
+        return;
+      }
+      reject(new Error("project-image-load-failed"));
+    };
+    preload.src = src;
+  }).catch((error) => {
+    projectImageCache.delete(src);
+    throw error;
+  });
+
+  projectImageCache.set(src, promise);
+  while (projectImageCache.size > PROJECT_IMAGE_CACHE_LIMIT) {
+    projectImageCache.delete(projectImageCache.keys().next().value);
+  }
+  return promise;
+}
+
+function preloadProjectNeighbors(fotos, index) {
+  [fotos[index - 1], fotos[index + 1]]
+    .filter(Boolean)
+    .forEach((src) => cacheProjectImage(src).catch(() => {}));
+}
+
+function setProjectImage(src, thumb, fotos, index) {
   const img = $("projectMainImage");
   const loading = $("projectImageLoading");
+  const modal = $("projectModal");
+  const request = ++projectImageRequest;
+  const hasVisibleImage = Boolean(img.getAttribute("src"));
+
+  clearTimeout(projectImageTransitionTimer);
+  modal.querySelector(".project-image-next")?.remove();
+  document
+    .querySelectorAll(".project-thumb.pending")
+    .forEach((item) => item.classList.remove("pending"));
+  thumb?.classList.add("pending");
+
   if (loading) {
+    loading.setAttribute("role", "status");
+    loading.setAttribute("aria-live", "polite");
     loading.textContent = "Carregando imagem...";
-    loading.classList.remove("hidden");
+    loading.classList.remove("hidden", "error");
   }
-  img.onload = () => loading?.classList.add("hidden");
-  img.onerror = () => {
-    if (loading) loading.textContent = "Não foi possível carregar esta imagem.";
-  };
-  recoverImage(img, src);
-  delete img.dataset.remoteFallback;
-  img.src = src;
+
+  cacheProjectImage(src)
+    .then((resolvedSrc) => {
+      if (request !== projectImageRequest || !modal.classList.contains("open")) {
+        return;
+      }
+
+      const finish = () => {
+        if (request !== projectImageRequest) return;
+        projectImageRequest += 1;
+        clearTimeout(projectImageTransitionTimer);
+        img.src = resolvedSrc;
+        modal.querySelector(".project-image-next")?.remove();
+        document
+          .querySelectorAll(".project-thumb")
+          .forEach((item) => item.classList.remove("active", "pending"));
+        thumb?.classList.add("active");
+        loading?.classList.add("hidden");
+        preloadProjectNeighbors(fotos, index);
+      };
+
+      if (
+        !hasVisibleImage ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        finish();
+        return;
+      }
+
+      const next = document.createElement("img");
+      next.className = "project-image-next";
+      next.src = resolvedSrc;
+      next.alt = "";
+      $("projectMainImage").insertAdjacentElement("afterend", next);
+      requestAnimationFrame(() => next.classList.add("ready"));
+      next.addEventListener("transitionend", finish, { once: true });
+      projectImageTransitionTimer = window.setTimeout(finish, 360);
+    })
+    .catch(() => {
+      if (request !== projectImageRequest || !modal.classList.contains("open")) {
+        return;
+      }
+      thumb?.classList.remove("pending");
+      if (loading) {
+        loading.textContent = "Não foi possível carregar esta imagem.";
+        loading.classList.add("error");
+      }
+    });
 }
 
 function openProject(index) {
@@ -223,23 +331,18 @@ function openProject(index) {
   $("projectTitle").textContent = p.titulo || "Projeto MT Studio";
   $("projectDescription").textContent =
     p.descricao || "Projeto produzido pela MT Studio.";
-  setProjectImage(fotos[0]);
 
   const thumbs = $("projectThumbs");
   thumbs.innerHTML = "";
   fotos.forEach((foto, i) => {
     const btn = document.createElement("button");
-    btn.className = "project-thumb" + (i === 0 ? " active" : "");
+    btn.className = "project-thumb";
     btn.type = "button";
     btn.setAttribute("aria-label", "Ver foto " + (i + 1));
-    btn.innerHTML = `<img src="${foto}" alt="">`;
+    btn.innerHTML = `<img src="${foto}" alt="" loading="lazy">`;
     recoverImage(btn.querySelector("img"), foto);
     btn.addEventListener("click", () => {
-      setProjectImage(foto);
-      document
-        .querySelectorAll(".project-thumb")
-        .forEach((t) => t.classList.remove("active"));
-      btn.classList.add("active");
+      setProjectImage(foto, btn, fotos, i);
     });
     thumbs.appendChild(btn);
   });
@@ -247,13 +350,18 @@ function openProject(index) {
   $("projectModal").classList.add("open");
   $("projectModal").setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+  setProjectImage(fotos[0], thumbs.querySelector(".project-thumb"), fotos, 0);
 }
 
 function closeProject() {
+  projectImageRequest += 1;
+  clearTimeout(projectImageTransitionTimer);
+  $("projectModal").querySelector(".project-image-next")?.remove();
   $("projectModal").classList.remove("open");
   $("projectModal").setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
   $("projectMainImage").src = "";
+  $("projectImageLoading")?.classList.add("hidden");
 }
 
 $("closeProjectModal").addEventListener("click", closeProject);

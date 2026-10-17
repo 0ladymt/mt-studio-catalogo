@@ -1127,6 +1127,15 @@ textarea {
   object-fit: contain;
   min-height: 0;
 }
+.project-large .project-image-next {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.project-large .project-image-next.ready {
+  opacity: 1;
+}
 .project-side {
   padding: 60px 22px 25px;
   overflow: auto;
@@ -1162,6 +1171,9 @@ textarea {
 .project-thumb.active {
   border-color: var(--lilac);
 }
+.project-thumb.pending {
+  border-color: color-mix(in srgb, var(--purple) 45%, transparent);
+}
 .project-thumb img {
   width: 100%;
   aspect-ratio: 1.4;
@@ -1169,11 +1181,21 @@ textarea {
 }
 .project-image-loading {
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: #101010;
+  z-index: 2;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  padding: 7px 11px;
+  background: #080808d9;
+  border: 1px solid var(--line);
   color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  pointer-events: none;
+}
+.project-image-loading.error {
+  color: #fff;
+  border-color: var(--purple);
 }
 footer {
   border-top: 1px solid var(--line);
