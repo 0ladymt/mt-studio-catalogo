@@ -257,6 +257,7 @@
   // content remains fully visible when JavaScript is unavailable.
   const home = document.getElementById("page-home");
   const store = document.getElementById("page-loja");
+  const catalog = document.getElementById("page-catalogo");
   const revealItems = [];
   const markReveal = (elements, options = {}) => {
     if (!elements) return [];
@@ -341,8 +342,26 @@
     markReveal(store.querySelector("#localDraftNotice"));
   }
 
+  if (catalog) {
+    markReveal(catalog.querySelector(".hero-card h2"));
+    markReveal(catalog.querySelector(".hero-card p"), { delay: 80 });
+    markReveal(catalog.querySelectorAll(".stats .stat"), {
+      delay: 150,
+      stagger: 70,
+    });
+    markReveal([
+      catalog.querySelector(".controls"),
+      catalog.querySelector(".catalog-results-summary"),
+    ], { delay: 50 });
+    markReveal(catalog.querySelector("#grid"));
+    markReveal(catalog.querySelector("#catalogLoading"));
+    markReveal(catalog.querySelector("#catalogEmpty"));
+    markReveal(catalog.querySelector("#catalogError"));
+    markReveal(catalog.querySelector("#empty"));
+  }
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const revealObserver = !reduceMotion.matches && "IntersectionObserver" in window
+  const revealObserver = !reduceMotion.matches && typeof window.IntersectionObserver === "function"
     ? new IntersectionObserver(
         (entries, observer) => {
           entries.forEach((entry) => {
@@ -357,11 +376,11 @@
       )
     : null;
 
-  [home, store].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
+  [home, store, catalog].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
   if (revealObserver) revealItems.forEach((item) => revealObserver.observe(item));
   else revealItems.forEach((item) => item.classList.add("is-revealed"));
 
-  [home, store].filter(Boolean).forEach((page) => {
+  [home, store, catalog].filter(Boolean).forEach((page) => {
     page.addEventListener("focusin", (event) => {
       const item = event.target.closest(".mt-reveal");
       if (!item) return;
@@ -385,6 +404,15 @@
     new MutationObserver(() =>
       registerStoreCards(storeGrid.querySelectorAll(".mt-shop-draft")),
     ).observe(storeGrid, { childList: true });
+  }
+  // Keep the catalogue usable in older browsers: reveal content immediately
+  // and leave incremental loading available through its keyboard-accessible button.
+  if (typeof window.IntersectionObserver !== "function") {
+    window.IntersectionObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
   }
   // Shared keyboard handling for existing gallery and model dialogs.
   let previousFocus = null;
