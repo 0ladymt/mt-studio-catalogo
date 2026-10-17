@@ -260,6 +260,7 @@
   const catalog = document.getElementById("page-catalogo");
   const about = document.getElementById("page-sobre");
   const social = document.getElementById("page-redes");
+  const projectsPage = document.getElementById("page-projetos");
   const revealItems = [];
   const markReveal = (elements, options = {}) => {
     if (!elements) return [];
@@ -392,6 +393,15 @@
     });
   }
 
+  if (projectsPage) {
+    markReveal(
+      projectsPage.querySelectorAll(
+        ".center-title .mt-projects-crown, .center-title h2, .center-title p",
+      ),
+      { stagger: 80 },
+    );
+  }
+
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const revealObserver = !reduceMotion.matches && typeof window.IntersectionObserver === "function"
     ? new IntersectionObserver(
@@ -408,11 +418,11 @@
       )
     : null;
 
-  [home, store, catalog, about, social].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
+  [home, store, catalog, about, social, projectsPage].filter(Boolean).forEach((page) => page.classList.add("mt-reveal-ready"));
   if (revealObserver) revealItems.forEach((item) => revealObserver.observe(item));
   else revealItems.forEach((item) => item.classList.add("is-revealed"));
 
-  [home, store, catalog, about, social].filter(Boolean).forEach((page) => {
+  [home, store, catalog, about, social, projectsPage].filter(Boolean).forEach((page) => {
     page.addEventListener("focusin", (event) => {
       const item = event.target.closest(".mt-reveal");
       if (!item) return;
@@ -420,6 +430,27 @@
       revealObserver?.unobserve(item);
     });
   });
+
+  if (projectsPage) {
+    window.addEventListener(
+      "load",
+      () => {
+        const featuredProject = projectsPage.querySelector(
+          ".projects-grid > .project-card:first-child",
+        );
+        const projectCards = projectsPage.querySelectorAll(
+          ".projects-grid > .project-card:not(:first-child)",
+        );
+        const registered = [
+          ...markReveal(featuredProject),
+          ...markReveal(projectCards, { delay: 80, stagger: 80 }),
+        ];
+        if (revealObserver) registered.forEach((item) => revealObserver.observe(item));
+        else registered.forEach((item) => item.classList.add("is-revealed"));
+      },
+      { once: true },
+    );
+  }
 
   if (storeGrid) {
     const registerStoreCards = (cards) => {
