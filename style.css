@@ -2883,6 +2883,7 @@ body:has(#page-redes.active) .mt-wall-marks { display:none; }
 #page-projetos .mt-projects-crown { width:88px; height:68px; }
 #page-projetos .project-card img,
 #page-projetos .project-card:first-child img { aspect-ratio:16/9; object-fit:cover; object-position:center; max-height:none; }
+#page-projetos .project-card img[alt="Projeto Kings"] { object-position:center 10%; }
 #content:has(> #page-projetos.active) { display:flow-root; }
 body:has(#page-projetos.active) { background:var(--mt-public-surface); background-attachment:fixed; }
 body:has(#page-projetos.active) .mt-wall-marks { display:none; }
