@@ -67,17 +67,40 @@ export class CatalogViewer {
       $('viewerLoading').setAttribute('role', 'status');
       $('viewerLoading').setAttribute('aria-live', 'polite');
       this.keyHandler = event => {
-        if (event.key === 'Escape' && this.active) $('closeModal').click();
+        if (event.key === 'Escape' && this.active) {
+          event.preventDefault();
+          $('closeModal').click();
+          return;
+        }
+        if (event.key !== 'Tab' || !this.active) return;
+        const focusable = [...this.modal.querySelectorAll('button:not(:disabled),input:not(:disabled),[href],[tabindex]:not([tabindex="-1"])')]
+          .filter(element => element.getClientRects().length);
+        if (!focusable.length) {
+          event.preventDefault();
+          return;
+        }
+        const first = focusable[0], last = focusable.at(-1);
+        if (event.shiftKey && (document.activeElement === first || !this.modal.contains(document.activeElement))) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first.focus();
+        }
       };
       document.addEventListener('keydown', this.keyHandler);
     }
+    this.modal.querySelectorAll('.color-dot').forEach(dot => {
+      if (dot.style.backgroundColor) dot.style.setProperty('--swatch-color', dot.style.backgroundColor);
+      dot.style.backgroundColor = 'transparent';
+    });
     this.items = items.length ? items : [item];
     this.load(item);
   }
   show() {
+    const wasOpen = this.modal.classList.contains('open');
     this.modal.classList.add('open');
     this.modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    if (!wasOpen) requestAnimationFrame(() => $('closeModal').focus());
   }
   status(message) {
     $('viewerLoading').textContent = message;
@@ -220,6 +243,7 @@ export class CatalogViewer {
   setLabels(item) {
     $('modalTitle').textContent = item.nome || item.id;
     $('modalSubtitle').textContent = `${item.genero || ''}, ${item.categoria || ''}`;
+    $('modalReference').textContent = `Referência: ${item.ydd || item.id || '-'}`;
   }
   setColor(color) { this.material?.color.setHex(color); }
   setBrightness(value) {
@@ -248,7 +272,7 @@ export class CatalogViewer {
     document.body.style.overflow = '';
     $('viewer3d').hidden = false;
     document.removeEventListener('keydown', this.keyHandler);
-    this.opener?.focus();
+    if (this.opener?.isConnected && !this.opener.disabled) this.opener.focus();
     this.renderer = this.controls = this.scene = this.object = this.material = this.radius = this.current = this.preview = null;
     this.fallback = false;
   }
