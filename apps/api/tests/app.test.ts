@@ -29,6 +29,7 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     signUpWithPassword: vi.fn(async () => undefined),
     confirmSignup: vi.fn(async () => true),
     resendSignupConfirmation: vi.fn(async () => undefined),
+    signInWithPassword: vi.fn(async () => ({ status: "invalid_credentials" as const })),
     getOwnProfile: vi.fn(async () => profile),
     ...overrides,
   };
@@ -251,5 +252,95 @@ describe("MT Studio API foundation", () => {
     });
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toEqual({ status: "verification_sent_if_eligible" });
+  });
+
+  it("authenticates with normalized credentials and emits only HttpOnly auth cookies", async () => {
+    const auth = gateway({
+      signInWithPassword: vi.fn(async () => ({
+        status: "authenticated" as const,
+        session: {
+          accessToken: "access-secret",
+          refreshToken: "refresh-secret",
+          expiresIn: 3600,
+          user: { id: profile.user_id },
+        },
+      })),
+    });
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/login", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: " USER@Example.Invalid ", password: "valid-password" }),
+    });
+    expect(response.status).toBe(200);
+    const responseBody = await response.json();
+    expect(responseBody).toEqual({ authenticated: true, user: { id: profile.user_id } });
+    expect(auth.signInWithPassword).toHaveBeenCalledWith("user@example.invalid", "valid-password");
+    const cookies = response.headers.getSetCookie();
+    expect(cookies.find((cookie) => cookie.startsWith("mt_access="))).toContain("HttpOnly");
+    expect(cookies.find((cookie) => cookie.startsWith("mt_refresh="))).toContain("HttpOnly");
+    expect(cookies.find((cookie) => cookie.startsWith("mt_csrf="))).not.toContain("HttpOnly");
+    expect(JSON.stringify(responseBody)).not.toMatch(/access-secret|refresh-secret/);
+  });
+
+  it("does not distinguish a missing account from a wrong password", async () => {
+    const request = async (auth: AuthGateway) => {
+      const app = createApp(auth, environment);
+      const csrfResponse = await app.request("/api/auth/csrf");
+      const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+      return app.request("/api/auth/login", {
+        method: "POST",
+        headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "user@example.invalid", password: "wrong" }),
+      });
+    };
+    const wrong = await request(gateway());
+    const missing = await request(gateway());
+    expect(wrong.status).toBe(401);
+    expect(missing.status).toBe(401);
+    expect(await wrong.json()).toEqual(await missing.json());
+  });
+
+  it("blocks a matching account until its email is confirmed", async () => {
+    const app = createApp(gateway({ signInWithPassword: vi.fn(async () => ({ status: "email_not_confirmed" as const })) }), environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/login", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "user@example.invalid", password: "valid-password" }),
+    });
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "email_not_confirmed" });
+  });
+
+  it("does not replace an existing authenticated session", async () => {
+    const auth = gateway();
+    const app = createApp(auth, environment);
+    const response = await app.request("/api/auth/login", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: "mt_access=existing-access; mt_csrf=proof", "X-CSRF-Token": "proof", "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "other@example.invalid", password: "valid-password" }),
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ error: "already_authenticated" });
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("rate limits repeated login attempts", async () => {
+    const app = createApp(gateway(), environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const request = () => app.request("/api/auth/login", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "limited@example.invalid", password: "wrong" }),
+    });
+    for (let attempt = 0; attempt < 8; attempt += 1) expect((await request()).status).toBe(401);
+    const blocked = await request();
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("retry-after")).toBeTruthy();
   });
 });

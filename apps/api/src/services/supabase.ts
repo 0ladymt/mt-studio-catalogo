@@ -67,6 +67,29 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       if (error && !isNonEnumeratingAuthOutcome(error)) throw new Error("resend-unavailable");
     },
 
+    async signInWithPassword(email, password) {
+      const client = clientFor("");
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) {
+        if (error.code === "email_not_confirmed") return { status: "email_not_confirmed" };
+        if (error.code === "invalid_credentials" || error.status === 400) {
+          return { status: "invalid_credentials" };
+        }
+        throw new Error("login-unavailable");
+      }
+      if (!data.session || !data.user) throw new Error("login-session-missing");
+      if (!data.user.email_confirmed_at) return { status: "email_not_confirmed" };
+      return {
+        status: "authenticated",
+        session: {
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          expiresIn: data.session.expires_in,
+          user: { id: data.user.id },
+        },
+      };
+    },
+
     async getOwnProfile(token, userId) {
       const { data, error } = await clientFor(token)
         .from("profiles")

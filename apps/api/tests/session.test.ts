@@ -30,6 +30,7 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     signUpWithPassword: vi.fn(async () => undefined),
     confirmSignup: vi.fn(async () => true),
     resendSignupConfirmation: vi.fn(async () => undefined),
+    signInWithPassword: vi.fn(async () => ({ status: "invalid_credentials" as const })),
     getOwnProfile: vi.fn(async () => null),
     ...overrides,
   };

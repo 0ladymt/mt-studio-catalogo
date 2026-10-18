@@ -9,6 +9,11 @@ export type AuthSession = {
   user: AuthenticatedUser;
 };
 
+export type LoginResult =
+  | { status: "authenticated"; session: AuthSession }
+  | { status: "invalid_credentials" }
+  | { status: "email_not_confirmed" };
+
 export type Profile = {
   user_id: string;
   display_name: string | null;
@@ -28,5 +33,6 @@ export interface AuthGateway {
   }): Promise<void>;
   confirmSignup(email: string, token: string): Promise<boolean>;
   resendSignupConfirmation(email: string): Promise<void>;
+  signInWithPassword(email: string, password: string): Promise<LoginResult>;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
 }

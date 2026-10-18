@@ -20,6 +20,11 @@ export const signupSchema = z.object({
 
 export const emailSchema = z.object({ email: normalizedEmail }).strict();
 
+export const loginSchema = z.object({
+  email: normalizedEmail,
+  password: z.string().min(1).max(128),
+}).strict();
+
 export const confirmationSchema = z.object({
   email: normalizedEmail,
   token: z.string().trim().regex(/^\d{6}$/),

@@ -6,7 +6,9 @@ import { SessionManager } from "./auth/session.js";
 import { protectMutation, restrictedCors } from "./middleware/security.js";
 import { issueCsrfCookie } from "./auth/cookies.js";
 import { FixedWindowRateLimiter } from "./auth/rate-limit.js";
-import { confirmationSchema, emailSchema, signupSchema } from "./auth/validation.js";
+import { confirmationSchema, emailSchema, loginSchema, signupSchema } from "./auth/validation.js";
+import { SingleFlight } from "./auth/single-flight.js";
+import type { LoginResult } from "./types/auth.js";
 
 export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   const app = new Hono<{ Variables: AuthVariables }>();
@@ -15,6 +17,9 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   const signupGlobalLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
   const confirmationLimiter = new FixedWindowRateLimiter(5, 15 * 60 * 1000);
   const resendLimiter = new FixedWindowRateLimiter(3, 15 * 60 * 1000);
+  const loginLimiter = new FixedWindowRateLimiter(8, 15 * 60 * 1000);
+  const loginGlobalLimiter = new FixedWindowRateLimiter(60, 15 * 60 * 1000);
+  const logins = new SingleFlight<LoginResult>();
 
   app.use("/api/*", restrictedCors(environment));
 
@@ -72,6 +77,38 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
       return context.json({ status: "verification_sent_if_eligible" }, 202);
     } catch {
       return context.json({ error: "verification_temporarily_unavailable" }, 503);
+    }
+  });
+
+  app.post("/api/auth/login", protectMutation(environment), async (context) => {
+    const input = loginSchema.safeParse(await safeJson(context));
+    if (!input.success) return context.json({ error: "invalid_login_data" }, 400);
+
+    const currentSession = await sessions.resolve(context);
+    if (currentSession) return context.json({ error: "already_authenticated" }, 409);
+
+    const rates = [loginGlobalLimiter.consume("login-global"), loginLimiter.consume(input.data.email)];
+    const denied = rates.find((rate) => !rate.allowed);
+    if (denied) {
+      context.header("Retry-After", String(denied.retryAfter));
+      return context.json({ error: "too_many_requests" }, 429);
+    }
+
+    try {
+      const result = await logins.run(
+        `${input.data.email}\0${input.data.password}`,
+        () => gateway.signInWithPassword(input.data.email, input.data.password),
+      );
+      if (result.status === "invalid_credentials") {
+        return context.json({ error: "invalid_credentials" }, 401);
+      }
+      if (result.status === "email_not_confirmed") {
+        return context.json({ error: "email_not_confirmed" }, 403);
+      }
+      sessions.issue(context, result.session);
+      return context.json({ authenticated: true, user: result.session.user });
+    } catch {
+      return context.json({ error: "login_temporarily_unavailable" }, 503);
     }
   });
 

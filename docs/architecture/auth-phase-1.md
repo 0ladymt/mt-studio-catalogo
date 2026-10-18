@@ -105,3 +105,20 @@ The local Supabase email and Auth limits are raised only to keep integration
 tests deterministic and its minimum email interval is one second. Hosted
 environments must define independent provider limits; the local values are not
 a production recommendation. BFF limits remain active during local tests.
+
+## Password login core (phase 2.3)
+
+`POST /api/auth/login` validates and normalizes credentials, then authenticates
+server-side with Supabase Auth. Successful sessions are passed to the existing
+`SessionManager`, which rotates the CSRF proof and emits the established
+HttpOnly cookies. Tokens are never returned in JSON.
+
+Unknown accounts and wrong passwords share the `invalid_credentials` response.
+An unconfirmed account is reported only after Supabase validates the matching
+credentials. Existing valid cookie sessions are not replaced, preventing login
+from being used to overwrite an active identity.
+
+Identical concurrent login attempts are single-flighted by a SHA-256 hash of
+the normalized email and password. The in-memory login rate limits are eight
+attempts per email and sixty total attempts per 15 minutes for this single API
+process. A shared atomic limiter is required before production scaling.
