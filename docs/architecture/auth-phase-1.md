@@ -45,6 +45,28 @@ testable without adding a login UI. The next auth phase will exchange verified
 auth callbacks for `HttpOnly`, `Secure`, appropriately `SameSite` cookies in a
 same-origin BFF. No refresh token should be exposed to page JavaScript.
 
+## Cookie session core (phase 2.1)
+
+The BFF owns access and refresh tokens in host-only `HttpOnly` cookies scoped to
+`/api`. A separate non-HttpOnly CSRF cookie is checked against the
+`X-CSRF-Token` header with a constant-time comparison for mutating requests.
+Allowed origins are explicit and credentialed CORS never reflects an unknown
+origin.
+
+Cookies use `SameSite=Lax`; `Secure` is required in staging and production and
+disabled only for local HTTP development. Refresh rotation is serialized per
+refresh-token hash inside an API process so concurrent requests do not perform
+multiple rotations. A distributed deployment will need a shared single-flight
+or session store before horizontal scaling. Completed rotations remain in the
+single-process cache for five seconds to cover requests that began with the old
+cookie immediately after another request rotated it.
+
+`GET /api/auth/session` reports only authentication state and the verified user
+ID. `POST /api/auth/logout` requires both an allowed Origin and valid CSRF proof,
+revokes the Supabase session, and clears all cookies. The existing Bearer path
+on `GET /api/profile` remains temporarily available for compatibility with
+foundation tests; browser-facing authentication uses cookies only.
+
 ## Known local environment limitation
 
 On Docker Desktop for Windows, the optional Supabase `vector` container may

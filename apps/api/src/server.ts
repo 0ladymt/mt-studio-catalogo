@@ -4,7 +4,7 @@ import { readEnvironment } from "./config/env.js";
 import { createSupabaseAuthGateway } from "./services/supabase.js";
 
 const environment = readEnvironment();
-const app = createApp(createSupabaseAuthGateway(environment));
+const app = createApp(createSupabaseAuthGateway(environment), environment);
 
 serve({
   fetch: app.fetch,

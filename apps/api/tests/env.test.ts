@@ -12,6 +12,8 @@ describe("API environment", () => {
     });
     expect(environment.APP_ENV).toBe("test");
     expect(environment.API_PORT).toBe(8787);
+    expect(environment.ALLOWED_ORIGINS).toContain("127.0.0.1:4173");
+    expect(environment.SESSION_REFRESH_MAX_AGE).toBe(2592000);
   });
 
   it("fails closed when required Supabase configuration is absent", () => {
