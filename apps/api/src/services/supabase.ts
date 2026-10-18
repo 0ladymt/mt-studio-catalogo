@@ -90,6 +90,22 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       };
     },
 
+    async requestPasswordRecovery(email) {
+      const client = clientFor("");
+      const { error } = await client.auth.resetPasswordForEmail(email);
+      if (error && !isNonEnumeratingAuthOutcome(error)) throw new Error("recovery-unavailable");
+    },
+
+    async resetPasswordWithOtp(email, token, password) {
+      const client = clientFor("");
+      const { data, error } = await client.auth.verifyOtp({ email, token, type: "recovery" });
+      if (error || !data.session || !data.user) return false;
+      const { error: updateError } = await client.auth.updateUser({ password });
+      if (updateError) throw new Error("password-update-unavailable");
+      await this.revokeSession(data.session.access_token);
+      return true;
+    },
+
     async getOwnProfile(token, userId) {
       const { data, error } = await clientFor(token)
         .from("profiles")

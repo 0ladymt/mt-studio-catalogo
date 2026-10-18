@@ -2,7 +2,7 @@
 (() => {
   const localApi = `${location.protocol}//${location.hostname}:8787`;
   const apiBase = ["127.0.0.1", "localhost"].includes(location.hostname) ? localApi : "";
-  const authPages = new Set(["cadastro", "confirmar-email", "login", "conta"]);
+  const authPages = new Set(["cadastro", "confirmar-email", "login", "conta", "recuperar-senha", "redefinir-senha"]);
   let csrfProof = "";
   let currentSession = null;
   let sessionRequest = null;
@@ -11,12 +11,16 @@
     signup: document.getElementById("signupForm"),
     confirmation: document.getElementById("confirmationForm"),
     login: document.getElementById("loginForm"),
+    recovery: document.getElementById("recoveryForm"),
+    passwordReset: document.getElementById("passwordResetForm"),
   };
   const statuses = {
     signup: document.getElementById("signupStatus"),
     confirmation: document.getElementById("confirmationStatus"),
     login: document.getElementById("loginStatus"),
     account: document.getElementById("accountStatus"),
+    recovery: document.getElementById("recoveryStatus"),
+    passwordReset: document.getElementById("passwordResetStatus"),
   };
 
   function showStatus(target, message = "", tone = "") {
@@ -94,6 +98,10 @@
       signup_temporarily_unavailable: "Não foi possível criar a conta agora.",
       confirmation_temporarily_unavailable: "Não foi possível confirmar o e-mail agora.",
       login_temporarily_unavailable: "O acesso está temporariamente indisponível.",
+      invalid_password_reset_data: "Revise o e-mail, o código e os requisitos da nova senha.",
+      password_reset_invalid_or_expired: "Código incorreto, expirado ou já utilizado.",
+      recovery_temporarily_unavailable: "Não foi possível solicitar a recuperação agora.",
+      password_reset_temporarily_unavailable: "Não foi possível redefinir a senha agora.",
     };
     return messages[error] ?? `Não foi possível concluir ${context}. Tente novamente.`;
   }
@@ -188,8 +196,75 @@
     } finally { setBusy(form, false); }
   });
 
-  document.getElementById("passwordRecoveryPending")?.addEventListener("click", () => {
-    showStatus(statuses.login, "A recuperação de senha será disponibilizada na próxima etapa.", "info");
+  forms.recovery?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const email = String(new FormData(form).get("email")).trim().toLowerCase();
+    setBusy(form, true);
+    showStatus(statuses.recovery, "Solicitando seu código…", "loading");
+    try {
+      const { response, body } = await api("/api/auth/request-password-reset", { method: "POST", data: { email } });
+      if (!response.ok) throw new Error(body.error ?? "recovery_failed");
+      sessionStorage.setItem("mt_recovery_email", email);
+      window.mtOpenPage("redefinir-senha");
+      fillRecoveryEmail();
+      showStatus(statuses.passwordReset, "Se a conta estiver elegível, o código foi enviado.", "success");
+    } catch (error) {
+      showStatus(statuses.recovery, errorMessage(error.message, "a recuperação"), "error");
+    } finally { setBusy(form, false); }
+  });
+
+  forms.passwordReset?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const password = String(data.get("password") ?? "");
+    if (password !== String(data.get("passwordConfirm") ?? "")) {
+      showStatus(statuses.passwordReset, "As senhas precisam ser iguais.", "error");
+      document.getElementById("resetPasswordConfirm").focus();
+      return;
+    }
+    setBusy(form, true);
+    showStatus(statuses.passwordReset, "Redefinindo sua senha…", "loading");
+    try {
+      const payload = {
+        email: String(data.get("email")),
+        token: String(data.get("token")).replace(/\D/g, ""),
+        password,
+      };
+      const { response, body } = await api("/api/auth/reset-password", { method: "POST", data: payload });
+      form.elements.password.value = "";
+      form.elements.passwordConfirm.value = "";
+      if (!response.ok) throw new Error(body.error ?? "password_reset_failed");
+      sessionStorage.removeItem("mt_recovery_email");
+      currentSession = null;
+      updateAccountNavigation();
+      forms.login.elements.email.value = payload.email.trim().toLowerCase();
+      form.reset();
+      window.mtOpenPage("login");
+      showStatus(statuses.login, "Senha redefinida. Entre novamente com sua nova senha.", "success");
+    } catch (error) {
+      form.elements.password.value = "";
+      form.elements.passwordConfirm.value = "";
+      showStatus(statuses.passwordReset, errorMessage(error.message, "a redefinição"), "error");
+    } finally { setBusy(form, false); }
+  });
+
+  document.getElementById("resendRecovery")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const email = forms.passwordReset.elements.email.value;
+    if (!forms.passwordReset.elements.email.reportValidity()) return;
+    button.disabled = true;
+    showStatus(statuses.passwordReset, "Solicitando um novo código…", "loading");
+    try {
+      const { response, body } = await api("/api/auth/request-password-reset", { method: "POST", data: { email } });
+      if (!response.ok) throw new Error(body.error ?? "recovery_failed");
+      showStatus(statuses.passwordReset, "Se a conta estiver elegível, um novo código foi enviado.", "success");
+    } catch (error) {
+      showStatus(statuses.passwordReset, errorMessage(error.message, "o reenvio"), "error");
+    } finally { button.disabled = false; }
   });
 
   document.getElementById("logoutButton")?.addEventListener("click", async (event) => {
@@ -214,6 +289,11 @@
     if (pendingEmail && forms.confirmation) forms.confirmation.elements.email.value = pendingEmail;
   }
 
+  function fillRecoveryEmail() {
+    const recoveryEmail = sessionStorage.getItem("mt_recovery_email");
+    if (recoveryEmail && forms.passwordReset) forms.passwordReset.elements.email.value = recoveryEmail;
+  }
+
   async function loadAccount() {
     const session = currentSession ?? await readSession(true);
     if (!session) return false;
@@ -231,13 +311,14 @@
     const page = event.detail;
     if (!authPages.has(page)) return;
     if (page === "confirmar-email") fillPendingEmail();
+    if (page === "redefinir-senha") fillRecoveryEmail();
     const session = await readSession();
     if (page === "conta" && !session) {
       window.mtOpenPage("login");
       showStatus(statuses.login, "Entre para acessar sua conta.", "info");
       return;
     }
-    if ((page === "login" || page === "cadastro") && session) {
+    if (["login", "cadastro", "recuperar-senha", "redefinir-senha"].includes(page) && session) {
       await loadAccount();
       window.mtOpenPage("conta");
       return;
@@ -247,6 +328,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     fillPendingEmail();
+    fillRecoveryEmail();
     readSession().then((session) => {
       if (location.hash === "#conta" && !session) window.mtOpenPage("login");
       if (location.hash === "#conta" && session) loadAccount();

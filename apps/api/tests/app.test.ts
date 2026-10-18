@@ -30,6 +30,8 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     confirmSignup: vi.fn(async () => true),
     resendSignupConfirmation: vi.fn(async () => undefined),
     signInWithPassword: vi.fn(async () => ({ status: "invalid_credentials" as const })),
+    requestPasswordRecovery: vi.fn(async () => undefined),
+    resetPasswordWithOtp: vi.fn(async () => false),
     getOwnProfile: vi.fn(async () => profile),
     ...overrides,
   };
@@ -342,5 +344,51 @@ describe("MT Studio API foundation", () => {
     const blocked = await request();
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("retry-after")).toBeTruthy();
+  });
+
+  it("returns the same neutral recovery response without exposing account existence", async () => {
+    const auth = gateway();
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/request-password-reset", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: " USER@Example.Invalid " }),
+    });
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ status: "recovery_sent_if_eligible" });
+    expect(auth.requestPasswordRecovery).toHaveBeenCalledWith("user@example.invalid");
+  });
+
+  it("resets a password only with a valid recovery OTP and clears local session cookies", async () => {
+    const auth = gateway({ resetPasswordWithOtp: vi.fn(async () => true) });
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/reset-password", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "user@example.invalid", token: "123456", password: "New-Password!234" }),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ status: "password_updated" });
+    expect(auth.resetPasswordWithOtp).toHaveBeenCalledWith("user@example.invalid", "123456", "New-Password!234");
+    expect(response.headers.getSetCookie().filter((cookie) => /mt_(access|refresh|csrf)=/.test(cookie)).every((cookie) => cookie.includes("Max-Age=0"))).toBe(true);
+  });
+
+  it("rejects invalid or expired recovery codes without exposing tokens", async () => {
+    const app = createApp(gateway(), environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/reset-password", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "user@example.invalid", token: "123456", password: "New-Password!234" }),
+    });
+    expect(response.status).toBe(400);
+    const result = await response.json();
+    expect(result).toEqual({ error: "password_reset_invalid_or_expired" });
+    expect(JSON.stringify(result)).not.toContain("123456");
   });
 });

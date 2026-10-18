@@ -122,3 +122,20 @@ Identical concurrent login attempts are single-flighted by a SHA-256 hash of
 the normalized email and password. The in-memory login rate limits are eight
 attempts per email and sixty total attempts per 15 minutes for this single API
 process. A shared atomic limiter is required before production scaling.
+
+## Password recovery (phase 2.5)
+
+Recovery uses a six-digit Supabase recovery OTP instead of a session-bearing
+URL. The BFF accepts the email and OTP, updates the password server-side and
+immediately performs a global Supabase logout. No recovery session or token is
+returned to the browser.
+
+Global logout revokes the account's refresh-token family. Already issued JWT
+access tokens remain valid until their short configured expiry because they are
+stateless. Immediate access-token invalidation would require a server-side
+session/version registry and is a production hardening decision.
+
+Recovery requests return the same accepted response for existing and missing
+accounts. Local in-memory limits allow three requests per email and thirty
+globally per 15 minutes; reset attempts allow five per email per 15 minutes.
+Production requires an atomic shared limiter.

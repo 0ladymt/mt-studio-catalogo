@@ -12,6 +12,8 @@
     "confirmar-email",
     "login",
     "conta",
+    "recuperar-senha",
+    "redefinir-senha",
   ]);
   const titles = {
     home: "Início",
@@ -25,6 +27,8 @@
     "confirmar-email": "Confirmar e-mail",
     login: "Entrar",
     conta: "Minha conta",
+    "recuperar-senha": "Recuperar senha",
+    "redefinir-senha": "Redefinir senha",
   };
   const menu = document.querySelector(".menu-toggle");
   function showPage(name, focus = false) {

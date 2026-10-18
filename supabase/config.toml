@@ -47,3 +47,7 @@ token_verifications = 100
 [auth.email.template.confirmation]
 subject = "Confirme seu e-mail — MT Studio"
 content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Recupere seu acesso — MT Studio"
+content_path = "./supabase/templates/recovery.html"

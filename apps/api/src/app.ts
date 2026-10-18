@@ -6,7 +6,7 @@ import { SessionManager } from "./auth/session.js";
 import { protectMutation, restrictedCors } from "./middleware/security.js";
 import { issueCsrfCookie } from "./auth/cookies.js";
 import { FixedWindowRateLimiter } from "./auth/rate-limit.js";
-import { confirmationSchema, emailSchema, loginSchema, signupSchema } from "./auth/validation.js";
+import { confirmationSchema, emailSchema, loginSchema, passwordResetSchema, signupSchema } from "./auth/validation.js";
 import { SingleFlight } from "./auth/single-flight.js";
 import type { LoginResult } from "./types/auth.js";
 
@@ -19,6 +19,9 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   const resendLimiter = new FixedWindowRateLimiter(3, 15 * 60 * 1000);
   const loginLimiter = new FixedWindowRateLimiter(8, 15 * 60 * 1000);
   const loginGlobalLimiter = new FixedWindowRateLimiter(60, 15 * 60 * 1000);
+  const recoveryLimiter = new FixedWindowRateLimiter(3, 15 * 60 * 1000);
+  const recoveryGlobalLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
+  const passwordResetLimiter = new FixedWindowRateLimiter(5, 15 * 60 * 1000);
   const logins = new SingleFlight<LoginResult>();
 
   app.use("/api/*", restrictedCors(environment));
@@ -109,6 +112,41 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
       return context.json({ authenticated: true, user: result.session.user });
     } catch {
       return context.json({ error: "login_temporarily_unavailable" }, 503);
+    }
+  });
+
+  app.post("/api/auth/request-password-reset", protectMutation(environment), async (context) => {
+    const input = emailSchema.safeParse(await safeJson(context));
+    if (!input.success) return context.json({ error: "invalid_email" }, 400);
+    const rates = [recoveryGlobalLimiter.consume("recovery-global"), recoveryLimiter.consume(input.data.email)];
+    const denied = rates.find((rate) => !rate.allowed);
+    if (denied) {
+      context.header("Retry-After", String(denied.retryAfter));
+      return context.json({ error: "too_many_requests" }, 429);
+    }
+    try {
+      await gateway.requestPasswordRecovery(input.data.email);
+      return context.json({ status: "recovery_sent_if_eligible" }, 202);
+    } catch {
+      return context.json({ error: "recovery_temporarily_unavailable" }, 503);
+    }
+  });
+
+  app.post("/api/auth/reset-password", protectMutation(environment), async (context) => {
+    const input = passwordResetSchema.safeParse(await safeJson(context));
+    if (!input.success) return context.json({ error: "invalid_password_reset_data" }, 400);
+    const rate = passwordResetLimiter.consume(input.data.email);
+    if (!rate.allowed) {
+      context.header("Retry-After", String(rate.retryAfter));
+      return context.json({ error: "too_many_requests" }, 429);
+    }
+    try {
+      const reset = await gateway.resetPasswordWithOtp(input.data.email, input.data.token, input.data.password);
+      if (!reset) return context.json({ error: "password_reset_invalid_or_expired" }, 400);
+      sessions.clear(context);
+      return context.json({ status: "password_updated" });
+    } catch {
+      return context.json({ error: "password_reset_temporarily_unavailable" }, 503);
     }
   });
 

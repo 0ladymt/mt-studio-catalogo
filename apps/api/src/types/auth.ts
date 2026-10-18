@@ -35,5 +35,7 @@ export interface AuthGateway {
   confirmSignup(email: string, token: string): Promise<boolean>;
   resendSignupConfirmation(email: string): Promise<void>;
   signInWithPassword(email: string, password: string): Promise<LoginResult>;
+  requestPasswordRecovery(email: string): Promise<void>;
+  resetPasswordWithOtp(email: string, token: string, password: string): Promise<boolean>;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
 }
