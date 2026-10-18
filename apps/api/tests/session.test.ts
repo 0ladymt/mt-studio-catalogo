@@ -27,6 +27,9 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     verifyAccessToken: vi.fn(async (token) => token === session.accessToken ? session.user : null),
     refreshSession: vi.fn(async (token) => token === session.refreshToken ? session : null),
     revokeSession: vi.fn(async () => undefined),
+    signUpWithPassword: vi.fn(async () => undefined),
+    confirmSignup: vi.fn(async () => true),
+    resendSignupConfirmation: vi.fn(async () => undefined),
     getOwnProfile: vi.fn(async () => null),
     ...overrides,
   };

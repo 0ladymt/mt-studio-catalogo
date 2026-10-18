@@ -78,3 +78,30 @@ not authentication or database authorization.
 Do not enable an unauthenticated Docker Engine TCP endpoint as a workaround.
 Keep this limitation open until it can be resolved through a supported Docker
 Desktop or Supabase CLI configuration.
+
+## Email signup core (phase 2.2)
+
+Traditional signup is handled only by the BFF. It normalizes email addresses,
+enforces a 12–128 character password with upper- and lowercase letters, a
+number, and a symbol, and returns the same accepted response for new and
+already-known accounts. No session cookie is issued before email confirmation.
+
+Local confirmation uses a six-digit OTP delivered to Mailpit and submitted by
+`POST`, avoiding auth tokens in application URLs and preventing link-prefetch
+software from consuming the confirmation. Successful verification sessions are
+immediately revoked; the customer must use the future login endpoint.
+
+`GET /api/auth/csrf` returns a non-secret double-submit proof and sets the
+matching `mt_csrf` cookie. Its `/api` path is unchanged. Future pages keep the
+returned proof in memory and send it in `X-CSRF-Token` with
+`credentials: include`; access and refresh cookies remain inaccessible to
+JavaScript.
+
+Signup and resend throttles are intentionally in-memory for the single-process
+local phase. A shared, atomic rate-limit store plus trusted proxy IP handling is
+required before horizontal scaling or production deployment.
+
+The local Supabase email and Auth limits are raised only to keep integration
+tests deterministic and its minimum email interval is one second. Hosted
+environments must define independent provider limits; the local values are not
+a production recommendation. BFF limits remain active during local tests.

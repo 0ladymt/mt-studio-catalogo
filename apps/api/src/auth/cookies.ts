@@ -29,7 +29,6 @@ export function issueSessionCookies(
   environment: ApiEnvironment,
   session: AuthSession,
 ): string {
-  const csrfToken = randomBytes(32).toString("base64url");
   const base = baseOptions(environment);
   setCookie(context, SESSION_COOKIES.access, session.accessToken, {
     ...base,
@@ -41,8 +40,13 @@ export function issueSessionCookies(
     httpOnly: true,
     maxAge: environment.SESSION_REFRESH_MAX_AGE,
   });
+  return issueCsrfCookie(context, environment);
+}
+
+export function issueCsrfCookie(context: Context, environment: ApiEnvironment): string {
+  const csrfToken = randomBytes(32).toString("base64url");
   setCookie(context, SESSION_COOKIES.csrf, csrfToken, {
-    ...base,
+    ...baseOptions(environment),
     httpOnly: false,
     maxAge: environment.SESSION_REFRESH_MAX_AGE,
   });

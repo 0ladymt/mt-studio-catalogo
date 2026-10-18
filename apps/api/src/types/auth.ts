@@ -21,5 +21,12 @@ export interface AuthGateway {
   verifyAccessToken(token: string): Promise<AuthenticatedUser | null>;
   refreshSession(refreshToken: string): Promise<AuthSession | null>;
   revokeSession(accessToken: string): Promise<void>;
+  signUpWithPassword(input: {
+    displayName: string;
+    email: string;
+    password: string;
+  }): Promise<void>;
+  confirmSignup(email: string, token: string): Promise<boolean>;
+  resendSignupConfirmation(email: string): Promise<void>;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
 }

@@ -43,6 +43,30 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       if (!response.ok && response.status !== 401) throw new Error("session-revocation-failed");
     },
 
+    async signUpWithPassword({ displayName, email, password }) {
+      const client = clientFor("");
+      const { error } = await client.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: displayName } },
+      });
+      if (error && !isNonEnumeratingAuthOutcome(error)) throw new Error("signup-unavailable");
+    },
+
+    async confirmSignup(email, token) {
+      const client = clientFor("");
+      const { data, error } = await client.auth.verifyOtp({ email, token, type: "signup" });
+      if (error || !data.user) return false;
+      if (data.session?.access_token) await this.revokeSession(data.session.access_token);
+      return true;
+    },
+
+    async resendSignupConfirmation(email) {
+      const client = clientFor("");
+      const { error } = await client.auth.resend({ type: "signup", email });
+      if (error && !isNonEnumeratingAuthOutcome(error)) throw new Error("resend-unavailable");
+    },
+
     async getOwnProfile(token, userId) {
       const { data, error } = await clientFor(token)
         .from("profiles")
@@ -54,4 +78,10 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       return data;
     },
   };
+}
+
+function isNonEnumeratingAuthOutcome(error: { status?: number; code?: string; message?: string }): boolean {
+  if (error.code === "user_already_exists" || error.code === "email_exists") return true;
+  if (error.status === 422 && /already|registered|confirmed/i.test(error.message ?? "")) return true;
+  return error.status !== undefined && error.status >= 400 && error.status < 500;
 }
