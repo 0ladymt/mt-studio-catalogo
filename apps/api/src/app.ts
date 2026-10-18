@@ -115,7 +115,7 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   app.get("/api/auth/session", async (context) => {
     const session = await sessions.resolve(context);
     if (!session) return context.json({ authenticated: false }, 200);
-    return context.json({ authenticated: true, user: { id: session.user.id } });
+    return context.json({ authenticated: true, user: session.user });
   });
 
   app.post("/api/auth/logout", protectMutation(environment), async (context) => {

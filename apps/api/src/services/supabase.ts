@@ -17,7 +17,7 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
     async verifyAccessToken(token) {
       const { data, error } = await clientFor(token).auth.getUser(token);
       if (error || !data.user) return null;
-      return { id: data.user.id };
+      return { id: data.user.id, email: data.user.email };
     },
 
     async refreshSession(refreshToken) {
@@ -28,7 +28,7 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
         expiresIn: data.session.expires_in,
-        user: { id: data.user.id },
+        user: { id: data.user.id, email: data.user.email },
       };
     },
 
@@ -85,7 +85,7 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
           accessToken: data.session.access_token,
           refreshToken: data.session.refresh_token,
           expiresIn: data.session.expires_in,
-          user: { id: data.user.id },
+          user: { id: data.user.id, email: data.user.email },
         },
       };
     },

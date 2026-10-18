@@ -45,6 +45,7 @@
         <button class="nav-tab" data-page="sobre">Sobre</button>
         <button class="nav-tab" data-page="redes">Redes Sociais</button>
         <button class="nav-tab" data-page="projetos">Projetos</button>
+        <button class="nav-tab nav-tab--account" id="accountNav" data-page="login">Minha conta</button>
       </nav>
 
       <a
@@ -631,6 +632,93 @@
         </div>
       </section>
 
+      <section id="page-cadastro" class="page mt-auth-page" aria-labelledby="signupTitle">
+        <div class="mt-auth-shell mt-shell">
+          <div class="mt-auth-intro">
+            <span class="mt-overline">Conta MT Studio</span>
+            <h2 id="signupTitle">CRIE SUA<br /><span>CONTA.</span></h2>
+            <p>Um acesso único para acompanhar suas compras e, em breve, seus pedidos digitais.</p>
+            <small>Cadastro protegido pelo ambiente seguro da MT Studio.</small>
+          </div>
+          <form id="signupForm" class="mt-auth-card" novalidate>
+            <div class="mt-auth-card__head"><span>01 / Cadastro</span><h3>SEUS DADOS.</h3></div>
+            <label for="signupName">Nome</label>
+            <input id="signupName" name="displayName" autocomplete="name" maxlength="120" required />
+            <label for="signupEmail">E-mail</label>
+            <input id="signupEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+            <label for="signupPassword">Senha</label>
+            <input id="signupPassword" name="password" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="passwordRequirements" />
+            <p id="passwordRequirements" class="mt-auth-hint">Use pelo menos 12 caracteres, com letra maiúscula, minúscula, número e símbolo.</p>
+            <label for="signupPasswordConfirm">Confirmar senha</label>
+            <input id="signupPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required />
+            <div class="mt-auth-legal" role="note"><strong>Termos em preparação</strong><span>O aceite obrigatório dos Termos de Uso e da Política de Privacidade será ativado antes do lançamento comercial.</span></div>
+            <p id="signupStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
+            <button class="mt-button mt-auth-submit" type="submit">Criar conta</button>
+            <p class="mt-auth-switch">Já possui uma conta? <a href="#login" data-page-link="login">Entrar</a></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-confirmar-email" class="page mt-auth-page" aria-labelledby="confirmationTitle">
+        <div class="mt-auth-shell mt-shell">
+          <div class="mt-auth-intro">
+            <span class="mt-overline">Confirmação</span>
+            <h2 id="confirmationTitle">CONFIRME SEU<br /><span>E-MAIL.</span></h2>
+            <p>Enviamos um código de seis dígitos para o endereço informado.</p>
+            <small>O código é temporário e pode ser usado somente uma vez.</small>
+          </div>
+          <form id="confirmationForm" class="mt-auth-card" novalidate>
+            <div class="mt-auth-card__head"><span>02 / Verificação</span><h3>CÓDIGO DE ACESSO.</h3></div>
+            <label for="confirmationEmail">E-mail</label>
+            <input id="confirmationEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+            <label for="confirmationCode">Código de seis dígitos</label>
+            <input id="confirmationCode" class="mt-auth-otp" name="token" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
+            <p id="confirmationStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
+            <button class="mt-button mt-auth-submit" type="submit">Confirmar e-mail</button>
+            <button id="resendVerification" class="mt-auth-secondary" type="button">Reenviar código</button>
+            <p class="mt-auth-switch"><a href="#login" data-page-link="login">Voltar para o login</a></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-login" class="page mt-auth-page" aria-labelledby="loginTitle">
+        <div class="mt-auth-shell mt-shell">
+          <div class="mt-auth-intro">
+            <span class="mt-overline">Área do cliente</span>
+            <h2 id="loginTitle">ENTRE NA SUA<br /><span>CONTA.</span></h2>
+            <p>Acesse sua conta MT Studio com o e-mail confirmado no cadastro.</p>
+            <small>Seus tokens de autenticação nunca ficam disponíveis ao navegador.</small>
+          </div>
+          <form id="loginForm" class="mt-auth-card" novalidate>
+            <div class="mt-auth-card__head"><span>03 / Login</span><h3>BEM-VINDO DE VOLTA.</h3></div>
+            <label for="loginEmail">E-mail</label>
+            <input id="loginEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+            <label for="loginPassword">Senha</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" maxlength="128" required />
+            <div class="mt-auth-inline"><a href="#cadastro" data-page-link="cadastro">Criar conta</a><button id="passwordRecoveryPending" type="button">Esqueci minha senha</button></div>
+            <p id="loginStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
+            <button class="mt-button mt-auth-submit" type="submit">Entrar</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-conta" class="page mt-auth-page" aria-labelledby="accountTitle">
+        <div class="mt-account-shell mt-shell">
+          <header class="mt-account-head">
+            <span class="mt-overline">Minha conta</span>
+            <h2 id="accountTitle">OLÁ, <span id="accountName">CLIENTE.</span></h2>
+            <p>Seu acesso à MT Studio está ativo.</p>
+          </header>
+          <div class="mt-account-panel">
+            <div><span>Nome</span><strong id="accountDisplayName">—</strong></div>
+            <div><span>E-mail</span><strong id="accountEmail">—</strong></div>
+            <div><span>Estado</span><strong class="mt-account-state"><i aria-hidden="true"></i> Autenticado</strong></div>
+            <button id="logoutButton" class="mt-button mt-button--outline" type="button">Sair da conta</button>
+          </div>
+          <p id="accountStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
       <section id="page-admin" class="page">
         <div class="mt-shell mt-admin">
           <span class="mt-overline">Gestão da vitrine</span>
@@ -888,6 +976,7 @@
     <script src="catalogo-data.js"></script>
     <script src="projetos-data.js"></script>
     <script src="site.js?v=20261006-home-project-gallery-smooth" defer></script>
+    <script src="auth-ui.js?v=20261018-auth-ui" defer></script>
     <script src="background-composition.js?v=20261006-global-surface" defer></script>
     <script src="intro.js?v=20261005-intro-tag-painted" defer></script>
     <script src="mt-store-drafts.js?v=20261005-loja-slots" defer></script>

@@ -8,6 +8,10 @@
     "redes",
     "projetos",
     "admin",
+    "cadastro",
+    "confirmar-email",
+    "login",
+    "conta",
   ]);
   const titles = {
     home: "Início",
@@ -17,6 +21,10 @@
     redes: "Redes sociais",
     projetos: "Projetos",
     admin: "Painel de rascunhos",
+    cadastro: "Criar conta",
+    "confirmar-email": "Confirmar e-mail",
+    login: "Entrar",
+    conta: "Minha conta",
   };
   const menu = document.querySelector(".menu-toggle");
   function showPage(name, focus = false) {
