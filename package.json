@@ -1,0 +1,30 @@
+{
+  "name": "mt-studio-commercial-foundation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:api": "npm run start:api",
+    "build:api": "tsc -p apps/api/tsconfig.build.json",
+    "start:api": "npm run build:api && node .build/api/server.js",
+    "typecheck": "tsc -p apps/api/tsconfig.json --noEmit",
+    "test:api": "vitest run apps/api/tests",
+    "test:site": "node scripts/check-site.mjs && node scripts/check-studio.mjs",
+    "test:db": "supabase test db",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "test": "npm run typecheck && npm run test:api && npm run test:site"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@supabase/supabase-js": "^2.76.1",
+    "hono": "^4.9.9",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "supabase": "^2.54.11",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}
