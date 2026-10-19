@@ -43,6 +43,9 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     confirmCurrentPassword: vi.fn(async () => false),
     beginGoogleIdentityLink: vi.fn(async () => ({ authorizationUrl: "https://accounts.google.test/link", pkceStorage: {} })),
     completeGoogleIdentityLink: vi.fn(async () => null),
+    hasPassword: vi.fn(async () => false),
+    requestPasswordSetup: vi.fn(async () => true),
+    setupPasswordWithOtp: vi.fn(async () => "invalid_or_expired" as const),
     getOwnProfile: vi.fn(async () => null),
     ...overrides,
   };

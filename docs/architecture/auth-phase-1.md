@@ -158,3 +158,21 @@ Production requires an atomic shared limiter.
 Linking requires a valid confirmed password account, recent password confirmation, and an opaque one-time authorization bound to both the original UUID and the current session. The BFF starts Supabase `linkIdentity()` with PKCE and rejects any callback whose returned UUID differs from the original UUID. There is no custom account merge or commercial-data transfer.
 
 Manual linking is enabled only in the local Supabase configuration for this validation phase. The sensitive-authorization and OAuth-transaction stores are in memory. Production or multi-instance deployment requires a shared store with TTL and atomic consume semantics (for example, Redis); restarting the local API safely invalidates pending transactions.
+
+## Password setup for Google-first accounts (phase 2.7B)
+
+Google-first users request a Supabase reauthentication nonce and set a password
+through the authenticated BFF. Tokens remain in HttpOnly cookies, the original
+UUID is checked before the credential update, and successful setup globally
+revokes refresh tokens. The current cookies are cleared so the customer must
+sign in again.
+
+Password capability is not inferred from `auth.identities`: Supabase can accept
+email/password login after `updateUser({ password, nonce })` without exposing an
+`email` identity. `profiles.password_configured_at` is therefore protected and
+server-managed. Its RPC only marks the current authenticated profile after the
+database confirms that Supabase Auth has populated `encrypted_password`.
+
+Already-issued access tokens can remain usable until JWT expiry after global
+refresh-token revocation. Sensitive endpoints must continue validating the user
+against Supabase, and production should keep access-token lifetimes short.

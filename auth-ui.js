@@ -15,6 +15,7 @@
     recovery: document.getElementById("recoveryForm"),
     passwordReset: document.getElementById("passwordResetForm"),
     googleLink: document.getElementById("googleLinkForm"),
+    passwordSetup: document.getElementById("passwordSetupForm"),
   };
   const statuses = {
     signup: document.getElementById("signupStatus"),
@@ -23,6 +24,7 @@
     account: document.getElementById("accountStatus"),
     recovery: document.getElementById("recoveryStatus"),
     passwordReset: document.getElementById("passwordResetStatus"),
+    passwordSetup: document.getElementById("passwordSetupStatus"),
   };
 
   function showStatus(target, message = "", tone = "") {
@@ -110,6 +112,12 @@
       google_link_not_eligible: "Esta conta não está elegível para vinculação neste momento.",
       google_already_linked: "O Google já está vinculado a esta conta.",
       google_link_temporarily_unavailable: "Não foi possível iniciar a vinculação agora.",
+      password_setup_not_eligible: "Esta conta não está elegível para definir senha.",
+      password_already_configured: "Esta conta já possui uma senha configurada.",
+      password_setup_session_invalid: "Sua sessão expirou. Entre novamente para continuar.",
+      invalid_password_setup_data: "Revise o código e os requisitos da nova senha.",
+      password_setup_invalid_or_expired: "Código incorreto, expirado ou já utilizado.",
+      password_setup_temporarily_unavailable: "Não foi possível definir a senha agora.",
     };
     return messages[error] ?? `Não foi possível concluir ${context}. Tente novamente.`;
   }
@@ -341,6 +349,70 @@
     }
   });
 
+  document.getElementById("showPasswordSetupForm")?.addEventListener("click", () => {
+    forms.passwordSetup.hidden = false;
+    document.getElementById("requestPasswordSetupCode").focus();
+  });
+
+  document.getElementById("cancelPasswordSetup")?.addEventListener("click", () => {
+    forms.passwordSetup.reset();
+    forms.passwordSetup.hidden = true;
+    document.getElementById("passwordSetupFields").hidden = true;
+    showStatus(statuses.passwordSetup);
+    document.getElementById("showPasswordSetupForm").focus();
+  });
+
+  async function requestPasswordSetupCode(button) {
+    button.disabled = true;
+    showStatus(statuses.passwordSetup, "Enviando seu código de segurança…", "loading");
+    try {
+      const { response, body } = await api("/api/auth/password/setup/request", { method: "POST", data: {} });
+      if (!response.ok) throw new Error(body.error ?? "password_setup_failed");
+      document.getElementById("passwordSetupFields").hidden = false;
+      forms.passwordSetup.elements.token.focus();
+      showStatus(statuses.passwordSetup, "Código enviado ao e-mail confirmado da sua conta.", "success");
+    } catch (error) {
+      showStatus(statuses.passwordSetup, errorMessage(error.message, "o envio do código"), "error");
+    } finally { button.disabled = false; }
+  }
+
+  document.getElementById("requestPasswordSetupCode")?.addEventListener("click", (event) => requestPasswordSetupCode(event.currentTarget));
+  document.getElementById("resendPasswordSetupCode")?.addEventListener("click", (event) => requestPasswordSetupCode(event.currentTarget));
+
+  forms.passwordSetup?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const password = String(data.get("password") ?? "");
+    if (password !== String(data.get("passwordConfirm") ?? "")) {
+      showStatus(statuses.passwordSetup, "As senhas não coincidem.", "error");
+      form.elements.passwordConfirm.focus();
+      return;
+    }
+    const token = String(data.get("token") ?? "").trim();
+    setBusy(form, true);
+    showStatus(statuses.passwordSetup, "Configurando seu novo método de acesso…", "loading");
+    try {
+      const { response, body } = await api("/api/auth/password/setup/confirm", {
+        method: "POST",
+        data: { token, password },
+      });
+      if (!response.ok) throw new Error(body.error ?? "password_setup_failed");
+      form.reset();
+      currentSession = null;
+      csrfProof = "";
+      updateAccountNavigation();
+      window.mtOpenPage("login");
+      showStatus(statuses.login, "Senha configurada. Entre novamente com Google ou e-mail e senha.", "success");
+    } catch (error) {
+      form.elements.token.value = "";
+      showStatus(statuses.passwordSetup, errorMessage(error.message, "a definição da senha"), "error");
+      setBusy(form, false);
+      form.elements.token.focus();
+    }
+  });
+
   function fillPendingEmail() {
     const pendingEmail = sessionStorage.getItem("mt_pending_email");
     if (pendingEmail && forms.confirmation) forms.confirmation.elements.email.value = pendingEmail;
@@ -375,10 +447,13 @@
     const hasPassword = Boolean(access.methods?.password);
     const hasGoogle = Boolean(access.methods?.google);
     document.getElementById("passwordMethodState").textContent = hasPassword ? "Ativo e confirmado" : "Não configurado";
+    document.getElementById("passwordMethodBadge").hidden = !hasPassword;
     document.getElementById("googleMethodState").textContent = hasGoogle ? "Acesso disponível" : "Ainda não vinculado";
     document.getElementById("googleLinkedBadge").hidden = !hasGoogle;
     document.getElementById("showGoogleLinkForm").hidden = hasGoogle || !hasPassword || !access.emailConfirmed;
+    document.getElementById("showPasswordSetupForm").hidden = !access.actions?.canSetupPassword;
     if (hasGoogle) forms.googleLink.hidden = true;
+    if (!access.actions?.canSetupPassword) forms.passwordSetup.hidden = true;
   }
 
   window.addEventListener("mt:page", async (event) => {

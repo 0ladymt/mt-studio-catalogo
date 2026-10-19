@@ -3217,6 +3217,16 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 .mt-google-link-form__row { display:grid; grid-template-columns:minmax(220px,1fr) auto auto; gap:12px; align-items:center; }
 .mt-google-link-form__row input { min-height:48px; }
 .mt-google-link-form small { display:block; margin-top:10px; color:#817884; }
+.mt-password-setup-form { display:grid; gap:18px; padding:26px 0; border-bottom:1px solid #332e36; }
+.mt-password-setup-form[hidden],.mt-password-setup-form__fields[hidden] { display:none; }
+.mt-password-setup-form__intro strong { display:block; color:#f2edf4; font-size:.9rem; }
+.mt-password-setup-form__intro p { max-width:620px; margin:7px 0 0; color:#918995; font-size:.76rem; line-height:1.65; }
+.mt-password-setup-form__fields { display:grid; grid-template-columns:minmax(180px,.55fr) minmax(240px,1fr) minmax(240px,1fr); gap:10px 14px; align-items:end; }
+.mt-password-setup-form label { color:#c9c0cc; font-size:.76rem; }
+.mt-password-setup-form input { min-height:48px; }
+.mt-password-setup-form__fields .mt-auth-hint { grid-column:2 / -1; margin:0; }
+.mt-password-setup-form__fields .mt-button,.mt-password-setup-form__fields .mt-auth-secondary { min-height:44px; margin:0; }
+.mt-password-setup-form > .mt-auth-secondary { justify-self:start; margin:0; }
 
 @media (max-width:900px) {
   .mt-auth-page { min-height:auto; }
@@ -3251,6 +3261,9 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-access-method { min-height:78px; }
   .mt-google-link-form__row { grid-template-columns:1fr; }
   .mt-google-link-form__row .mt-button,.mt-google-link-form__row .mt-auth-secondary { width:100%; min-height:44px; }
+  .mt-password-setup-form__fields { grid-template-columns:1fr; }
+  .mt-password-setup-form__fields .mt-auth-hint { grid-column:auto; }
+  .mt-password-setup-form__fields .mt-button,.mt-password-setup-form__fields .mt-auth-secondary,.mt-password-setup-form > .mt-auth-secondary { width:100%; }
 }
 
 @media (prefers-reduced-motion:reduce) {

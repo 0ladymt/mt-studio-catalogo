@@ -48,6 +48,9 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
       pkceStorage: { "supabase.auth.token-code-verifier": "link-verifier" },
     })),
     completeGoogleIdentityLink: vi.fn(async () => null),
+    hasPassword: vi.fn(async () => false),
+    requestPasswordSetup: vi.fn(async () => true),
+    setupPasswordWithOtp: vi.fn(async () => "invalid_or_expired" as const),
     getOwnProfile: vi.fn(async () => profile),
     ...overrides,
   };
@@ -121,12 +124,15 @@ describe("MT Studio API foundation", () => {
   });
 
   it("reports linked access methods from the validated session", async () => {
-    const auth = gateway({ verifyAccessToken: vi.fn(async () => ({
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => ({
       id: profile.user_id,
       email: "cliente@example.test",
       emailConfirmed: true,
       providers: ["email", "google"],
-    })) });
+      })),
+      hasPassword: vi.fn(async () => true),
+    });
     const response = await createApp(auth, environment).request("/api/auth/access-methods", {
       headers: { Cookie: "mt_access=valid-access; mt_refresh=valid-refresh" },
     });
@@ -134,7 +140,110 @@ describe("MT Studio API foundation", () => {
     await expect(response.json()).resolves.toEqual({
       emailConfirmed: true,
       methods: { password: true, google: true },
+      actions: { canSetupPassword: false },
     });
+  });
+
+  it("offers password setup only to an eligible Google-only account", async () => {
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => ({
+        id: profile.user_id,
+        email: "google@example.test",
+        emailConfirmed: true,
+        providers: ["google"],
+      })),
+      hasPassword: vi.fn(async () => false),
+    });
+    const response = await createApp(auth, environment).request("/api/auth/access-methods", {
+      headers: { Cookie: "mt_access=valid-access; mt_refresh=valid-refresh" },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      methods: { password: false, google: true },
+      actions: { canSetupPassword: true },
+    });
+  });
+
+  it("requests a reauthentication OTP for an eligible Google-only account", async () => {
+    const user = { id: profile.user_id, email: "google@example.test", emailConfirmed: true, providers: ["google"] };
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => user),
+      hasPassword: vi.fn(async () => false),
+      requestPasswordSetup: vi.fn(async () => true),
+    });
+    const response = await createApp(auth, environment).request("/api/auth/password/setup/request", {
+      method: "POST",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-access; mt_refresh=valid-refresh; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ status: "password_setup_code_sent" });
+    expect(auth.requestPasswordSetup).toHaveBeenCalledWith(expect.objectContaining({ user }), profile.user_id);
+  });
+
+  it("blocks password setup when a password is already configured", async () => {
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => ({ id: profile.user_id, emailConfirmed: true, providers: ["google"] })),
+      hasPassword: vi.fn(async () => true),
+    });
+    const response = await createApp(auth, environment).request("/api/auth/password/setup/request", {
+      method: "POST",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-access; mt_refresh=valid-refresh; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+      },
+    });
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ error: "password_already_configured" });
+  });
+
+  it("sets a password with the OTP, preserves the UUID and clears the session", async () => {
+    const user = { id: profile.user_id, email: "google@example.test", emailConfirmed: true, providers: ["google"] };
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => user),
+      hasPassword: vi.fn(async () => false),
+      setupPasswordWithOtp: vi.fn(async () => "updated" as const),
+    });
+    const response = await createApp(auth, environment).request("/api/auth/password/setup/confirm", {
+      method: "POST",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-access; mt_refresh=valid-refresh; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token: "123456", password: "New-Password!234" }),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ status: "password_configured", authenticated: false });
+    expect(auth.setupPasswordWithOtp).toHaveBeenCalledWith(expect.objectContaining({ user }), profile.user_id, "123456", "New-Password!234");
+    expect(response.headers.getSetCookie().filter((cookie) => /mt_(access|refresh|csrf)=/.test(cookie)).every((cookie) => cookie.includes("Max-Age=0"))).toBe(true);
+  });
+
+  it("rejects invalid password setup data before changing credentials", async () => {
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => ({ id: profile.user_id, emailConfirmed: true, providers: ["google"] })),
+      hasPassword: vi.fn(async () => false),
+    });
+    const response = await createApp(auth, environment).request("/api/auth/password/setup/confirm", {
+      method: "POST",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-access; mt_refresh=valid-refresh; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token: "bad", password: "weak" }),
+    });
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_password_setup_data" });
+    expect(auth.setupPasswordWithOtp).not.toHaveBeenCalled();
   });
 
   it("requires recent password reauthentication before starting a Google link", async () => {

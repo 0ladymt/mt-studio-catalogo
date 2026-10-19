@@ -781,8 +781,29 @@
             </div>
             <div class="mt-access-method" data-access-method="password">
               <div><strong>E-mail e senha</strong><span id="passwordMethodState">Verificando…</span></div>
-              <span class="mt-access-method__badge">Principal</span>
+              <button id="showPasswordSetupForm" class="mt-button mt-button--outline" type="button" hidden>Definir senha</button>
+              <span id="passwordMethodBadge" class="mt-access-method__badge">Principal</span>
             </div>
+            <form id="passwordSetupForm" class="mt-password-setup-form" hidden>
+              <div class="mt-password-setup-form__intro">
+                <strong>Defina seu acesso por senha</strong>
+                <p>Enviaremos um código de uso único para o e-mail confirmado da sua conta.</p>
+              </div>
+              <button id="requestPasswordSetupCode" class="mt-button mt-button--outline" type="button">Enviar código</button>
+              <div id="passwordSetupFields" class="mt-password-setup-form__fields" hidden>
+                <label for="passwordSetupCode">Código de seis dígitos</label>
+                <input id="passwordSetupCode" name="token" class="mt-auth-otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
+                <label for="passwordSetupValue">Nova senha</label>
+                <input id="passwordSetupValue" name="password" type="password" autocomplete="new-password" maxlength="128" aria-describedby="passwordSetupRequirements" required />
+                <p id="passwordSetupRequirements" class="mt-auth-hint">Use pelo menos 12 caracteres, com letra maiúscula, minúscula, número e símbolo.</p>
+                <label for="passwordSetupConfirm">Confirmar nova senha</label>
+                <input id="passwordSetupConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required />
+                <button class="mt-button" type="submit">Definir senha e sair</button>
+                <button id="resendPasswordSetupCode" class="mt-auth-secondary" type="button">Reenviar código</button>
+              </div>
+              <button id="cancelPasswordSetup" class="mt-auth-secondary" type="button">Cancelar</button>
+              <p id="passwordSetupStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
+            </form>
             <div class="mt-access-method" data-access-method="google">
               <div><strong>Google</strong><span id="googleMethodState">Verificando…</span></div>
               <button id="showGoogleLinkForm" class="mt-button mt-button--outline" type="button" hidden>Vincular Google</button>

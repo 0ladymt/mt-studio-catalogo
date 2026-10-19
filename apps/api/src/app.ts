@@ -6,7 +6,7 @@ import { SessionManager } from "./auth/session.js";
 import { protectMutation, restrictedCors } from "./middleware/security.js";
 import { issueCsrfCookie } from "./auth/cookies.js";
 import { FixedWindowRateLimiter } from "./auth/rate-limit.js";
-import { confirmationSchema, emailSchema, loginSchema, passwordConfirmationSchema, passwordResetSchema, signupSchema } from "./auth/validation.js";
+import { confirmationSchema, emailSchema, loginSchema, passwordConfirmationSchema, passwordResetSchema, passwordSetupSchema, signupSchema } from "./auth/validation.js";
 import { SingleFlight } from "./auth/single-flight.js";
 import type { LoginResult } from "./types/auth.js";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
@@ -29,6 +29,8 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   const recoveryLimiter = new FixedWindowRateLimiter(3, 15 * 60 * 1000);
   const recoveryGlobalLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
   const passwordResetLimiter = new FixedWindowRateLimiter(5, 15 * 60 * 1000);
+  const passwordSetupLimiter = new FixedWindowRateLimiter(5, 15 * 60 * 1000);
+  const passwordSetupGlobalLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
   const googleOAuthStartLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
   const logins = new SingleFlight<LoginResult>();
   const oauthTransactions = new OAuthTransactionStore(environment.OAUTH_TRANSACTION_TTL_SECONDS * 1000);
@@ -209,13 +211,87 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   app.get("/api/auth/access-methods", async (context) => {
     const session = await sessions.resolve(context);
     if (!session) return context.json({ error: "authentication_required" }, 401);
-    return context.json({
-      emailConfirmed: Boolean(session.user.emailConfirmed),
-      methods: {
-        password: session.user.providers?.includes("email") ?? false,
-        google: session.user.providers?.includes("google") ?? false,
-      },
-    });
+    try {
+      const hasPassword = await gateway.hasPassword(session.accessToken, session.user.id);
+      return context.json({
+        emailConfirmed: Boolean(session.user.emailConfirmed),
+        methods: {
+          password: hasPassword,
+          google: session.user.providers?.includes("google") ?? false,
+        },
+        actions: {
+          canSetupPassword: Boolean(session.user.emailConfirmed)
+            && !hasPassword
+            && (session.user.providers?.includes("google") ?? false),
+        },
+      });
+    } catch {
+      return context.json({ error: "access_methods_unavailable" }, 503);
+    }
+  });
+
+  app.post("/api/auth/password/setup/request", protectMutation(environment), async (context) => {
+    const session = await sessions.resolve(context);
+    if (!session?.refreshToken) return context.json({ error: "authentication_required" }, 401);
+    if (!session.user.emailConfirmed || !session.user.providers?.includes("google")) {
+      return context.json({ error: "password_setup_not_eligible" }, 409);
+    }
+    const rates = [
+      passwordSetupGlobalLimiter.consume("password-setup-global"),
+      passwordSetupLimiter.consume(`request:${session.user.id}`),
+    ];
+    const denied = rates.find((rate) => !rate.allowed);
+    if (denied) {
+      context.header("Retry-After", String(denied.retryAfter));
+      return context.json({ error: "too_many_requests" }, 429);
+    }
+    try {
+      if (await gateway.hasPassword(session.accessToken, session.user.id)) {
+        return context.json({ error: "password_already_configured" }, 409);
+      }
+      const requested = await gateway.requestPasswordSetup({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: 60,
+        user: session.user,
+      }, session.user.id);
+      if (!requested) return context.json({ error: "password_setup_session_invalid" }, 401);
+      return context.json({ status: "password_setup_code_sent" }, 202);
+    } catch {
+      return context.json({ error: "password_setup_temporarily_unavailable" }, 503);
+    }
+  });
+
+  app.post("/api/auth/password/setup/confirm", protectMutation(environment), async (context) => {
+    const session = await sessions.resolve(context);
+    if (!session?.refreshToken) return context.json({ error: "authentication_required" }, 401);
+    if (!session.user.emailConfirmed || !session.user.providers?.includes("google")) {
+      return context.json({ error: "password_setup_not_eligible" }, 409);
+    }
+    const input = passwordSetupSchema.safeParse(await safeJson(context));
+    if (!input.success) return context.json({ error: "invalid_password_setup_data" }, 400);
+    const rate = passwordSetupLimiter.consume(`confirm:${session.user.id}`);
+    if (!rate.allowed) {
+      context.header("Retry-After", String(rate.retryAfter));
+      return context.json({ error: "too_many_requests" }, 429);
+    }
+    try {
+      if (await gateway.hasPassword(session.accessToken, session.user.id)) {
+        return context.json({ error: "password_already_configured" }, 409);
+      }
+      const result = await gateway.setupPasswordWithOtp({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: 60,
+        user: session.user,
+      }, session.user.id, input.data.token, input.data.password);
+      if (result !== "updated") return context.json({ error: "password_setup_invalid_or_expired" }, 400);
+      sessions.clear(context);
+      return context.json({ status: "password_configured", authenticated: false });
+    } catch {
+      sessions.clear(context);
+      return context.json({ error: "password_setup_temporarily_unavailable" }, 503);
+    }
   });
 
   app.post("/api/auth/reauthenticate-password", protectMutation(environment), async (context) => {

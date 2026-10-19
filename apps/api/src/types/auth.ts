@@ -49,5 +49,13 @@ export interface AuthGateway {
   confirmCurrentPassword(email: string, password: string, expectedUserId: string): Promise<boolean>;
   beginGoogleIdentityLink(session: AuthSession, callbackUrl: string): Promise<OAuthStart>;
   completeGoogleIdentityLink(code: string, pkceStorage: Record<string, string>): Promise<AuthSession | null>;
+  hasPassword(accessToken: string, userId: string): Promise<boolean>;
+  requestPasswordSetup(session: AuthSession, expectedUserId: string): Promise<boolean>;
+  setupPasswordWithOtp(
+    session: AuthSession,
+    expectedUserId: string,
+    nonce: string,
+    password: string,
+  ): Promise<"updated" | "invalid_or_expired">;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
 }

@@ -188,6 +188,54 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       return this.completeGoogleOAuth(code, pkceStorage);
     },
 
+    async hasPassword(accessToken, userId) {
+      const { data, error } = await clientFor(accessToken)
+        .from("profiles")
+        .select("password_configured_at")
+        .eq("user_id", userId)
+        .maybeSingle<{ password_configured_at: string | null }>();
+      if (error || !data) throw new Error("password-capability-query-failed");
+      return Boolean(data.password_configured_at);
+    },
+
+    async requestPasswordSetup(session, expectedUserId) {
+      const client = oauthClient({});
+      const { error: sessionError } = await client.auth.setSession({
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+      });
+      if (sessionError) return false;
+      const { data: userData, error: userError } = await client.auth.getUser();
+      if (userError || userData.user?.id !== expectedUserId || !userData.user.email_confirmed_at) return false;
+      const { error } = await client.auth.reauthenticate();
+      if (error) throw new Error("password-setup-otp-unavailable");
+      return true;
+    },
+
+    async setupPasswordWithOtp(session, expectedUserId, nonce, password) {
+      const client = oauthClient({});
+      const { error: sessionError } = await client.auth.setSession({
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+      });
+      if (sessionError) return "invalid_or_expired";
+      const { data: before, error: beforeError } = await client.auth.getUser();
+      if (beforeError || before.user?.id !== expectedUserId || !before.user.email_confirmed_at) return "invalid_or_expired";
+      const { data, error } = await client.auth.updateUser({ password, nonce });
+      if (error) {
+        if (["reauthentication_not_valid", "otp_expired", "reauth_nonce_missing"].includes(error.code ?? "")) {
+          return "invalid_or_expired";
+        }
+        throw new Error("password-setup-unavailable");
+      }
+      if (data.user?.id !== expectedUserId) throw new Error("password-setup-user-mismatch");
+      const { error: markerError } = await client.rpc("mark_own_password_configured");
+      if (markerError) throw new Error("password-capability-marker-failed");
+      const { error: revokeError } = await client.auth.signOut({ scope: "global" });
+      if (revokeError) throw new Error("session-revocation-failed");
+      return "updated";
+    },
+
     async getOwnProfile(token, userId) {
       const { data, error } = await clientFor(token)
         .from("profiles")

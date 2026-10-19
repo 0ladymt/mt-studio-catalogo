@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(14);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -18,6 +18,15 @@ select is(
   )),
   2,
   'trigger creates one profile per auth user'
+);
+
+select is(
+  (select count(*)::integer from public.profiles where password_configured_at is not null and user_id in (
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222'
+  )),
+  2,
+  'trigger records password capability without exposing password material'
 );
 
 set local role authenticated;
@@ -38,6 +47,19 @@ select throws_ok(
   '42501',
   null,
   'authenticated users cannot update protected status'
+);
+
+select throws_ok(
+  $$ update public.profiles set password_configured_at = null where user_id = '11111111-1111-4111-8111-111111111111' $$,
+  '42501',
+  null,
+  'authenticated users cannot alter the protected password capability marker'
+);
+
+select isnt(
+  public.mark_own_password_configured(),
+  null,
+  'authenticated user can confirm their own marker only when Auth has a password'
 );
 
 select is(
