@@ -491,6 +491,47 @@ describe("MT Studio API foundation", () => {
     expect(denied.headers.get("access-control-allow-origin")).toBeNull();
   });
 
+  it("authorizes only the expected PATCH profile preflight without touching profile data", async () => {
+    const auth = gateway();
+    const app = createApp(auth, environment);
+    const allowed = await app.request("/api/profile", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:4173",
+        "Access-Control-Request-Method": "PATCH",
+        "Access-Control-Request-Headers": "content-type,x-csrf-token",
+      },
+    });
+
+    expect(allowed.status).toBe(204);
+    expect(allowed.headers.get("access-control-allow-origin")).toBe("http://127.0.0.1:4173");
+    expect(allowed.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(allowed.headers.get("access-control-allow-methods")?.split(",")).toContain("PATCH");
+    expect(allowed.headers.get("access-control-allow-headers")?.toLowerCase().split(",")).toContain("x-csrf-token");
+    expect(auth.updateOwnProfile).not.toHaveBeenCalled();
+
+    const deniedOrigin = await app.request("/api/profile", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "https://attacker.invalid",
+        "Access-Control-Request-Method": "PATCH",
+        "Access-Control-Request-Headers": "x-csrf-token",
+      },
+    });
+    expect(deniedOrigin.headers.get("access-control-allow-origin")).toBeNull();
+    expect(deniedOrigin.headers.get("access-control-allow-credentials")).toBe("true");
+
+    const unexpectedMethod = await app.request("/api/profile", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://127.0.0.1:4173",
+        "Access-Control-Request-Method": "DELETE",
+      },
+    });
+    expect(unexpectedMethod.headers.get("access-control-allow-methods")?.split(",")).not.toContain("DELETE");
+    expect(auth.updateOwnProfile).not.toHaveBeenCalled();
+  });
+
   it("issues an anonymous CSRF proof without auth tokens", async () => {
     const response = await createApp(gateway(), environment).request("/api/auth/csrf");
     const body = await response.json() as { csrfToken: string };
