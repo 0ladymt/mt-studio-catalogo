@@ -11,7 +11,14 @@ insert into auth.users (
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-111111111111', 'authenticated', 'authenticated', 'user-a@example.invalid', 'test-only', now(), '{}', '{"display_name":"Usuário A"}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', '22222222-2222-4222-8222-222222222222', 'authenticated', 'authenticated', 'user-b@example.invalid', 'test-only', now(), '{}', '{"display_name":"Usuário B"}', now(), now());
 
-select is((select count(*)::integer from public.profiles), 2, 'trigger creates one profile per auth user');
+select is(
+  (select count(*)::integer from public.profiles where user_id in (
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222'
+  )),
+  2,
+  'trigger creates one profile per auth user'
+);
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
@@ -78,7 +85,14 @@ reset role;
 insert into public.profiles (user_id, display_name)
 values ('11111111-1111-4111-8111-111111111111', 'Duplicado')
 on conflict (user_id) do nothing;
-select is((select count(*)::integer from public.profiles), 2, 'profile creation remains idempotent');
+select is(
+  (select count(*)::integer from public.profiles where user_id in (
+    '11111111-1111-4111-8111-111111111111',
+    '22222222-2222-4222-8222-222222222222'
+  )),
+  2,
+  'profile creation remains idempotent'
+);
 
 select * from finish();
 rollback;

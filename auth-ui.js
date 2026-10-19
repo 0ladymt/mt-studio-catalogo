@@ -102,6 +102,7 @@
       password_reset_invalid_or_expired: "Código incorreto, expirado ou já utilizado.",
       recovery_temporarily_unavailable: "Não foi possível solicitar a recuperação agora.",
       password_reset_temporarily_unavailable: "Não foi possível redefinir a senha agora.",
+      google_oauth_temporarily_unavailable: "Não foi possível iniciar o acesso com Google agora.",
     };
     return messages[error] ?? `Não foi possível concluir ${context}. Tente novamente.`;
   }
@@ -194,6 +195,23 @@
       form.elements.password.value = "";
       showStatus(statuses.login, errorMessage(error.message, "o login"), "error");
     } finally { setBusy(form, false); }
+  });
+
+  document.querySelectorAll("[data-google-auth]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const form = button.closest("form");
+      const status = form === forms.signup ? statuses.signup : statuses.login;
+      setBusy(form, true);
+      showStatus(status, "Abrindo o acesso seguro do Google…", "loading");
+      try {
+        const { response, body } = await api("/api/auth/google/start", { method: "POST", data: {} });
+        if (!response.ok || !body.authorizationUrl) throw new Error(body.error ?? "google_oauth_failed");
+        location.assign(body.authorizationUrl);
+      } catch (error) {
+        showStatus(status, errorMessage(error.message, "o acesso com Google"), "error");
+        setBusy(form, false);
+      }
+    });
   });
 
   forms.recovery?.addEventListener("submit", async (event) => {
@@ -333,5 +351,10 @@
       if (location.hash === "#conta" && !session) window.mtOpenPage("login");
       if (location.hash === "#conta" && session) loadAccount();
     });
+    const oauthResult = new URLSearchParams(location.search).get("oauth");
+    if (oauthResult === "cancelled") {
+      showStatus(statuses.login, "O acesso com Google foi cancelado. Nenhuma sessão foi criada.", "info");
+      history.replaceState(null, "", `${location.pathname}${location.hash || "#login"}`);
+    }
   });
 })();

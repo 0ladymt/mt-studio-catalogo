@@ -10,6 +10,11 @@ export type AuthSession = {
   user: AuthenticatedUser;
 };
 
+export type OAuthStart = {
+  authorizationUrl: string;
+  pkceStorage: Record<string, string>;
+};
+
 export type LoginResult =
   | { status: "authenticated"; session: AuthSession }
   | { status: "invalid_credentials" }
@@ -37,5 +42,7 @@ export interface AuthGateway {
   signInWithPassword(email: string, password: string): Promise<LoginResult>;
   requestPasswordRecovery(email: string): Promise<void>;
   resetPasswordWithOtp(email: string, token: string, password: string): Promise<boolean>;
+  beginGoogleOAuth(callbackUrl: string): Promise<OAuthStart>;
+  completeGoogleOAuth(code: string, pkceStorage: Record<string, string>): Promise<AuthSession | null>;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
 }

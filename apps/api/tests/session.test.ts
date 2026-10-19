@@ -13,6 +13,9 @@ const environment: ApiEnvironment = {
   SUPABASE_PUBLISHABLE_KEY: "local-publishable-key-for-tests",
   ALLOWED_ORIGINS: "http://127.0.0.1:4173",
   SESSION_REFRESH_MAX_AGE: 2592000,
+  GOOGLE_OAUTH_CALLBACK_URL: "http://127.0.0.1:8787/api/auth/google/callback",
+  OAUTH_TRANSACTION_TTL_SECONDS: 600,
+  PUBLIC_SITE_URL: "http://127.0.0.1:4173",
 };
 
 const session: AuthSession = {
@@ -33,6 +36,8 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     signInWithPassword: vi.fn(async () => ({ status: "invalid_credentials" as const })),
     requestPasswordRecovery: vi.fn(async () => undefined),
     resetPasswordWithOtp: vi.fn(async () => false),
+    beginGoogleOAuth: vi.fn(async () => ({ authorizationUrl: "https://accounts.google.test", pkceStorage: {} })),
+    completeGoogleOAuth: vi.fn(async () => null),
     getOwnProfile: vi.fn(async () => null),
     ...overrides,
   };

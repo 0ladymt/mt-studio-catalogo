@@ -138,4 +138,17 @@ session/version registry and is a production hardening decision.
 Recovery requests return the same accepted response for existing and missing
 accounts. Local in-memory limits allow three requests per email and thirty
 globally per 15 minutes; reset attempts allow five per email per 15 minutes.
+
+## Google OAuth login (phase 2.6)
+
+- Google delegates to the local Supabase callback at `http://127.0.0.1:54321/auth/v1/callback`.
+- Supabase redirects the one-time authorization code to the BFF at `http://127.0.0.1:8787/api/auth/google/callback`.
+- `POST /api/auth/google/start` requires the existing Origin and CSRF protections and refuses to replace an authenticated session.
+- The BFF uses the Supabase PKCE flow. The verifier remains server-side and the browser receives only an opaque, HttpOnly, SameSite=Lax transaction cookie scoped to `/api/auth/google`.
+- The transaction is consumed before callback processing, expires after ten minutes by default, and cannot be reused.
+- The callback exchanges the code server-side, issues the existing HttpOnly MT session cookies, clears the OAuth transaction cookie, and redirects to a clean application URL.
+- Provider cancellation consumes the transaction and returns to login without creating a session.
+- Explicit identity linking and unlinking are deliberately outside this phase. The application never merges commercial data by matching e-mail addresses.
+
+The transaction store is intentionally in-memory for the single-process local environment. Before horizontal scaling or production deployment it must move to a shared store with atomic consume semantics, such as Redis or PostgreSQL, so callbacks survive process restarts and cannot be accepted by more than one instance.
 Production requires an atomic shared limiter.

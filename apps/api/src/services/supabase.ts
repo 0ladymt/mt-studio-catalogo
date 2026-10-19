@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ApiEnvironment } from "../config/env.js";
-import type { AuthGateway, Profile } from "../types/auth.js";
+import type { AuthGateway, AuthSession, Profile } from "../types/auth.js";
 
 export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGateway {
   const clientFor = (token: string) =>
@@ -12,6 +12,23 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       },
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
+
+  const oauthClient = (storageValues: Record<string, string>) => {
+    const storage = {
+      getItem: async (key: string) => storageValues[key] ?? null,
+      setItem: async (key: string, value: string) => { storageValues[key] = value; },
+      removeItem: async (key: string) => { delete storageValues[key]; },
+    };
+    return createClient(environment.SUPABASE_URL, environment.SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: true,
+        flowType: "pkce",
+        storage,
+      },
+    });
+  };
 
   return {
     async verifyAccessToken(token) {
@@ -104,6 +121,34 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       if (updateError) throw new Error("password-update-unavailable");
       await this.revokeSession(data.session.access_token);
       return true;
+    },
+
+    async beginGoogleOAuth(callbackUrl) {
+      const pkceStorage: Record<string, string> = {};
+      const client = oauthClient(pkceStorage);
+      const { data, error } = await client.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error || !data.url) throw new Error("google-oauth-start-failed");
+      return { authorizationUrl: data.url, pkceStorage };
+    },
+
+    async completeGoogleOAuth(code, pkceStorage) {
+      const client = oauthClient({ ...pkceStorage });
+      const { data, error } = await client.auth.exchangeCodeForSession(code);
+      if (error || !data.session || !data.user) return null;
+      const session: AuthSession = {
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+        expiresIn: data.session.expires_in,
+        user: { id: data.user.id, email: data.user.email },
+      };
+      return session;
     },
 
     async getOwnProfile(token, userId) {

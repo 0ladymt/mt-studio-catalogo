@@ -11,6 +11,9 @@ const environment: ApiEnvironment = {
   SUPABASE_PUBLISHABLE_KEY: "local-publishable-key-for-tests",
   ALLOWED_ORIGINS: "http://127.0.0.1:4173",
   SESSION_REFRESH_MAX_AGE: 2592000,
+  GOOGLE_OAUTH_CALLBACK_URL: "http://127.0.0.1:8787/api/auth/google/callback",
+  OAUTH_TRANSACTION_TTL_SECONDS: 600,
+  PUBLIC_SITE_URL: "http://127.0.0.1:4173",
 };
 
 const profile: Profile = {
@@ -32,6 +35,11 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     signInWithPassword: vi.fn(async () => ({ status: "invalid_credentials" as const })),
     requestPasswordRecovery: vi.fn(async () => undefined),
     resetPasswordWithOtp: vi.fn(async () => false),
+    beginGoogleOAuth: vi.fn(async () => ({
+      authorizationUrl: "https://accounts.google.test/authorize",
+      pkceStorage: { "supabase.auth.token-code-verifier": "verifier" },
+    })),
+    completeGoogleOAuth: vi.fn(async () => null),
     getOwnProfile: vi.fn(async () => profile),
     ...overrides,
   };
@@ -329,6 +337,88 @@ describe("MT Studio API foundation", () => {
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toEqual({ error: "already_authenticated" });
     expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it("starts Google OAuth only with Origin and CSRF protection", async () => {
+    const auth = gateway();
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/google/start", {
+      method: "POST",
+      headers: {
+        Origin: "http://127.0.0.1:4173",
+        Cookie: `mt_csrf=${csrfToken}`,
+        "X-CSRF-Token": csrfToken,
+      },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ authorizationUrl: "https://accounts.google.test/authorize" });
+    expect(auth.beginGoogleOAuth).toHaveBeenCalledWith(environment.GOOGLE_OAUTH_CALLBACK_URL);
+    const transactionCookie = response.headers.getSetCookie().find((cookie) => cookie.startsWith("mt_oauth_tx="));
+    expect(transactionCookie).toContain("HttpOnly");
+    expect(transactionCookie).toContain("SameSite=Lax");
+    expect(transactionCookie).toContain("Path=/api/auth/google");
+  });
+
+  it("rejects a Google callback without a matching transaction", async () => {
+    const auth = gateway();
+    const response = await createApp(auth, environment).request("/api/auth/google/callback?code=untrusted");
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "oauth_transaction_invalid_or_expired" });
+    expect(auth.completeGoogleOAuth).not.toHaveBeenCalled();
+  });
+
+  it("consumes a Google transaction once and emits the existing session cookies", async () => {
+    const auth = gateway({
+      completeGoogleOAuth: vi.fn(async () => ({
+        accessToken: "google-access-secret",
+        refreshToken: "google-refresh-secret",
+        expiresIn: 3600,
+        user: { id: profile.user_id, email: "google@example.invalid" },
+      })),
+    });
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const start = await app.request("/api/auth/google/start", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken },
+    });
+    const transactionCookie = start.headers.getSetCookie()
+      .find((cookie) => cookie.startsWith("mt_oauth_tx="))!
+      .split(";", 1)[0]!;
+    const callback = () => app.request("/api/auth/google/callback?code=single-use-code", {
+      headers: { Cookie: transactionCookie },
+    });
+
+    const accepted = await callback();
+    expect(accepted.status).toBe(303);
+    expect(accepted.headers.get("location")).toBe("http://127.0.0.1:4173/#conta");
+    const cookies = accepted.headers.getSetCookie();
+    expect(cookies.find((cookie) => cookie.startsWith("mt_access="))).toContain("HttpOnly");
+    expect(cookies.find((cookie) => cookie.startsWith("mt_refresh="))).toContain("HttpOnly");
+    expect(JSON.stringify(await accepted.text())).not.toMatch(/google-access-secret|google-refresh-secret/);
+
+    const reused = await callback();
+    expect(reused.status).toBe(400);
+    expect(auth.completeGoogleOAuth).toHaveBeenCalledTimes(1);
+  });
+
+  it("consumes a cancelled Google transaction without creating a session", async () => {
+    const auth = gateway();
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const start = await app.request("/api/auth/google/start", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken },
+    });
+    const cookie = start.headers.getSetCookie().find((value) => value.startsWith("mt_oauth_tx="))!.split(";", 1)[0]!;
+    const cancelled = await app.request("/api/auth/google/callback?error=access_denied", { headers: { Cookie: cookie } });
+    expect(cancelled.status).toBe(303);
+    expect(cancelled.headers.get("location")).toBe("http://127.0.0.1:4173/?oauth=cancelled#login");
+    expect(auth.completeGoogleOAuth).not.toHaveBeenCalled();
   });
 
   it("rate limits repeated login attempts", async () => {
