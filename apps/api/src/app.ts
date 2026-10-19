@@ -12,13 +12,21 @@ import type { LoginResult } from "./types/auth.js";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { OAuthTransactionStore } from "./auth/oauth-transaction.js";
 import { fingerprintSession, SensitiveAuthorizationStore } from "./auth/sensitive-authorization.js";
+import type { AdminGateway } from "./types/admin.js";
+import { permissionsForRole } from "./auth/staff-permissions.js";
+import { requireStaff, type StaffVariables } from "./middleware/require-staff.js";
+import { unavailableAdminGateway } from "./services/admin-supabase.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
 const SENSITIVE_AUTHORIZATION_COOKIE = "mt_sensitive_auth";
 
-export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
-  const app = new Hono<{ Variables: AuthVariables }>();
+export function createApp(
+  gateway: AuthGateway,
+  environment: ApiEnvironment,
+  adminGateway: AdminGateway = unavailableAdminGateway(),
+) {
+  const app = new Hono<{ Variables: AuthVariables & StaffVariables }>();
   const sessions = new SessionManager(gateway, environment);
   const signupLimiter = new FixedWindowRateLimiter(5, 15 * 60 * 1000);
   const signupGlobalLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
@@ -40,6 +48,19 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   app.use("/api/*", restrictedCors(environment));
 
   app.get("/api/health", (context) => context.json({ status: "ok" }));
+
+  app.get(
+    "/api/admin/access",
+    requireStaff(sessions, adminGateway),
+    (context) => {
+      const staff = context.get("staff");
+      return context.json({
+        authorized: true,
+        role: staff.role,
+        permissions: permissionsForRole(staff.role),
+      });
+    },
+  );
 
   app.get("/api/auth/csrf", (context) => {
     const csrfToken = issueCsrfCookie(context, environment);

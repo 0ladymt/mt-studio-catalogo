@@ -2,9 +2,14 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { readEnvironment } from "./config/env.js";
 import { createSupabaseAuthGateway } from "./services/supabase.js";
+import { createAdminSupabaseGateway } from "./services/admin-supabase.js";
 
 const environment = readEnvironment();
-const app = createApp(createSupabaseAuthGateway(environment), environment);
+const app = createApp(
+  createSupabaseAuthGateway(environment),
+  environment,
+  createAdminSupabaseGateway(environment),
+);
 
 serve({
   fetch: app.fetch,
