@@ -32,6 +32,91 @@
     target.dataset.tone = tone;
   }
 
+  const passwordRules = [
+    { key: "length", label: "12 caracteres ou mais", test: (value) => value.length >= 12 },
+    { key: "uppercase", label: "Uma letra maiúscula", test: (value) => /[A-Z]/.test(value) },
+    { key: "lowercase", label: "Uma letra minúscula", test: (value) => /[a-z]/.test(value) },
+    { key: "number", label: "Um número", test: (value) => /[0-9]/.test(value) },
+    { key: "symbol", label: "Um símbolo", test: (value) => /[^A-Za-z0-9]/.test(value) },
+    { key: "match", label: "As senhas coincidem", test: (value, confirmation) => Boolean(confirmation) && value === confirmation },
+  ];
+  const passwordChecklists = new Map();
+
+  function updatePasswordChecklist(checklist, announce = false) {
+    const password = checklist.passwordInput.value;
+    const confirmation = checklist.confirmationInput.value;
+    const started = Boolean(password || confirmation);
+    const unmet = [];
+
+    for (const rule of passwordRules) {
+      const met = rule.test(password, confirmation);
+      const item = checklist.items.get(rule.key);
+      const state = !started ? "neutral" : met ? "met" : "pending";
+      item.dataset.state = state;
+      item.querySelector(".mt-password-requirement__state").textContent = state === "met" ? "Atendido" : state === "pending" ? "Pendente" : "Neutro";
+      item.setAttribute("aria-label", `${rule.label}: ${state === "met" ? "atendido" : state === "pending" ? "pendente" : "não avaliado"}`);
+      if (!met) unmet.push(rule);
+    }
+
+    if (announce) {
+      checklist.summary.textContent = unmet.length
+        ? `A senha ainda precisa atender: ${unmet.map((rule) => rule.label.toLowerCase()).join(", ")}.`
+        : "Todos os requisitos da senha foram atendidos.";
+    } else if (!started) {
+      checklist.summary.textContent = "";
+    }
+    return { valid: unmet.length === 0, unmet };
+  }
+
+  function createPasswordChecklist(container) {
+    const passwordInput = document.getElementById(container.dataset.passwordField);
+    const confirmationInput = document.getElementById(container.dataset.confirmationField);
+    if (!passwordInput || !confirmationInput) return;
+
+    const title = document.createElement("p");
+    title.className = "mt-password-checklist__title";
+    title.textContent = "Sua senha precisa ter:";
+    const list = document.createElement("ul");
+    list.className = "mt-password-checklist__list";
+    const summary = document.createElement("p");
+    summary.className = "sr-only";
+    summary.setAttribute("role", "status");
+    summary.setAttribute("aria-live", "polite");
+    summary.setAttribute("aria-atomic", "true");
+    const items = new Map();
+
+    for (const rule of passwordRules) {
+      const item = document.createElement("li");
+      item.dataset.rule = rule.key;
+      item.dataset.state = "neutral";
+      item.innerHTML = `<span class="mt-password-requirement__marker" aria-hidden="true"></span><span class="mt-password-requirement__label">${rule.label}</span><span class="mt-password-requirement__state">Neutro</span>`;
+      list.append(item);
+      items.set(rule.key, item);
+    }
+
+    container.append(title, list, summary);
+    const checklist = { container, passwordInput, confirmationInput, items, summary };
+    passwordChecklists.set(passwordInput.form?.id, checklist);
+    const update = () => updatePasswordChecklist(checklist);
+    passwordInput.addEventListener("input", update);
+    confirmationInput.addEventListener("input", update);
+    passwordInput.form?.addEventListener("reset", () => queueMicrotask(update));
+    update();
+  }
+
+  function validatePasswordChecklist(form, status) {
+    const checklist = passwordChecklists.get(form.id);
+    if (!checklist) return true;
+    const result = updatePasswordChecklist(checklist, true);
+    if (result.valid) return true;
+    showStatus(status, checklist.summary.textContent, "error");
+    const onlyMismatch = result.unmet.length === 1 && result.unmet[0].key === "match";
+    (onlyMismatch ? checklist.confirmationInput : checklist.passwordInput).focus();
+    return false;
+  }
+
+  document.querySelectorAll("[data-password-checklist]").forEach(createPasswordChecklist);
+
   function setBusy(form, busy) {
     form.setAttribute("aria-busy", String(busy));
     for (const control of form.elements) control.disabled = busy;
@@ -127,13 +212,8 @@
     const form = event.currentTarget;
     const data = new FormData(form);
     const password = String(data.get("password") ?? "");
-    const confirmation = String(data.get("passwordConfirm") ?? "");
     if (!form.reportValidity()) return;
-    if (password !== confirmation) {
-      showStatus(statuses.signup, "As senhas precisam ser iguais.", "error");
-      document.getElementById("signupPasswordConfirm").focus();
-      return;
-    }
+    if (!validatePasswordChecklist(form, statuses.signup)) return;
     setBusy(form, true);
     showStatus(statuses.signup, "Criando sua conta…", "loading");
     try {
@@ -254,11 +334,7 @@
     if (!form.reportValidity()) return;
     const data = new FormData(form);
     const password = String(data.get("password") ?? "");
-    if (password !== String(data.get("passwordConfirm") ?? "")) {
-      showStatus(statuses.passwordReset, "As senhas precisam ser iguais.", "error");
-      document.getElementById("resetPasswordConfirm").focus();
-      return;
-    }
+    if (!validatePasswordChecklist(form, statuses.passwordReset)) return;
     setBusy(form, true);
     showStatus(statuses.passwordReset, "Redefinindo sua senha…", "loading");
     try {
@@ -385,11 +461,7 @@
     if (!form.reportValidity()) return;
     const data = new FormData(form);
     const password = String(data.get("password") ?? "");
-    if (password !== String(data.get("passwordConfirm") ?? "")) {
-      showStatus(statuses.passwordSetup, "As senhas não coincidem.", "error");
-      form.elements.passwordConfirm.focus();
-      return;
-    }
+    if (!validatePasswordChecklist(form, statuses.passwordSetup)) return;
     const token = String(data.get("token") ?? "").trim();
     setBusy(form, true);
     showStatus(statuses.passwordSetup, "Configurando seu novo método de acesso…", "loading");

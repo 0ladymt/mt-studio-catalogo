@@ -3163,6 +3163,20 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 .mt-auth-card input:focus-visible { outline:2px solid var(--mt-purple); outline-offset:3px; border-color:var(--mt-purple); }
 .mt-auth-card input:disabled,.mt-auth-card button:disabled { opacity:.62; cursor:wait; }
 .mt-auth-hint { margin:-10px 0 20px; color:#8d8791; font-size:.68rem; line-height:1.6; }
+.mt-password-checklist { margin:-8px 0 22px; color:#c3bcc7; font-size:.84rem; line-height:1.45; }
+.mt-password-checklist > .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.mt-password-checklist__title { margin:0 0 10px; color:#ddd7e0; font-size:.84rem; font-weight:700; }
+.mt-password-checklist__list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 18px; margin:0; padding:0; list-style:none; }
+.mt-password-checklist__list li { display:grid; grid-template-columns:16px minmax(0,1fr) auto; align-items:center; gap:7px; min-width:0; }
+.mt-password-requirement__marker { display:grid; place-items:center; width:14px; height:14px; border:1px solid #69616d; border-radius:50%; color:#d9d2dc; font-size:.62rem; font-weight:800; line-height:1; }
+.mt-password-requirement__marker::before { content:"·"; }
+.mt-password-requirement__state { color:#918a95; font-size:.7rem; font-weight:700; }
+.mt-password-checklist__list li[data-state="met"] .mt-password-requirement__marker { border-color:var(--mt-purple); background:var(--mt-purple); color:#fff; }
+.mt-password-checklist__list li[data-state="met"] .mt-password-requirement__marker::before { content:"✓"; }
+.mt-password-checklist__list li[data-state="met"] .mt-password-requirement__state { color:#dcb8ee; }
+.mt-password-checklist__list li[data-state="pending"] .mt-password-requirement__marker { border-color:#b78d74; color:#e3b99d; }
+.mt-password-checklist__list li[data-state="pending"] .mt-password-requirement__marker::before { content:"!"; }
+.mt-password-checklist__list li[data-state="pending"] .mt-password-requirement__state { color:#d3aa91; }
 .mt-auth-legal { display:flex; flex-direction:column; gap:4px; margin:0 0 22px; padding:14px 16px; border-left:2px solid var(--mt-purple); background:#19131d; }
 .mt-auth-legal strong { color:#e7dfea; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; }
 .mt-auth-legal span { color:#97919b; font-size:.67rem; line-height:1.55; }
@@ -3224,7 +3238,7 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 .mt-password-setup-form__fields { display:grid; grid-template-columns:minmax(180px,.55fr) minmax(240px,1fr) minmax(240px,1fr); gap:10px 14px; align-items:end; }
 .mt-password-setup-form label { color:#c9c0cc; font-size:.76rem; }
 .mt-password-setup-form input { min-height:48px; }
-.mt-password-setup-form__fields .mt-auth-hint { grid-column:2 / -1; margin:0; }
+.mt-password-setup-form__fields .mt-password-checklist { grid-column:2 / -1; margin:0 0 8px; }
 .mt-password-setup-form__fields .mt-button,.mt-password-setup-form__fields .mt-auth-secondary { min-height:44px; margin:0; }
 .mt-password-setup-form > .mt-auth-secondary { justify-self:start; margin:0; }
 
@@ -3239,6 +3253,7 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-account-panel > div:nth-child(2) { border-right:0; }
   .mt-account-panel > button { justify-self:start; margin:24px 0; }
   .mt-access-methods__head { grid-template-columns:1fr; gap:16px; }
+  .mt-password-checklist__list { grid-template-columns:1fr; gap:7px; }
 }
 
 @media (max-width:620px) {
@@ -3262,8 +3277,9 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-google-link-form__row { grid-template-columns:1fr; }
   .mt-google-link-form__row .mt-button,.mt-google-link-form__row .mt-auth-secondary { width:100%; min-height:44px; }
   .mt-password-setup-form__fields { grid-template-columns:1fr; }
-  .mt-password-setup-form__fields .mt-auth-hint { grid-column:auto; }
+  .mt-password-setup-form__fields .mt-password-checklist { grid-column:auto; }
   .mt-password-setup-form__fields .mt-button,.mt-password-setup-form__fields .mt-auth-secondary,.mt-password-setup-form > .mt-auth-secondary { width:100%; }
+  .mt-password-checklist__list { grid-template-columns:1fr; gap:7px; }
 }
 
 @media (prefers-reduced-motion:reduce) {

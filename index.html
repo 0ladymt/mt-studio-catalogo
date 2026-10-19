@@ -648,9 +648,9 @@
             <input id="signupEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
             <label for="signupPassword">Senha</label>
             <input id="signupPassword" name="password" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="passwordRequirements" />
-            <p id="passwordRequirements" class="mt-auth-hint">Use pelo menos 12 caracteres, com letra maiúscula, minúscula, número e símbolo.</p>
+            <div id="passwordRequirements" class="mt-password-checklist" data-password-checklist data-password-field="signupPassword" data-confirmation-field="signupPasswordConfirm"></div>
             <label for="signupPasswordConfirm">Confirmar senha</label>
-            <input id="signupPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required />
+            <input id="signupPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="passwordRequirements" />
             <div class="mt-auth-legal" role="note"><strong>Termos em preparação</strong><span>O aceite obrigatório dos Termos de Uso e da Política de Privacidade será ativado antes do lançamento comercial.</span></div>
             <p id="signupStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
             <button class="mt-button mt-auth-submit" type="submit">Criar conta</button>
@@ -747,9 +747,9 @@
             <input id="resetCode" class="mt-auth-otp" name="token" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
             <label for="resetPassword">Nova senha</label>
             <input id="resetPassword" name="password" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="resetPasswordRequirements" />
-            <p id="resetPasswordRequirements" class="mt-auth-hint">Use pelo menos 12 caracteres, com letra maiúscula, minúscula, número e símbolo.</p>
+            <div id="resetPasswordRequirements" class="mt-password-checklist" data-password-checklist data-password-field="resetPassword" data-confirmation-field="resetPasswordConfirm"></div>
             <label for="resetPasswordConfirm">Confirmar nova senha</label>
-            <input id="resetPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required />
+            <input id="resetPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="resetPasswordRequirements" />
             <p id="passwordResetStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
             <button class="mt-button mt-auth-submit" type="submit">Redefinir senha</button>
             <button id="resendRecovery" class="mt-auth-secondary" type="button">Reenviar código</button>
@@ -795,9 +795,9 @@
                 <input id="passwordSetupCode" name="token" class="mt-auth-otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required />
                 <label for="passwordSetupValue">Nova senha</label>
                 <input id="passwordSetupValue" name="password" type="password" autocomplete="new-password" maxlength="128" aria-describedby="passwordSetupRequirements" required />
-                <p id="passwordSetupRequirements" class="mt-auth-hint">Use pelo menos 12 caracteres, com letra maiúscula, minúscula, número e símbolo.</p>
+                <div id="passwordSetupRequirements" class="mt-password-checklist" data-password-checklist data-password-field="passwordSetupValue" data-confirmation-field="passwordSetupConfirm"></div>
                 <label for="passwordSetupConfirm">Confirmar nova senha</label>
-                <input id="passwordSetupConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required />
+                <input id="passwordSetupConfirm" name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required aria-describedby="passwordSetupRequirements" />
                 <button class="mt-button" type="submit">Definir senha e sair</button>
                 <button id="resendPasswordSetupCode" class="mt-auth-secondary" type="button">Reenviar código</button>
               </div>
