@@ -6,6 +6,7 @@
   let csrfProof = "";
   let currentSession = null;
   let sessionRequest = null;
+  let pendingAccountNotice = null;
 
   const forms = {
     signup: document.getElementById("signupForm"),
@@ -13,6 +14,7 @@
     login: document.getElementById("loginForm"),
     recovery: document.getElementById("recoveryForm"),
     passwordReset: document.getElementById("passwordResetForm"),
+    googleLink: document.getElementById("googleLinkForm"),
   };
   const statuses = {
     signup: document.getElementById("signupStatus"),
@@ -103,6 +105,11 @@
       recovery_temporarily_unavailable: "Não foi possível solicitar a recuperação agora.",
       password_reset_temporarily_unavailable: "Não foi possível redefinir a senha agora.",
       google_oauth_temporarily_unavailable: "Não foi possível iniciar o acesso com Google agora.",
+      invalid_password_confirmation: "Informe sua senha atual.",
+      recent_reauthentication_required: "Confirme sua senha novamente para continuar.",
+      google_link_not_eligible: "Esta conta não está elegível para vinculação neste momento.",
+      google_already_linked: "O Google já está vinculado a esta conta.",
+      google_link_temporarily_unavailable: "Não foi possível iniciar a vinculação agora.",
     };
     return messages[error] ?? `Não foi possível concluir ${context}. Tente novamente.`;
   }
@@ -302,6 +309,38 @@
     } finally { button.disabled = false; }
   });
 
+  document.getElementById("showGoogleLinkForm")?.addEventListener("click", () => {
+    forms.googleLink.hidden = false;
+    forms.googleLink.elements.password.focus();
+  });
+
+  document.getElementById("cancelGoogleLink")?.addEventListener("click", () => {
+    forms.googleLink.reset();
+    forms.googleLink.hidden = true;
+    document.getElementById("showGoogleLinkForm").focus();
+  });
+
+  forms.googleLink?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const password = String(new FormData(form).get("password") ?? "");
+    setBusy(form, true);
+    showStatus(statuses.account, "Confirmando sua identidade…", "loading");
+    try {
+      const reauthentication = await api("/api/auth/reauthenticate-password", { method: "POST", data: { password } });
+      form.elements.password.value = "";
+      if (!reauthentication.response.ok) throw new Error(reauthentication.body.error ?? "reauthentication_failed");
+      const linking = await api("/api/auth/google/link/start", { method: "POST", data: {} });
+      if (!linking.response.ok || !linking.body.authorizationUrl) throw new Error(linking.body.error ?? "google_link_failed");
+      location.assign(linking.body.authorizationUrl);
+    } catch (error) {
+      form.elements.password.value = "";
+      showStatus(statuses.account, errorMessage(error.message, "a vinculação"), "error");
+      setBusy(form, false);
+    }
+  });
+
   function fillPendingEmail() {
     const pendingEmail = sessionStorage.getItem("mt_pending_email");
     if (pendingEmail && forms.confirmation) forms.confirmation.elements.email.value = pendingEmail;
@@ -321,8 +360,25 @@
     document.getElementById("accountName").textContent = `${name}.`;
     document.getElementById("accountDisplayName").textContent = name;
     document.getElementById("accountEmail").textContent = session.user?.email || "E-mail confirmado";
-    showStatus(statuses.account);
+    const methodsResponse = await api("/api/auth/access-methods");
+    if (methodsResponse.response.ok) updateAccessMethods(methodsResponse.body);
+    if (pendingAccountNotice) {
+      showStatus(statuses.account, pendingAccountNotice.message, pendingAccountNotice.tone);
+      pendingAccountNotice = null;
+    } else {
+      showStatus(statuses.account);
+    }
     return true;
+  }
+
+  function updateAccessMethods(access) {
+    const hasPassword = Boolean(access.methods?.password);
+    const hasGoogle = Boolean(access.methods?.google);
+    document.getElementById("passwordMethodState").textContent = hasPassword ? "Ativo e confirmado" : "Não configurado";
+    document.getElementById("googleMethodState").textContent = hasGoogle ? "Acesso disponível" : "Ainda não vinculado";
+    document.getElementById("googleLinkedBadge").hidden = !hasGoogle;
+    document.getElementById("showGoogleLinkForm").hidden = hasGoogle || !hasPassword || !access.emailConfirmed;
+    if (hasGoogle) forms.googleLink.hidden = true;
   }
 
   window.addEventListener("mt:page", async (event) => {
@@ -347,6 +403,17 @@
   document.addEventListener("DOMContentLoaded", () => {
     fillPendingEmail();
     fillRecoveryEmail();
+    const linkResult = new URLSearchParams(location.search).get("link");
+    if (linkResult) {
+      const messages = {
+        "google-linked": ["Google vinculado com segurança à sua conta.", "success"],
+        cancelled: ["A vinculação com Google foi cancelada. Sua conta não foi alterada.", "info"],
+        failed: ["Não foi possível concluir a vinculação com Google.", "error"],
+      };
+      const [message, tone] = messages[linkResult] ?? messages.failed;
+      pendingAccountNotice = { message, tone };
+      history.replaceState(null, "", `${location.pathname}#conta`);
+    }
     readSession().then((session) => {
       if (location.hash === "#conta" && !session) window.mtOpenPage("login");
       if (location.hash === "#conta" && session) loadAccount();

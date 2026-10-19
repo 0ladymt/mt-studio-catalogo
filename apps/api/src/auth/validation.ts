@@ -37,3 +37,7 @@ export const passwordResetSchema = z.object({
   token: z.string().trim().regex(/^\d{6}$/),
   password: strongPassword,
 }).strict();
+
+export const passwordConfirmationSchema = z.object({
+  password: z.string().min(1).max(128),
+}).strict();

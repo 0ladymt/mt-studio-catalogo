@@ -771,6 +771,33 @@
             <div><span>Estado</span><strong class="mt-account-state"><i aria-hidden="true"></i> Autenticado</strong></div>
             <button id="logoutButton" class="mt-button mt-button--outline" type="button">Sair da conta</button>
           </div>
+          <section class="mt-access-methods" aria-labelledby="accessMethodsTitle">
+            <div class="mt-access-methods__head">
+              <div>
+                <span class="mt-overline">Segurança da conta</span>
+                <h3 id="accessMethodsTitle">MÉTODOS DE ACESSO.</h3>
+              </div>
+              <p>Gerencie como você entra na MT Studio sem alterar seus pedidos ou seu perfil.</p>
+            </div>
+            <div class="mt-access-method" data-access-method="password">
+              <div><strong>E-mail e senha</strong><span id="passwordMethodState">Verificando…</span></div>
+              <span class="mt-access-method__badge">Principal</span>
+            </div>
+            <div class="mt-access-method" data-access-method="google">
+              <div><strong>Google</strong><span id="googleMethodState">Verificando…</span></div>
+              <button id="showGoogleLinkForm" class="mt-button mt-button--outline" type="button" hidden>Vincular Google</button>
+              <span id="googleLinkedBadge" class="mt-access-method__badge" hidden>Vinculado</span>
+            </div>
+            <form id="googleLinkForm" class="mt-google-link-form" hidden>
+              <label for="googleLinkPassword">Confirme sua senha atual</label>
+              <div class="mt-google-link-form__row">
+                <input id="googleLinkPassword" name="password" type="password" autocomplete="current-password" maxlength="128" required />
+                <button class="mt-button" type="submit">Continuar com Google</button>
+                <button id="cancelGoogleLink" class="mt-auth-secondary" type="button">Cancelar</button>
+              </div>
+              <small>A confirmação vale por poucos minutos e será usada uma única vez.</small>
+            </form>
+          </section>
           <p id="accountStatus" class="mt-auth-status" role="status" aria-live="polite"></p>
         </div>
       </section>

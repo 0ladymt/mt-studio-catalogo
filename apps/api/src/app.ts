@@ -6,13 +6,16 @@ import { SessionManager } from "./auth/session.js";
 import { protectMutation, restrictedCors } from "./middleware/security.js";
 import { issueCsrfCookie } from "./auth/cookies.js";
 import { FixedWindowRateLimiter } from "./auth/rate-limit.js";
-import { confirmationSchema, emailSchema, loginSchema, passwordResetSchema, signupSchema } from "./auth/validation.js";
+import { confirmationSchema, emailSchema, loginSchema, passwordConfirmationSchema, passwordResetSchema, signupSchema } from "./auth/validation.js";
 import { SingleFlight } from "./auth/single-flight.js";
 import type { LoginResult } from "./types/auth.js";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { OAuthTransactionStore } from "./auth/oauth-transaction.js";
+import { fingerprintSession, SensitiveAuthorizationStore } from "./auth/sensitive-authorization.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
+const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
+const SENSITIVE_AUTHORIZATION_COOKIE = "mt_sensitive_auth";
 
 export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   const app = new Hono<{ Variables: AuthVariables }>();
@@ -29,6 +32,8 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
   const googleOAuthStartLimiter = new FixedWindowRateLimiter(30, 15 * 60 * 1000);
   const logins = new SingleFlight<LoginResult>();
   const oauthTransactions = new OAuthTransactionStore(environment.OAUTH_TRANSACTION_TTL_SECONDS * 1000);
+  const googleLinkTransactions = new OAuthTransactionStore(environment.OAUTH_TRANSACTION_TTL_SECONDS * 1000);
+  const sensitiveAuthorizations = new SensitiveAuthorizationStore(environment.SENSITIVE_AUTHORIZATION_TTL_SECONDS * 1000);
 
   app.use("/api/*", restrictedCors(environment));
 
@@ -201,6 +206,96 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
     return context.json({ authenticated: true, user: session.user });
   });
 
+  app.get("/api/auth/access-methods", async (context) => {
+    const session = await sessions.resolve(context);
+    if (!session) return context.json({ error: "authentication_required" }, 401);
+    return context.json({
+      emailConfirmed: Boolean(session.user.emailConfirmed),
+      methods: {
+        password: session.user.providers?.includes("email") ?? false,
+        google: session.user.providers?.includes("google") ?? false,
+      },
+    });
+  });
+
+  app.post("/api/auth/reauthenticate-password", protectMutation(environment), async (context) => {
+    const session = await sessions.resolve(context);
+    if (!session) return context.json({ error: "authentication_required" }, 401);
+    if (!session.user.emailConfirmed || !session.user.email || !session.user.providers?.includes("email")) {
+      return context.json({ error: "password_reauthentication_unavailable" }, 409);
+    }
+    const input = passwordConfirmationSchema.safeParse(await safeJson(context));
+    if (!input.success) return context.json({ error: "invalid_password_confirmation" }, 400);
+    try {
+      const confirmed = await gateway.confirmCurrentPassword(session.user.email, input.data.password, session.user.id);
+      if (!confirmed) return context.json({ error: "invalid_credentials" }, 401);
+      const authorizationId = sensitiveAuthorizations.create(session.user.id, session.accessToken);
+      setCookie(context, SENSITIVE_AUTHORIZATION_COOKIE, authorizationId, sensitiveCookieOptions(environment));
+      return context.json({ authorized: true });
+    } catch {
+      return context.json({ error: "reauthentication_temporarily_unavailable" }, 503);
+    }
+  });
+
+  app.post("/api/auth/google/link/start", protectMutation(environment), async (context) => {
+    const session = await sessions.resolve(context);
+    if (!session || !session.refreshToken) return context.json({ error: "authentication_required" }, 401);
+    if (!session.user.emailConfirmed || !session.user.providers?.includes("email")) {
+      return context.json({ error: "google_link_not_eligible" }, 409);
+    }
+    if (session.user.providers.includes("google")) return context.json({ error: "google_already_linked" }, 409);
+    const authorizationId = getCookie(context, SENSITIVE_AUTHORIZATION_COOKIE);
+    deleteCookie(context, SENSITIVE_AUTHORIZATION_COOKIE, sensitiveCookieOptions(environment));
+    if (!sensitiveAuthorizations.consume(authorizationId, session.user.id, session.accessToken)) {
+      return context.json({ error: "recent_reauthentication_required" }, 403);
+    }
+    try {
+      const oauth = await gateway.beginGoogleIdentityLink({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: 60,
+        user: session.user,
+      }, environment.GOOGLE_IDENTITY_LINK_CALLBACK_URL);
+      const transactionId = googleLinkTransactions.create(oauth.pkceStorage, {
+        expectedUserId: session.user.id,
+        sessionFingerprint: fingerprintSession(session.accessToken),
+      });
+      setCookie(context, GOOGLE_LINK_TRANSACTION_COOKIE, transactionId, googleLinkCookieOptions(environment));
+      return context.json({ authorizationUrl: oauth.authorizationUrl });
+    } catch {
+      return context.json({ error: "google_link_temporarily_unavailable" }, 503);
+    }
+  });
+
+  app.get("/api/auth/google/link/callback", async (context) => {
+    const transactionId = getCookie(context, GOOGLE_LINK_TRANSACTION_COOKIE);
+    const transaction = googleLinkTransactions.consume(transactionId);
+    deleteCookie(context, GOOGLE_LINK_TRANSACTION_COOKIE, googleLinkCookieOptions(environment));
+    if (!transaction?.expectedUserId || !transaction.sessionFingerprint) {
+      return context.json({ error: "oauth_transaction_invalid_or_expired" }, 400);
+    }
+    const current = await sessions.resolve(context);
+    if (!current || current.user.id !== transaction.expectedUserId || fingerprintSession(current.accessToken) !== transaction.sessionFingerprint) {
+      return context.json({ error: "oauth_session_mismatch" }, 403);
+    }
+    if (context.req.query("error")) {
+      return context.redirect(`${environment.PUBLIC_SITE_URL}/?link=cancelled#conta`, 303);
+    }
+    const code = context.req.query("code");
+    if (!code) return context.json({ error: "oauth_callback_invalid" }, 400);
+    try {
+      const linkedSession = await gateway.completeGoogleIdentityLink(code, transaction.pkceStorage);
+      if (!linkedSession || linkedSession.user.id !== transaction.expectedUserId) {
+        if (linkedSession) await gateway.revokeSession(linkedSession.accessToken);
+        return context.json({ error: "oauth_identity_mismatch" }, 403);
+      }
+      sessions.issue(context, linkedSession);
+      return context.redirect(`${environment.PUBLIC_SITE_URL}/?link=google-linked#conta`, 303);
+    } catch {
+      return context.redirect(`${environment.PUBLIC_SITE_URL}/?link=failed#conta`, 303);
+    }
+  });
+
   app.post("/api/auth/logout", protectMutation(environment), async (context) => {
     await sessions.logout(context);
     return context.json({ authenticated: false });
@@ -230,6 +325,20 @@ function oauthCookieOptions(environment: ApiEnvironment) {
     sameSite: "Lax" as const,
     path: "/api/auth/google",
     maxAge: environment.OAUTH_TRANSACTION_TTL_SECONDS,
+  };
+}
+
+function googleLinkCookieOptions(environment: ApiEnvironment) {
+  return { ...oauthCookieOptions(environment), path: "/api/auth/google/link" };
+}
+
+function sensitiveCookieOptions(environment: ApiEnvironment) {
+  return {
+    httpOnly: true,
+    secure: environment.APP_ENV === "staging" || environment.APP_ENV === "production",
+    sameSite: "Lax" as const,
+    path: "/api/auth/google/link",
+    maxAge: environment.SENSITIVE_AUTHORIZATION_TTL_SECONDS,
   };
 }
 

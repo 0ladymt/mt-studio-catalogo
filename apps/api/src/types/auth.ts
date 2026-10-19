@@ -1,6 +1,8 @@
 export type AuthenticatedUser = {
   id: string;
   email?: string;
+  emailConfirmed?: boolean;
+  providers?: string[];
 };
 
 export type AuthSession = {
@@ -31,7 +33,7 @@ export type Profile = {
 export interface AuthGateway {
   verifyAccessToken(token: string): Promise<AuthenticatedUser | null>;
   refreshSession(refreshToken: string): Promise<AuthSession | null>;
-  revokeSession(accessToken: string): Promise<void>;
+  revokeSession(accessToken: string, scope?: "global" | "local"): Promise<void>;
   signUpWithPassword(input: {
     displayName: string;
     email: string;
@@ -44,5 +46,8 @@ export interface AuthGateway {
   resetPasswordWithOtp(email: string, token: string, password: string): Promise<boolean>;
   beginGoogleOAuth(callbackUrl: string): Promise<OAuthStart>;
   completeGoogleOAuth(code: string, pkceStorage: Record<string, string>): Promise<AuthSession | null>;
+  confirmCurrentPassword(email: string, password: string, expectedUserId: string): Promise<boolean>;
+  beginGoogleIdentityLink(session: AuthSession, callbackUrl: string): Promise<OAuthStart>;
+  completeGoogleIdentityLink(code: string, pkceStorage: Record<string, string>): Promise<AuthSession | null>;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
 }

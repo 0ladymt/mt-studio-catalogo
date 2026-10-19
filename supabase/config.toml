@@ -22,11 +22,13 @@ enabled = true
 port = 54324
 
 [auth]
+enable_manual_linking = true
 enabled = true
 site_url = "http://127.0.0.1:4173"
 additional_redirect_urls = [
   "http://localhost:4173",
   "http://127.0.0.1:8787/api/auth/google/callback",
+  "http://127.0.0.1:8787/api/auth/google/link/callback",
 ]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true

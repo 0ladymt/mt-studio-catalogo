@@ -9,7 +9,9 @@ const environmentSchema = z.object({
   ALLOWED_ORIGINS: z.string().default("http://127.0.0.1:4173,http://localhost:4173"),
   SESSION_REFRESH_MAX_AGE: z.coerce.number().int().positive().default(60 * 60 * 24 * 30),
   GOOGLE_OAUTH_CALLBACK_URL: z.string().url().default("http://127.0.0.1:8787/api/auth/google/callback"),
+  GOOGLE_IDENTITY_LINK_CALLBACK_URL: z.string().url().default("http://127.0.0.1:8787/api/auth/google/link/callback"),
   OAUTH_TRANSACTION_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(600),
+  SENSITIVE_AUTHORIZATION_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
   PUBLIC_SITE_URL: z.string().url().default("http://127.0.0.1:4173"),
 });
 

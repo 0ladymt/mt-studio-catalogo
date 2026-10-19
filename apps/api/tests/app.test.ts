@@ -12,7 +12,9 @@ const environment: ApiEnvironment = {
   ALLOWED_ORIGINS: "http://127.0.0.1:4173",
   SESSION_REFRESH_MAX_AGE: 2592000,
   GOOGLE_OAUTH_CALLBACK_URL: "http://127.0.0.1:8787/api/auth/google/callback",
+  GOOGLE_IDENTITY_LINK_CALLBACK_URL: "http://127.0.0.1:8787/api/auth/google/link/callback",
   OAUTH_TRANSACTION_TTL_SECONDS: 600,
+  SENSITIVE_AUTHORIZATION_TTL_SECONDS: 300,
   PUBLIC_SITE_URL: "http://127.0.0.1:4173",
 };
 
@@ -40,6 +42,12 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
       pkceStorage: { "supabase.auth.token-code-verifier": "verifier" },
     })),
     completeGoogleOAuth: vi.fn(async () => null),
+    confirmCurrentPassword: vi.fn(async () => false),
+    beginGoogleIdentityLink: vi.fn(async () => ({
+      authorizationUrl: "https://accounts.google.test/link",
+      pkceStorage: { "supabase.auth.token-code-verifier": "link-verifier" },
+    })),
+    completeGoogleIdentityLink: vi.fn(async () => null),
     getOwnProfile: vi.fn(async () => profile),
     ...overrides,
   };
@@ -110,6 +118,115 @@ describe("MT Studio API foundation", () => {
     const response = await createApp(gateway(), environment).request("/api/auth/session");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ authenticated: false });
+  });
+
+  it("reports linked access methods from the validated session", async () => {
+    const auth = gateway({ verifyAccessToken: vi.fn(async () => ({
+      id: profile.user_id,
+      email: "cliente@example.test",
+      emailConfirmed: true,
+      providers: ["email", "google"],
+    })) });
+    const response = await createApp(auth, environment).request("/api/auth/access-methods", {
+      headers: { Cookie: "mt_access=valid-access; mt_refresh=valid-refresh" },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      emailConfirmed: true,
+      methods: { password: true, google: true },
+    });
+  });
+
+  it("requires recent password reauthentication before starting a Google link", async () => {
+    const auth = gateway({ verifyAccessToken: vi.fn(async () => ({
+      id: profile.user_id,
+      email: "cliente@example.test",
+      emailConfirmed: true,
+      providers: ["email"],
+    })) });
+    const response = await createApp(auth, environment).request("/api/auth/google/link/start", {
+      method: "POST",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-access; mt_refresh=valid-refresh; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "recent_reauthentication_required" });
+  });
+
+  it("binds a one-time Google link transaction to the original user and session", async () => {
+    const verifiedUser = {
+      id: profile.user_id,
+      email: "cliente@example.test",
+      emailConfirmed: true,
+      providers: ["email"],
+    };
+    const linkedSession = {
+      accessToken: "linked-access",
+      refreshToken: "linked-refresh",
+      expiresIn: 3600,
+      user: { ...verifiedUser, providers: ["email", "google"] },
+    };
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => verifiedUser),
+      confirmCurrentPassword: vi.fn(async () => true),
+      completeGoogleIdentityLink: vi.fn(async () => linkedSession),
+    });
+    const app = createApp(auth, environment);
+    const mutationHeaders = {
+      Origin: environment.PUBLIC_SITE_URL,
+      Cookie: "mt_access=valid-access; mt_refresh=valid-refresh; mt_csrf=proof",
+      "X-CSRF-Token": "proof",
+      "Content-Type": "application/json",
+    };
+    const reauthenticated = await app.request("/api/auth/reauthenticate-password", {
+      method: "POST", headers: mutationHeaders, body: JSON.stringify({ password: "ValidPassword!1" }),
+    });
+    expect(reauthenticated.status).toBe(200);
+    const sensitive = reauthenticated.headers.getSetCookie().find((cookie) => cookie.startsWith("mt_sensitive_auth="))!.split(";", 1)[0]!;
+    const start = await app.request("/api/auth/google/link/start", {
+      method: "POST",
+      headers: { ...mutationHeaders, Cookie: `${mutationHeaders.Cookie}; ${sensitive}` },
+      body: "{}",
+    });
+    expect(start.status).toBe(200);
+    const transaction = start.headers.getSetCookie().find((cookie) => cookie.startsWith("mt_google_link_tx="))!.split(";", 1)[0]!;
+    const callback = await app.request("/api/auth/google/link/callback?code=valid-code", {
+      headers: { Cookie: `mt_access=valid-access; mt_refresh=valid-refresh; ${transaction}` },
+    });
+    expect(callback.status).toBe(303);
+    expect(callback.headers.get("location")).toBe(`${environment.PUBLIC_SITE_URL}/?link=google-linked#conta`);
+    expect(auth.completeGoogleIdentityLink).toHaveBeenCalledOnce();
+    const reused = await app.request("/api/auth/google/link/callback?code=valid-code", {
+      headers: { Cookie: `mt_access=valid-access; mt_refresh=valid-refresh; ${transaction}` },
+    });
+    expect(reused.status).toBe(400);
+  });
+
+  it("rejects a linked identity that returns a different UUID", async () => {
+    const verifiedUser = { id: profile.user_id, email: "cliente@example.test", emailConfirmed: true, providers: ["email"] };
+    const auth = gateway({
+      verifyAccessToken: vi.fn(async () => verifiedUser),
+      confirmCurrentPassword: vi.fn(async () => true),
+      completeGoogleIdentityLink: vi.fn(async () => ({
+        accessToken: "foreign-access", refreshToken: "foreign-refresh", expiresIn: 3600,
+        user: { id: "22222222-2222-4222-8222-222222222222", providers: ["google"] },
+      })),
+    });
+    const app = createApp(auth, environment);
+    const headers = { Origin: environment.PUBLIC_SITE_URL, Cookie: "mt_access=a; mt_refresh=r; mt_csrf=p", "X-CSRF-Token": "p", "Content-Type": "application/json" };
+    const reauth = await app.request("/api/auth/reauthenticate-password", { method: "POST", headers, body: JSON.stringify({ password: "ValidPassword!1" }) });
+    const sensitive = reauth.headers.getSetCookie().find((cookie) => cookie.startsWith("mt_sensitive_auth="))!.split(";", 1)[0]!;
+    const start = await app.request("/api/auth/google/link/start", { method: "POST", headers: { ...headers, Cookie: `${headers.Cookie}; ${sensitive}` }, body: "{}" });
+    const transaction = start.headers.getSetCookie().find((cookie) => cookie.startsWith("mt_google_link_tx="))!.split(";", 1)[0]!;
+    const callback = await app.request("/api/auth/google/link/callback?code=foreign", { headers: { Cookie: `mt_access=a; mt_refresh=r; ${transaction}` } });
+    expect(callback.status).toBe(403);
+    await expect(callback.json()).resolves.toEqual({ error: "oauth_identity_mismatch" });
+    expect(auth.revokeSession).toHaveBeenCalledWith("foreign-access");
   });
 
   it("rejects logout without an allowed origin and CSRF proof", async () => {

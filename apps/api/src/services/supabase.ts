@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ApiEnvironment } from "../config/env.js";
-import type { AuthGateway, AuthSession, Profile } from "../types/auth.js";
+import type { AuthGateway, AuthSession, AuthenticatedUser, Profile } from "../types/auth.js";
 
 export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGateway {
   const clientFor = (token: string) =>
@@ -34,7 +34,7 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
     async verifyAccessToken(token) {
       const { data, error } = await clientFor(token).auth.getUser(token);
       if (error || !data.user) return null;
-      return { id: data.user.id, email: data.user.email };
+      return userSummary(data.user);
     },
 
     async refreshSession(refreshToken) {
@@ -45,12 +45,12 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
         expiresIn: data.session.expires_in,
-        user: { id: data.user.id, email: data.user.email },
+        user: userSummary(data.user),
       };
     },
 
-    async revokeSession(accessToken) {
-      const response = await fetch(`${environment.SUPABASE_URL}/auth/v1/logout?scope=global`, {
+    async revokeSession(accessToken, scope = "global") {
+      const response = await fetch(`${environment.SUPABASE_URL}/auth/v1/logout?scope=${scope}`, {
         method: "POST",
         headers: {
           apikey: environment.SUPABASE_PUBLISHABLE_KEY,
@@ -146,9 +146,46 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
         expiresIn: data.session.expires_in,
-        user: { id: data.user.id, email: data.user.email },
+        user: userSummary(data.user),
       };
       return session;
+    },
+
+    async confirmCurrentPassword(email, password, expectedUserId) {
+      const result = await this.signInWithPassword(email, password);
+      if (result.status !== "authenticated") return false;
+      try {
+        return result.session.user.id === expectedUserId;
+      } finally {
+        await this.revokeSession(result.session.accessToken, "local");
+      }
+    },
+
+    async beginGoogleIdentityLink(session, callbackUrl) {
+      const pkceStorage: Record<string, string> = {};
+      const client = oauthClient(pkceStorage);
+      const { error: sessionError } = await client.auth.setSession({
+        access_token: session.accessToken,
+        refresh_token: session.refreshToken,
+      });
+      if (sessionError) throw new Error("google-link-session-invalid");
+      const { data, error } = await client.auth.linkIdentity({
+        provider: "google",
+        options: {
+          redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error || !data.url) throw new Error("google-link-start-failed");
+      const verifierStorage = Object.fromEntries(
+        Object.entries(pkceStorage).filter(([key]) => key.includes("code-verifier")),
+      );
+      return { authorizationUrl: data.url, pkceStorage: verifierStorage };
+    },
+
+    async completeGoogleIdentityLink(code, pkceStorage) {
+      return this.completeGoogleOAuth(code, pkceStorage);
     },
 
     async getOwnProfile(token, userId) {
@@ -161,6 +198,15 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       if (error) throw new Error("profile-query-failed");
       return data;
     },
+  };
+}
+
+function userSummary(user: { id: string; email?: string; email_confirmed_at?: string; identities?: Array<{ provider: string }> }): AuthenticatedUser {
+  return {
+    id: user.id,
+    email: user.email,
+    emailConfirmed: Boolean(user.email_confirmed_at),
+    providers: [...new Set((user.identities ?? []).map((identity) => identity.provider))],
   };
 }
 

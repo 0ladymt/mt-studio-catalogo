@@ -2,6 +2,8 @@ import { randomBytes } from "node:crypto";
 
 export type OAuthTransaction = {
   pkceStorage: Record<string, string>;
+  expectedUserId?: string;
+  sessionFingerprint?: string;
   expiresAt: number;
 };
 
@@ -13,11 +15,12 @@ export class OAuthTransactionStore {
     private readonly now: () => number = Date.now,
   ) {}
 
-  create(pkceStorage: Record<string, string>): string {
+  create(pkceStorage: Record<string, string>, binding: Pick<OAuthTransaction, "expectedUserId" | "sessionFingerprint"> = {}): string {
     this.removeExpired();
     const id = randomBytes(32).toString("base64url");
     this.transactions.set(id, {
       pkceStorage: { ...pkceStorage },
+      ...binding,
       expiresAt: this.now() + this.ttlMs,
     });
     return id;

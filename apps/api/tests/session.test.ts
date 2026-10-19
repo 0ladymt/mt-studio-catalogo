@@ -14,7 +14,9 @@ const environment: ApiEnvironment = {
   ALLOWED_ORIGINS: "http://127.0.0.1:4173",
   SESSION_REFRESH_MAX_AGE: 2592000,
   GOOGLE_OAUTH_CALLBACK_URL: "http://127.0.0.1:8787/api/auth/google/callback",
+  GOOGLE_IDENTITY_LINK_CALLBACK_URL: "http://127.0.0.1:8787/api/auth/google/link/callback",
   OAUTH_TRANSACTION_TTL_SECONDS: 600,
+  SENSITIVE_AUTHORIZATION_TTL_SECONDS: 300,
   PUBLIC_SITE_URL: "http://127.0.0.1:4173",
 };
 
@@ -38,6 +40,9 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     resetPasswordWithOtp: vi.fn(async () => false),
     beginGoogleOAuth: vi.fn(async () => ({ authorizationUrl: "https://accounts.google.test", pkceStorage: {} })),
     completeGoogleOAuth: vi.fn(async () => null),
+    confirmCurrentPassword: vi.fn(async () => false),
+    beginGoogleIdentityLink: vi.fn(async () => ({ authorizationUrl: "https://accounts.google.test/link", pkceStorage: {} })),
+    completeGoogleIdentityLink: vi.fn(async () => null),
     getOwnProfile: vi.fn(async () => null),
     ...overrides,
   };

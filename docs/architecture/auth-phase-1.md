@@ -152,3 +152,9 @@ globally per 15 minutes; reset attempts allow five per email per 15 minutes.
 
 The transaction store is intentionally in-memory for the single-process local environment. Before horizontal scaling or production deployment it must move to a shared store with atomic consume semantics, such as Redis or PostgreSQL, so callbacks survive process restarts and cannot be accepted by more than one instance.
 Production requires an atomic shared limiter.
+
+## Explicit Google identity linking (phase 2.7A)
+
+Linking requires a valid confirmed password account, recent password confirmation, and an opaque one-time authorization bound to both the original UUID and the current session. The BFF starts Supabase `linkIdentity()` with PKCE and rejects any callback whose returned UUID differs from the original UUID. There is no custom account merge or commercial-data transfer.
+
+Manual linking is enabled only in the local Supabase configuration for this validation phase. The sensitive-authorization and OAuth-transaction stores are in memory. Production or multi-instance deployment requires a shared store with TTL and atomic consume semantics (for example, Redis); restarting the local API safely invalidates pending transactions.

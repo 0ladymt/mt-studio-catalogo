@@ -6,6 +6,7 @@ import { clearSessionCookies, issueSessionCookies, readSessionCookies } from "./
 
 export type ResolvedSession = {
   accessToken: string;
+  refreshToken?: string;
   user: AuthenticatedUser;
   renewed: boolean;
 };
@@ -30,14 +31,14 @@ export class SessionManager {
     const cookies = readSessionCookies(context);
     if (cookies.accessToken) {
       const user = await this.gateway.verifyAccessToken(cookies.accessToken);
-      if (user) return { accessToken: cookies.accessToken, user, renewed: false };
+      if (user) return { accessToken: cookies.accessToken, refreshToken: cookies.refreshToken, user, renewed: false };
     }
 
     if (cookies.refreshToken) {
       const refreshed = await this.refreshOnce(cookies.refreshToken);
       if (refreshed) {
         this.issue(context, refreshed);
-        return { accessToken: refreshed.accessToken, user: refreshed.user, renewed: true };
+        return { accessToken: refreshed.accessToken, refreshToken: refreshed.refreshToken, user: refreshed.user, renewed: true };
       }
       this.clear(context);
       return null;
