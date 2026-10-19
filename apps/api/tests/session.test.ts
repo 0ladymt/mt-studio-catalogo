@@ -47,6 +47,7 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     requestPasswordSetup: vi.fn(async () => true),
     setupPasswordWithOtp: vi.fn(async () => "invalid_or_expired" as const),
     getOwnProfile: vi.fn(async () => null),
+    updateOwnProfile: vi.fn(async () => null),
     ...overrides,
   };
 }

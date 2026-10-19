@@ -3206,15 +3206,27 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 .mt-account-shell { padding-block:clamp(70px,9vw,130px); }
 .mt-account-head { max-width:780px; margin-bottom:42px; }
 .mt-account-head h2 { font-size:clamp(4rem,7vw,7rem); }
+.mt-account-head #accountName { display:inline; max-width:100%; overflow-wrap:anywhere; word-break:break-word; }
 .mt-account-head p { margin:20px 0 0; }
 .mt-account-panel { display:grid; grid-template-columns:1fr 1.2fr .8fr auto; align-items:end; gap:0; border-block:1px solid #3b343f; }
 .mt-account-panel > div { min-width:0; min-height:112px; padding:24px 28px; border-right:1px solid #332e36; }
 .mt-account-panel > div:first-child { padding-left:0; }
 .mt-account-panel span { display:block; margin-bottom:10px; color:#8e8793; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; }
 .mt-account-panel strong { display:block; overflow-wrap:anywhere; font-size:.86rem; }
+.mt-account-edit { min-height:36px; margin-top:12px; padding:5px 0; border:0; color:#dcb8ee; font-size:.72rem; font-weight:700; text-decoration:underline; text-underline-offset:4px; }
+.mt-account-edit:hover { color:#fff; }
+.mt-account-edit:focus-visible { outline:2px solid var(--mt-purple); outline-offset:3px; }
 .mt-account-state { color:#dfbaeF; }
 .mt-account-state i { display:inline-block; width:7px; height:7px; margin-right:7px; border-radius:50%; background:var(--mt-purple); }
 .mt-account-panel > button { min-height:48px; margin:0 0 31px 28px; white-space:nowrap; }
+.mt-profile-name-form { padding:24px 0; border-bottom:1px solid #332e36; }
+.mt-profile-name-form[hidden] { display:none; }
+.mt-profile-name-form label { display:block; margin-bottom:10px; color:#c9c0cc; font-size:.78rem; font-weight:700; }
+.mt-profile-name-form__row { display:grid; grid-template-columns:minmax(240px,1fr) auto auto; align-items:center; gap:12px; }
+.mt-profile-name-form input { min-width:0; min-height:48px; padding:12px 14px; border:1px solid #48404e; border-radius:3px; background:#0b0a0c; color:#fff; }
+.mt-profile-name-form input:focus-visible { outline:2px solid var(--mt-purple); outline-offset:3px; border-color:var(--mt-purple); }
+.mt-profile-name-form .mt-auth-secondary { min-height:44px; margin:0; }
+.mt-profile-name-form small { display:block; margin-top:10px; color:#9c94a0; font-size:.76rem; line-height:1.55; }
 .mt-access-methods { margin-top:clamp(42px,6vw,74px); border-top:1px solid #3b343f; }
 .mt-access-methods__head { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,.8fr); gap:36px; align-items:end; padding:34px 0 26px; }
 .mt-access-methods__head h3 { margin:8px 0 0; font-size:clamp(2rem,3.3vw,3.4rem); }
@@ -3268,9 +3280,12 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-account-shell { width:calc(100% - 36px); padding-block:52px 72px; }
   .mt-account-head { margin-bottom:30px; }
   .mt-account-head h2 { font-size:clamp(3.5rem,17vw,4.8rem); }
+  .mt-account-head #accountName { font-size:clamp(.72em,8vw,1em); }
   .mt-account-panel { grid-template-columns:1fr; }
   .mt-account-panel > div,.mt-account-panel > div:first-child { min-height:0; padding:20px 0; border-right:0; }
   .mt-account-panel > button { width:100%; margin:26px 0 4px; }
+  .mt-profile-name-form__row { grid-template-columns:1fr; }
+  .mt-profile-name-form__row .mt-button,.mt-profile-name-form__row .mt-auth-secondary { width:100%; min-height:44px; }
   .mt-access-methods { margin-top:40px; }
   .mt-access-methods__head { padding-top:28px; }
   .mt-access-method { min-height:78px; }

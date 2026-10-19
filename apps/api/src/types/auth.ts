@@ -58,4 +58,5 @@ export interface AuthGateway {
     password: string,
   ): Promise<"updated" | "invalid_or_expired">;
   getOwnProfile(token: string, userId: string): Promise<Profile | null>;
+  updateOwnProfile(token: string, userId: string, displayName: string): Promise<Profile | null>;
 }

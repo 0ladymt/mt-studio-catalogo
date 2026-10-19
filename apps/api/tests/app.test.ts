@@ -52,6 +52,7 @@ function gateway(overrides: Partial<AuthGateway> = {}): AuthGateway {
     requestPasswordSetup: vi.fn(async () => true),
     setupPasswordWithOtp: vi.fn(async () => "invalid_or_expired" as const),
     getOwnProfile: vi.fn(async () => profile),
+    updateOwnProfile: vi.fn(async (_token, _userId, displayName) => ({ ...profile, display_name: displayName })),
     ...overrides,
   };
 }
@@ -115,6 +116,94 @@ describe("MT Studio API foundation", () => {
     });
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ error: "profile_unavailable" });
+  });
+
+  it("updates only the authenticated user's normalized display name", async () => {
+    const auth = gateway();
+    const response = await createApp(auth, environment).request("/api/profile", {
+      method: "PATCH",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-test-token; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayName: "  Rafaella   Ávila  " }),
+    });
+    expect(response.status).toBe(200);
+    expect(auth.updateOwnProfile).toHaveBeenCalledWith("valid-test-token", profile.user_id, "Rafaella Ávila");
+    await expect(response.json()).resolves.toMatchObject({ profile: { user_id: profile.user_id, display_name: "Rafaella Ávila" } });
+  });
+
+  it("rejects extra profile fields instead of allowing identity changes", async () => {
+    const auth = gateway();
+    const response = await createApp(auth, environment).request("/api/profile", {
+      method: "PATCH",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-test-token; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayName: "Nome válido", user_id: "22222222-2222-4222-8222-222222222222" }),
+    });
+    expect(response.status).toBe(400);
+    expect(auth.updateOwnProfile).not.toHaveBeenCalled();
+  });
+
+  it("rejects control and invisible characters in profile names", async () => {
+    const auth = gateway();
+    const response = await createApp(auth, environment).request("/api/profile", {
+      method: "PATCH",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-test-token; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayName: "Nome\u200Binvisível" }),
+    });
+    expect(response.status).toBe(400);
+    expect(auth.updateOwnProfile).not.toHaveBeenCalled();
+  });
+
+  it("requires a valid session, origin and CSRF proof to update a profile", async () => {
+    const auth = gateway();
+    const missingSession = await createApp(auth, environment).request("/api/profile", {
+      method: "PATCH",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayName: "Nome válido" }),
+    });
+    expect(missingSession.status).toBe(401);
+
+    const invalidOrigin = await createApp(auth, environment).request("/api/profile", {
+      method: "PATCH",
+      headers: {
+        Origin: "https://attacker.invalid",
+        Cookie: "mt_access=valid-test-token; mt_csrf=proof",
+        "X-CSRF-Token": "proof",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayName: "Nome válido" }),
+    });
+    expect(invalidOrigin.status).toBe(403);
+
+    const invalidCsrf = await createApp(auth, environment).request("/api/profile", {
+      method: "PATCH",
+      headers: {
+        Origin: environment.PUBLIC_SITE_URL,
+        Cookie: "mt_access=valid-test-token; mt_csrf=proof",
+        "X-CSRF-Token": "tampered",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayName: "Nome válido" }),
+    });
+    expect(invalidCsrf.status).toBe(403);
   });
 
   it("reports an anonymous cookie session without exposing tokens", async () => {

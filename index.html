@@ -766,11 +766,20 @@
             <p>Seu acesso à MT Studio está ativo.</p>
           </header>
           <div class="mt-account-panel">
-            <div><span>Nome</span><strong id="accountDisplayName">—</strong></div>
+            <div class="mt-account-name"><span>Nome</span><strong id="accountDisplayName">—</strong><button id="showProfileNameForm" class="mt-account-edit" type="button">Editar nome</button></div>
             <div><span>E-mail</span><strong id="accountEmail">—</strong></div>
             <div><span>Estado</span><strong class="mt-account-state"><i aria-hidden="true"></i> Autenticado</strong></div>
             <button id="logoutButton" class="mt-button mt-button--outline" type="button">Sair da conta</button>
           </div>
+          <form id="profileNameForm" class="mt-profile-name-form" hidden>
+            <label for="profileDisplayName">Nome de exibição</label>
+            <div class="mt-profile-name-form__row">
+              <input id="profileDisplayName" name="displayName" autocomplete="name" minlength="2" maxlength="80" required aria-describedby="profileNameHint" />
+              <button class="mt-button" type="submit">Salvar nome</button>
+              <button id="cancelProfileName" class="mt-auth-secondary" type="button">Cancelar</button>
+            </div>
+            <small id="profileNameHint">Use entre 2 e 80 caracteres. Espaços repetidos serão ajustados.</small>
+          </form>
           <section class="mt-access-methods" aria-labelledby="accessMethodsTitle">
             <div class="mt-access-methods__head">
               <div>

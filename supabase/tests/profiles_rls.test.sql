@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(17);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -27,6 +27,33 @@ select is(
   )),
   2,
   'trigger records password capability without exposing password material'
+);
+
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+  created_at, updated_at
+) values
+  ('00000000-0000-0000-0000-000000000000', '33333333-3333-4333-8333-333333333333', 'authenticated', 'authenticated', 'google-name@example.invalid', '', now(), '{"provider":"google","providers":["google"]}', '{"display_name":"  Nome   Preferido  ","full_name":"Nome Completo","name":"Nome Alternativo"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-8444-444444444444', 'authenticated', 'authenticated', 'google-full-name@example.invalid', '', now(), '{"provider":"google","providers":["google"]}', '{"full_name":"Ágata   D''Ávila"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '55555555-5555-4555-8555-555555555555', 'authenticated', 'authenticated', 'google-no-name@example.invalid', '', now(), '{"provider":"google","providers":["google"]}', '{}', now(), now());
+
+select is(
+  (select display_name from public.profiles where user_id = '33333333-3333-4333-8333-333333333333'),
+  'Nome Preferido',
+  'Google profile name prefers normalized display_name metadata'
+);
+
+select is(
+  (select display_name from public.profiles where user_id = '44444444-4444-4444-8444-444444444444'),
+  'Ágata D''Ávila',
+  'Google profile name falls back to normalized full_name metadata'
+);
+
+select is(
+  (select display_name from public.profiles where user_id = '55555555-5555-4555-8555-555555555555'),
+  null,
+  'Google profile without usable name metadata keeps a safe null fallback'
 );
 
 set local role authenticated;

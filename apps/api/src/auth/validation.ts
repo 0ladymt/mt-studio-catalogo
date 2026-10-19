@@ -46,3 +46,12 @@ export const passwordSetupSchema = z.object({
   token: z.string().trim().regex(/^\d{6}$/),
   password: strongPassword,
 }).strict();
+
+const unsafeDisplayName = /[\u0000-\u001F\u007F-\u009F\u200B-\u200D\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/u;
+
+export const profileUpdateSchema = z.object({
+  displayName: z.string()
+    .refine((value) => !unsafeDisplayName.test(value), "unsafe_display_name")
+    .transform((value) => value.normalize("NFC").replace(/\s+/gu, " ").trim())
+    .pipe(z.string().min(2).max(80)),
+}).strict();

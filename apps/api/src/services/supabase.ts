@@ -246,6 +246,18 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       if (error) throw new Error("profile-query-failed");
       return data;
     },
+
+    async updateOwnProfile(token, userId, displayName) {
+      const { data, error } = await clientFor(token)
+        .from("profiles")
+        .update({ display_name: displayName })
+        .eq("user_id", userId)
+        .select("user_id,display_name,status,created_at,updated_at")
+        .maybeSingle<Profile>();
+
+      if (error) throw new Error("profile-update-failed");
+      return data;
+    },
   };
 }
 

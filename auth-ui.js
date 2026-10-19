@@ -16,6 +16,7 @@
     passwordReset: document.getElementById("passwordResetForm"),
     googleLink: document.getElementById("googleLinkForm"),
     passwordSetup: document.getElementById("passwordSetupForm"),
+    profileName: document.getElementById("profileNameForm"),
   };
   const statuses = {
     signup: document.getElementById("signupStatus"),
@@ -203,6 +204,9 @@
       invalid_password_setup_data: "Revise o código e os requisitos da nova senha.",
       password_setup_invalid_or_expired: "Código incorreto, expirado ou já utilizado.",
       password_setup_temporarily_unavailable: "Não foi possível definir a senha agora.",
+      invalid_profile_data: "Use um nome válido entre 2 e 80 caracteres.",
+      profile_not_found: "Não foi possível localizar seu perfil.",
+      profile_update_unavailable: "Não foi possível atualizar seu nome agora.",
     };
     return messages[error] ?? `Não foi possível concluir ${context}. Tente novamente.`;
   }
@@ -495,14 +499,56 @@
     if (recoveryEmail && forms.passwordReset) forms.passwordReset.elements.email.value = recoveryEmail;
   }
 
+  let currentDisplayName = "Cliente";
+
+  function renderAccountName(name) {
+    currentDisplayName = name || "Cliente";
+    document.getElementById("accountName").textContent = `${currentDisplayName}.`;
+    document.getElementById("accountDisplayName").textContent = currentDisplayName;
+    if (forms.profileName) forms.profileName.elements.displayName.value = currentDisplayName;
+  }
+
+  document.getElementById("showProfileNameForm")?.addEventListener("click", () => {
+    forms.profileName.hidden = false;
+    forms.profileName.elements.displayName.value = currentDisplayName;
+    forms.profileName.elements.displayName.focus();
+  });
+
+  document.getElementById("cancelProfileName")?.addEventListener("click", () => {
+    forms.profileName.elements.displayName.value = currentDisplayName;
+    forms.profileName.hidden = true;
+    showStatus(statuses.account);
+    document.getElementById("showProfileNameForm").focus();
+  });
+
+  forms.profileName?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const displayName = String(new FormData(form).get("displayName") ?? "");
+    setBusy(form, true);
+    showStatus(statuses.account, "Salvando seu nome…", "loading");
+    try {
+      const { response, body } = await api("/api/profile", { method: "PATCH", data: { displayName } });
+      if (!response.ok) throw new Error(body.error ?? "profile_update_failed");
+      renderAccountName(body.profile?.display_name || "Cliente");
+      form.hidden = true;
+      showStatus(statuses.account, "Nome atualizado com segurança.", "success");
+      document.getElementById("showProfileNameForm").focus();
+    } catch (error) {
+      showStatus(statuses.account, errorMessage(error.message, "a atualização do perfil"), "error");
+    } finally {
+      setBusy(form, false);
+    }
+  });
+
   async function loadAccount() {
     const session = currentSession ?? await readSession(true);
     if (!session) return false;
     const { response, body } = await api("/api/profile");
     if (!response.ok) return false;
     const name = body.profile?.display_name || "Cliente";
-    document.getElementById("accountName").textContent = `${name}.`;
-    document.getElementById("accountDisplayName").textContent = name;
+    renderAccountName(name);
     document.getElementById("accountEmail").textContent = session.user?.email || "E-mail confirmado";
     const methodsResponse = await api("/api/auth/access-methods");
     if (methodsResponse.response.ok) updateAccessMethods(methodsResponse.body);

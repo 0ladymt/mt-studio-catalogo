@@ -6,7 +6,7 @@ import { SessionManager } from "./auth/session.js";
 import { protectMutation, restrictedCors } from "./middleware/security.js";
 import { issueCsrfCookie } from "./auth/cookies.js";
 import { FixedWindowRateLimiter } from "./auth/rate-limit.js";
-import { confirmationSchema, emailSchema, loginSchema, passwordConfirmationSchema, passwordResetSchema, passwordSetupSchema, signupSchema } from "./auth/validation.js";
+import { confirmationSchema, emailSchema, loginSchema, passwordConfirmationSchema, passwordResetSchema, passwordSetupSchema, profileUpdateSchema, signupSchema } from "./auth/validation.js";
 import { SingleFlight } from "./auth/single-flight.js";
 import type { LoginResult } from "./types/auth.js";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
@@ -387,6 +387,21 @@ export function createApp(gateway: AuthGateway, environment: ApiEnvironment) {
       return context.json({ profile });
     } catch {
       return context.json({ error: "profile_unavailable" }, 503);
+    }
+  });
+
+  app.patch("/api/profile", protectMutation(environment), async (context) => {
+    const session = await sessions.resolve(context);
+    if (!session) return context.json({ error: "authentication_required" }, 401);
+    const input = profileUpdateSchema.safeParse(await safeJson(context));
+    if (!input.success) return context.json({ error: "invalid_profile_data" }, 400);
+
+    try {
+      const profile = await gateway.updateOwnProfile(session.accessToken, session.user.id, input.data.displayName);
+      if (!profile) return context.json({ error: "profile_not_found" }, 404);
+      return context.json({ profile });
+    } catch {
+      return context.json({ error: "profile_update_unavailable" }, 503);
     }
   });
 
