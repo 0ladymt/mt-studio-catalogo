@@ -55,8 +55,23 @@ function authGateway(): AuthGateway {
   };
 }
 
+function adminGateway(overrides: Partial<AdminGateway> = {}): AdminGateway {
+  return {
+    getStaffMember: vi.fn(async () => null),
+    listCategories: vi.fn(async () => ({ items: [], total: 0 })),
+    createCategory: vi.fn(async () => { throw new Error("unused"); }),
+    updateCategory: vi.fn(async () => { throw new Error("unused"); }),
+    listProducts: vi.fn(async () => ({ items: [], total: 0 })),
+    getProduct: vi.fn(async () => null),
+    createDraftProduct: vi.fn(async () => { throw new Error("unused"); }),
+    updateDraftProduct: vi.fn(async () => { throw new Error("unused"); }),
+    archiveDraftProduct: vi.fn(async () => { throw new Error("unused"); }),
+    ...overrides,
+  };
+}
+
 function staffGateway(member: StaffMember | null): AdminGateway {
-  return { getStaffMember: vi.fn(async () => member) };
+  return adminGateway({ getStaffMember: vi.fn(async () => member) });
 }
 
 const request = (app: ReturnType<typeof createApp>, suffix = "") => app.request(`/api/admin/access${suffix}`, {
@@ -116,14 +131,14 @@ describe("administrative authorization", () => {
     const getStaffMember = vi.fn()
       .mockResolvedValueOnce({ userId, role: "admin", status: "active" } satisfies StaffMember)
       .mockResolvedValueOnce(null);
-    const app = createApp(authGateway(), environment, { getStaffMember });
+    const app = createApp(authGateway(), environment, adminGateway({ getStaffMember }));
     expect((await request(app)).status).toBe(200);
     expect((await request(app)).status).toBe(403);
     expect(getStaffMember).toHaveBeenCalledTimes(2);
   });
 
   it("does not expose internal authorization failures", async () => {
-    const admin: AdminGateway = { getStaffMember: vi.fn(async () => { throw new Error("private database detail"); }) };
+    const admin = adminGateway({ getStaffMember: vi.fn(async () => { throw new Error("private database detail"); }) });
     const response = await request(createApp(authGateway(), environment, admin));
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ error: "admin_authorization_unavailable" });

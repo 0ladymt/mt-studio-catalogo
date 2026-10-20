@@ -1,4 +1,5 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
+import { z } from "zod";
 import { authenticate, type AuthVariables } from "./middleware/authenticate.js";
 import type { AuthGateway } from "./types/auth.js";
 import type { ApiEnvironment } from "./config/env.js";
@@ -12,14 +13,17 @@ import type { LoginResult } from "./types/auth.js";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { OAuthTransactionStore } from "./auth/oauth-transaction.js";
 import { fingerprintSession, SensitiveAuthorizationStore } from "./auth/sensitive-authorization.js";
+import { randomUUID } from "node:crypto";
 import type { AdminGateway } from "./types/admin.js";
 import { permissionsForRole } from "./auth/staff-permissions.js";
 import { requireStaff, type StaffVariables } from "./middleware/require-staff.js";
-import { unavailableAdminGateway } from "./services/admin-supabase.js";
+import { AdminOperationError, unavailableAdminGateway } from "./services/admin-supabase.js";
+import { categoryInputSchema, identifierSchema, paginationSchema, productInputSchema, productListQuerySchema } from "./admin/validation.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
 const SENSITIVE_AUTHORIZATION_COOKIE = "mt_sensitive_auth";
+const zEmptyObject = z.object({}).strict();
 
 export function createApp(
   gateway: AuthGateway,
@@ -59,6 +63,123 @@ export function createApp(
         role: staff.role,
         permissions: permissionsForRole(staff.role),
       });
+    },
+  );
+
+  app.get("/api/admin/categories", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const input = paginationSchema.safeParse(context.req.query());
+    if (!input.success) return context.json({ error: "invalid_pagination" }, 400);
+    try {
+      const page = await adminGateway.listCategories(input.data);
+      return context.json({ ...page, ...input.data });
+    } catch (error) {
+      return adminErrorResponse(context, error);
+    }
+  });
+
+  app.post(
+    "/api/admin/categories",
+    protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]),
+    async (context) => {
+      const input = categoryInputSchema.safeParse(await safeJson(context));
+      if (!input.success) return context.json({ error: "invalid_category_data" }, 400);
+      try {
+        const category = await adminGateway.createCategory(context.get("user").id, randomUUID(), input.data);
+        return context.json({ category }, 201);
+      } catch (error) {
+        return adminErrorResponse(context, error);
+      }
+    },
+  );
+
+  app.patch(
+    "/api/admin/categories/:id",
+    protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]),
+    async (context) => {
+      const categoryId = identifierSchema.safeParse(context.req.param("id"));
+      const input = categoryInputSchema.safeParse(await safeJson(context));
+      if (!categoryId.success || !input.success) return context.json({ error: "invalid_category_data" }, 400);
+      try {
+        const category = await adminGateway.updateCategory(context.get("user").id, randomUUID(), categoryId.data, input.data);
+        return context.json({ category });
+      } catch (error) {
+        return adminErrorResponse(context, error);
+      }
+    },
+  );
+
+  app.get("/api/admin/products", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const input = productListQuerySchema.safeParse(context.req.query());
+    if (!input.success) return context.json({ error: "invalid_product_query" }, 400);
+    try {
+      const page = await adminGateway.listProducts(input.data);
+      return context.json({ ...page, ...input.data });
+    } catch (error) {
+      return adminErrorResponse(context, error);
+    }
+  });
+
+  app.get("/api/admin/products/:id", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const productId = identifierSchema.safeParse(context.req.param("id"));
+    if (!productId.success) return context.json({ error: "invalid_product_id" }, 400);
+    try {
+      const product = await adminGateway.getProduct(productId.data);
+      if (!product) return context.json({ error: "product_not_found" }, 404);
+      return context.json({ product });
+    } catch (error) {
+      return adminErrorResponse(context, error);
+    }
+  });
+
+  app.post(
+    "/api/admin/products",
+    protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]),
+    async (context) => {
+      const input = productInputSchema.safeParse(await safeJson(context));
+      if (!input.success) return context.json({ error: "invalid_product_data" }, 400);
+      try {
+        const product = await adminGateway.createDraftProduct(context.get("user").id, randomUUID(), input.data);
+        return context.json({ product }, 201);
+      } catch (error) {
+        return adminErrorResponse(context, error);
+      }
+    },
+  );
+
+  app.patch(
+    "/api/admin/products/:id",
+    protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]),
+    async (context) => {
+      const productId = identifierSchema.safeParse(context.req.param("id"));
+      const input = productInputSchema.safeParse(await safeJson(context));
+      if (!productId.success || !input.success) return context.json({ error: "invalid_product_data" }, 400);
+      try {
+        const product = await adminGateway.updateDraftProduct(context.get("user").id, randomUUID(), productId.data, input.data);
+        return context.json({ product });
+      } catch (error) {
+        return adminErrorResponse(context, error);
+      }
+    },
+  );
+
+  app.post(
+    "/api/admin/products/:id/archive",
+    protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]),
+    async (context) => {
+      const productId = identifierSchema.safeParse(context.req.param("id"));
+      const input = zEmptyObject.safeParse(await safeJson(context));
+      if (!productId.success || !input.success) return context.json({ error: "invalid_product_archive_data" }, 400);
+      try {
+        const product = await adminGateway.archiveDraftProduct(context.get("user").id, randomUUID(), productId.data);
+        return context.json({ product });
+      } catch (error) {
+        return adminErrorResponse(context, error);
+      }
     },
   );
 
@@ -460,4 +581,15 @@ async function safeJson(context: { req: { json(): Promise<unknown> } }): Promise
   } catch {
     return null;
   }
+}
+
+function adminErrorResponse(context: Context, error: unknown) {
+  const code = error instanceof AdminOperationError ? error.databaseCode : undefined;
+  if (code === "23505") return context.json({ error: "admin_conflict" }, 409);
+  if (["23503", "23514", "55000"].includes(code ?? "")) {
+    return context.json({ error: "admin_state_conflict" }, 409);
+  }
+  if (code === "P0002") return context.json({ error: "admin_resource_not_found" }, 404);
+  if (code === "42501") return context.json({ error: "admin_access_denied" }, 403);
+  return context.json({ error: "admin_operation_unavailable" }, 503);
 }
