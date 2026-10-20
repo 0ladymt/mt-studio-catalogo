@@ -46,3 +46,25 @@ export const productListQuerySchema = paginationSchema.extend({
 }).strict();
 
 export const identifierSchema = z.string().uuid();
+
+const optionalTimestamp = z.union([z.iso.datetime({ offset: true }), z.null()]);
+
+export const versionInputSchema = z.object({
+  versionLabel: z.string().transform((value) => value.normalize("NFKC").trim()).pipe(z.string().min(1).max(40)),
+  releaseSequence: z.number().int().positive().max(2147483647),
+  releaseNotes: z.union([normalizedDescription(5000, true), z.null()]).optional().transform((value) => value || null),
+  availableFrom: optionalTimestamp.optional().default(null),
+  availableUntil: optionalTimestamp.optional().default(null),
+}).strict().refine(
+  ({ availableFrom, availableUntil }) => !availableFrom || !availableUntil || new Date(availableUntil) > new Date(availableFrom),
+  { message: "invalid availability window", path: ["availableUntil"] },
+);
+
+export const priceInputSchema = z.object({
+  amountCents: z.number().int().positive().max(999999999999),
+  validFrom: z.iso.datetime({ offset: true }),
+  validUntil: optionalTimestamp.optional().default(null),
+}).strict().refine(
+  ({ validFrom, validUntil }) => !validUntil || new Date(validUntil) > new Date(validFrom),
+  { message: "invalid price window", path: ["validUntil"] },
+);

@@ -18,7 +18,7 @@ import type { AdminGateway } from "./types/admin.js";
 import { permissionsForRole } from "./auth/staff-permissions.js";
 import { requireStaff, type StaffVariables } from "./middleware/require-staff.js";
 import { AdminOperationError, unavailableAdminGateway } from "./services/admin-supabase.js";
-import { categoryInputSchema, identifierSchema, paginationSchema, productInputSchema, productListQuerySchema } from "./admin/validation.js";
+import { categoryInputSchema, identifierSchema, paginationSchema, priceInputSchema, productInputSchema, productListQuerySchema, versionInputSchema } from "./admin/validation.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
@@ -182,6 +182,112 @@ export function createApp(
       }
     },
   );
+
+  app.get("/api/admin/products/:id/versions", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const productId = identifierSchema.safeParse(context.req.param("id"));
+    const page = paginationSchema.safeParse(context.req.query());
+    if (!productId.success || !page.success) return context.json({ error: "invalid_version_query" }, 400);
+    try {
+      const result = await adminGateway.listVersions(productId.data, page.data);
+      return context.json({ ...result, ...page.data });
+    } catch (error) { return adminErrorResponse(context, error); }
+  });
+
+  app.post(
+    "/api/admin/products/:id/versions", protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]), async (context) => {
+      const productId = identifierSchema.safeParse(context.req.param("id"));
+      const input = versionInputSchema.safeParse(await safeJson(context));
+      if (!productId.success || !input.success) return context.json({ error: "invalid_version_data" }, 400);
+      try {
+        const version = await adminGateway.createVersion(context.get("user").id, randomUUID(), productId.data, input.data);
+        return context.json({ version }, 201);
+      } catch (error) { return adminErrorResponse(context, error); }
+    },
+  );
+
+  app.get("/api/admin/versions/:id", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const versionId = identifierSchema.safeParse(context.req.param("id"));
+    if (!versionId.success) return context.json({ error: "invalid_version_id" }, 400);
+    try {
+      const version = await adminGateway.getVersion(versionId.data);
+      return version ? context.json({ version }) : context.json({ error: "version_not_found" }, 404);
+    } catch (error) { return adminErrorResponse(context, error); }
+  });
+
+  app.patch(
+    "/api/admin/versions/:id", protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]), async (context) => {
+      const versionId = identifierSchema.safeParse(context.req.param("id"));
+      const input = versionInputSchema.safeParse(await safeJson(context));
+      if (!versionId.success || !input.success) return context.json({ error: "invalid_version_data" }, 400);
+      try {
+        const version = await adminGateway.updateVersion(context.get("user").id, randomUUID(), versionId.data, input.data);
+        return context.json({ version });
+      } catch (error) { return adminErrorResponse(context, error); }
+    },
+  );
+
+  app.post(
+    "/api/admin/versions/:id/retire", protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]), async (context) => {
+      const versionId = identifierSchema.safeParse(context.req.param("id"));
+      const input = zEmptyObject.safeParse(await safeJson(context));
+      if (!versionId.success || !input.success) return context.json({ error: "invalid_version_retire_data" }, 400);
+      try {
+        const version = await adminGateway.retireVersion(context.get("user").id, randomUUID(), versionId.data);
+        return context.json({ version });
+      } catch (error) { return adminErrorResponse(context, error); }
+    },
+  );
+
+  app.get("/api/admin/versions/:id/prices", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const versionId = identifierSchema.safeParse(context.req.param("id"));
+    const page = paginationSchema.safeParse(context.req.query());
+    if (!versionId.success || !page.success) return context.json({ error: "invalid_price_query" }, 400);
+    try {
+      const result = await adminGateway.listPrices(versionId.data, page.data);
+      return context.json({ ...result, ...page.data });
+    } catch (error) { return adminErrorResponse(context, error); }
+  });
+
+  app.post(
+    "/api/admin/versions/:id/prices", protectMutation(environment),
+    requireStaff(sessions, adminGateway, ["catalog:write"]), async (context) => {
+      const versionId = identifierSchema.safeParse(context.req.param("id"));
+      const input = priceInputSchema.safeParse(await safeJson(context));
+      if (!versionId.success || !input.success) return context.json({ error: "invalid_price_data" }, 400);
+      try {
+        const price = await adminGateway.createPrice(context.get("user").id, randomUUID(), versionId.data, input.data);
+        return context.json({ price }, 201);
+      } catch (error) { return adminErrorResponse(context, error); }
+    },
+  );
+
+  app.get("/api/admin/prices/:id", requireStaff(sessions, adminGateway, ["catalog:read"]), async (context) => {
+    const priceId = identifierSchema.safeParse(context.req.param("id"));
+    if (!priceId.success) return context.json({ error: "invalid_price_id" }, 400);
+    try {
+      const price = await adminGateway.getPrice(priceId.data);
+      return price ? context.json({ price }) : context.json({ error: "price_not_found" }, 404);
+    } catch (error) { return adminErrorResponse(context, error); }
+  });
+
+  for (const action of ["activate", "retire"] as const) {
+    app.post(
+      `/api/admin/prices/:id/${action}`, protectMutation(environment),
+      requireStaff(sessions, adminGateway, ["catalog:write"]), async (context) => {
+        const priceId = identifierSchema.safeParse(context.req.param("id"));
+        const input = zEmptyObject.safeParse(await safeJson(context));
+        if (!priceId.success || !input.success) return context.json({ error: `invalid_price_${action}_data` }, 400);
+        try {
+          const method = action === "activate" ? adminGateway.activatePrice : adminGateway.retirePrice;
+          const price = await method(context.get("user").id, randomUUID(), priceId.data);
+          return context.json({ price });
+        } catch (error) { return adminErrorResponse(context, error); }
+      },
+    );
+  }
 
   app.get("/api/auth/csrf", (context) => {
     const csrfToken = issueCsrfCookie(context, environment);

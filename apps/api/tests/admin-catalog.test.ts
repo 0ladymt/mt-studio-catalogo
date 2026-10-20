@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import { AdminOperationError } from "../src/services/admin-supabase.js";
 import type { ApiEnvironment } from "../src/config/env.js";
-import type { AdminGateway, DraftProduct, ProductCategory, StaffMember } from "../src/types/admin.js";
+import type { AdminGateway, DraftProduct, ProductCategory, ProductPrice, ProductVersion, StaffMember } from "../src/types/admin.js";
 import type { AuthGateway, Profile } from "../src/types/auth.js";
 
 const userId = "11111111-1111-4111-8111-111111111111";
 const categoryId = "22222222-2222-4222-8222-222222222222";
 const productId = "33333333-3333-4333-8333-333333333333";
+const versionId = "44444444-4444-4444-8444-444444444444";
+const priceId = "55555555-5555-4555-8555-555555555555";
 const environment: ApiEnvironment = {
   APP_ENV: "test", API_HOST: "127.0.0.1", API_PORT: 8787,
   SUPABASE_URL: "http://127.0.0.1:54321", SUPABASE_PUBLISHABLE_KEY: "test-key",
@@ -20,6 +22,8 @@ const environment: ApiEnvironment = {
 const profile: Profile = { user_id: userId, display_name: "Gestor fictício", status: "active", created_at: "2026-10-19T00:00:00Z", updated_at: "2026-10-19T00:00:00Z" };
 const category: ProductCategory = { id: categoryId, slug: "roupas", name: "Roupas", description: null, sortOrder: 0, status: "active", createdAt: "2026-10-19T00:00:00Z", updatedAt: "2026-10-19T00:00:00Z" };
 const product: DraftProduct = { id: productId, categoryId, slug: "pack-teste", name: "Pack teste", description: "Descrição", status: "draft", featured: false, currentVersionId: null, publishedAt: null, createdAt: "2026-10-19T00:00:00Z", updatedAt: "2026-10-19T00:00:00Z" };
+const version: ProductVersion = { id: versionId, productId, versionLabel: "1.0", releaseSequence: 1, releaseNotes: null, status: "draft", availableFrom: null, availableUntil: null, lockedAt: null, createdAt: "2026-10-19T00:00:00Z", updatedAt: "2026-10-19T00:00:00Z" };
+const price: ProductPrice = { id: priceId, productVersionId: versionId, amountCents: 12990, currency: "BRL", status: "scheduled", validFrom: "2026-10-19T00:00:00Z", validUntil: null, lockedAt: null, createdAt: "2026-10-19T00:00:00Z", updatedAt: "2026-10-19T00:00:00Z" };
 
 function authGateway(): AuthGateway {
   return {
@@ -36,6 +40,8 @@ function gateway(role: StaffMember["role"] = "catalog_manager", status: StaffMem
     getStaffMember: vi.fn(async () => ({ userId, role, status })),
     listCategories: vi.fn(async () => ({ items: [category], total: 1 })), createCategory: vi.fn(async () => category), updateCategory: vi.fn(async () => category),
     listProducts: vi.fn(async () => ({ items: [product], total: 1 })), getProduct: vi.fn(async () => product), createDraftProduct: vi.fn(async () => product), updateDraftProduct: vi.fn(async () => product), archiveDraftProduct: vi.fn(async () => ({ ...product, status: "archived" } satisfies DraftProduct)),
+    listVersions: vi.fn(async () => ({ items: [version], total: 1 })), getVersion: vi.fn(async () => version), createVersion: vi.fn(async () => version), updateVersion: vi.fn(async () => version), retireVersion: vi.fn(async () => ({ ...version, status: "retired" } satisfies ProductVersion)),
+    listPrices: vi.fn(async () => ({ items: [price], total: 1 })), getPrice: vi.fn(async () => price), createPrice: vi.fn(async () => price), activatePrice: vi.fn(async () => ({ ...price, status: "active" } satisfies ProductPrice)), retirePrice: vi.fn(async () => ({ ...price, status: "retired" } satisfies ProductPrice)),
     ...overrides,
   };
 }
@@ -99,5 +105,48 @@ describe("administrative draft catalog API", () => {
     const admin = gateway("catalog_manager", "active", { createCategory: vi.fn(async () => { throw new AdminOperationError("23505"); }) });
     const response = await createApp(authGateway(), environment, admin).request("/api/admin/categories", { method: "POST", headers: mutationHeaders, body: JSON.stringify(categoryBody) });
     expect(response.status).toBe(409); await expect(response.json()).resolves.toEqual({ error: "admin_conflict" });
+  });
+
+  it("creates and updates versions without accepting a client-selected status", async () => {
+    const admin = gateway(); const app = createApp(authGateway(), environment, admin);
+    const body = { versionLabel: " 1.0 ", releaseSequence: 1, releaseNotes: "", availableFrom: null, availableUntil: null };
+    expect((await app.request(`/api/admin/products/${productId}/versions`, { method: "POST", headers: mutationHeaders, body: JSON.stringify(body) })).status).toBe(201);
+    expect(admin.createVersion).toHaveBeenCalledWith(userId, expect.any(String), productId, { ...body, versionLabel: "1.0", releaseNotes: null });
+    const rejected = await app.request(`/api/admin/products/${productId}/versions`, { method: "POST", headers: mutationHeaders, body: JSON.stringify({ ...body, status: "published" }) });
+    expect(rejected.status).toBe(400);
+  });
+
+  it("lists, reads and retires versions through dedicated routes", async () => {
+    const admin = gateway(); const app = createApp(authGateway(), environment, admin);
+    expect((await app.request(`/api/admin/products/${productId}/versions?limit=10&offset=0`, { headers: readHeaders })).status).toBe(200);
+    expect((await app.request(`/api/admin/versions/${versionId}`, { headers: readHeaders })).status).toBe(200);
+    expect((await app.request(`/api/admin/versions/${versionId}/retire`, { method: "POST", headers: mutationHeaders, body: "{}" })).status).toBe(200);
+    expect(admin.retireVersion).toHaveBeenCalledWith(userId, expect.any(String), versionId);
+  });
+
+  it("accepts only integer cent prices in BRL controlled by the server", async () => {
+    const admin = gateway(); const app = createApp(authGateway(), environment, admin);
+    const body = { amountCents: 12990, validFrom: "2026-10-19T00:00:00Z", validUntil: null };
+    expect((await app.request(`/api/admin/versions/${versionId}/prices`, { method: "POST", headers: mutationHeaders, body: JSON.stringify(body) })).status).toBe(201);
+    expect(admin.createPrice).toHaveBeenCalledWith(userId, expect.any(String), versionId, body);
+    for (const invalid of [-1, 12.5, Number.MAX_SAFE_INTEGER]) {
+      expect((await app.request(`/api/admin/versions/${versionId}/prices`, { method: "POST", headers: mutationHeaders, body: JSON.stringify({ ...body, amountCents: invalid }) })).status).toBe(400);
+    }
+    expect((await app.request(`/api/admin/versions/${versionId}/prices`, { method: "POST", headers: mutationHeaders, body: JSON.stringify({ ...body, currency: "USD" }) })).status).toBe(400);
+  });
+
+  it("lists price history and uses explicit activation and retirement operations", async () => {
+    const admin = gateway(); const app = createApp(authGateway(), environment, admin);
+    expect((await app.request(`/api/admin/versions/${versionId}/prices`, { headers: readHeaders })).status).toBe(200);
+    expect((await app.request(`/api/admin/prices/${priceId}`, { headers: readHeaders })).status).toBe(200);
+    expect((await app.request(`/api/admin/prices/${priceId}/activate`, { method: "POST", headers: mutationHeaders, body: "{}" })).status).toBe(200);
+    expect((await app.request(`/api/admin/prices/${priceId}/retire`, { method: "POST", headers: mutationHeaders, body: "{}" })).status).toBe(200);
+  });
+
+  it("keeps version and price mutations protected by CSRF, Origin and catalog permissions", async () => {
+    const support = gateway("support");
+    const deniedRole = await createApp(authGateway(), environment, support).request(`/api/admin/versions/${versionId}/prices`, { method: "POST", headers: mutationHeaders, body: JSON.stringify({ amountCents: 1000, validFrom: "2026-10-19T00:00:00Z", validUntil: null }) });
+    const badOrigin = await createApp(authGateway(), environment, gateway()).request(`/api/admin/prices/${priceId}/activate`, { method: "POST", headers: { ...mutationHeaders, Origin: "https://evil.invalid" }, body: "{}" });
+    expect(deniedRole.status).toBe(403); expect(badOrigin.status).toBe(403);
   });
 });

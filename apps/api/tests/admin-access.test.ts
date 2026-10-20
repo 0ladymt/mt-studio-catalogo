@@ -66,6 +66,16 @@ function adminGateway(overrides: Partial<AdminGateway> = {}): AdminGateway {
     createDraftProduct: vi.fn(async () => { throw new Error("unused"); }),
     updateDraftProduct: vi.fn(async () => { throw new Error("unused"); }),
     archiveDraftProduct: vi.fn(async () => { throw new Error("unused"); }),
+    listVersions: vi.fn(async () => ({ items: [], total: 0 })),
+    getVersion: vi.fn(async () => null),
+    createVersion: vi.fn(async () => { throw new Error("unused"); }),
+    updateVersion: vi.fn(async () => { throw new Error("unused"); }),
+    retireVersion: vi.fn(async () => { throw new Error("unused"); }),
+    listPrices: vi.fn(async () => ({ items: [], total: 0 })),
+    getPrice: vi.fn(async () => null),
+    createPrice: vi.fn(async () => { throw new Error("unused"); }),
+    activatePrice: vi.fn(async () => { throw new Error("unused"); }),
+    retirePrice: vi.fn(async () => { throw new Error("unused"); }),
     ...overrides,
   };
 }

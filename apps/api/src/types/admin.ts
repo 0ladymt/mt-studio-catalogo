@@ -54,6 +54,37 @@ export type ProductListOptions = PageOptions & {
   categoryId?: string;
 };
 
+export type ProductVersion = {
+  id: string;
+  productId: string;
+  versionLabel: string;
+  releaseSequence: number;
+  releaseNotes: string | null;
+  status: "draft" | "published" | "retired";
+  availableFrom: string | null;
+  availableUntil: string | null;
+  lockedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductVersionInput = Pick<ProductVersion, "versionLabel" | "releaseSequence" | "releaseNotes" | "availableFrom" | "availableUntil">;
+
+export type ProductPrice = {
+  id: string;
+  productVersionId: string;
+  amountCents: number;
+  currency: "BRL";
+  status: "scheduled" | "active" | "retired";
+  validFrom: string;
+  validUntil: string | null;
+  lockedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductPriceInput = Pick<ProductPrice, "amountCents" | "validFrom" | "validUntil">;
+
 export interface AdminGateway {
   getStaffMember(userId: string): Promise<StaffMember | null>;
   listCategories(options: PageOptions): Promise<{ items: ProductCategory[]; total: number }>;
@@ -64,4 +95,14 @@ export interface AdminGateway {
   createDraftProduct(actorUserId: string, requestId: string, input: DraftProductInput): Promise<DraftProduct>;
   updateDraftProduct(actorUserId: string, requestId: string, productId: string, input: DraftProductInput): Promise<DraftProduct>;
   archiveDraftProduct(actorUserId: string, requestId: string, productId: string): Promise<DraftProduct>;
+  listVersions(productId: string, options: PageOptions): Promise<{ items: ProductVersion[]; total: number }>;
+  getVersion(versionId: string): Promise<ProductVersion | null>;
+  createVersion(actorUserId: string, requestId: string, productId: string, input: ProductVersionInput): Promise<ProductVersion>;
+  updateVersion(actorUserId: string, requestId: string, versionId: string, input: ProductVersionInput): Promise<ProductVersion>;
+  retireVersion(actorUserId: string, requestId: string, versionId: string): Promise<ProductVersion>;
+  listPrices(versionId: string, options: PageOptions): Promise<{ items: ProductPrice[]; total: number }>;
+  getPrice(priceId: string): Promise<ProductPrice | null>;
+  createPrice(actorUserId: string, requestId: string, versionId: string, input: ProductPriceInput): Promise<ProductPrice>;
+  activatePrice(actorUserId: string, requestId: string, priceId: string): Promise<ProductPrice>;
+  retirePrice(actorUserId: string, requestId: string, priceId: string): Promise<ProductPrice>;
 }
