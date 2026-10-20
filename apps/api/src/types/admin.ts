@@ -84,6 +84,12 @@ export type ProductPrice = {
 };
 
 export type ProductPriceInput = Pick<ProductPrice, "amountCents" | "validFrom" | "validUntil">;
+export type ProductMedia = { id:string; productId:string; mediaType:"cover"|"gallery"; storageKey:string; altText:string; sortOrder:number; status:"active"|"archived"; createdAt:string; updatedAt:string };
+export type ProductMediaInput = Pick<ProductMedia,"storageKey"|"altText"|"sortOrder">;
+export type ProductFile = { id:string; productVersionId:string; displayName:string; storageKey:string; mimeType:string; sizeBytes:number; checksumSha256:string; sortOrder:number; status:"active"|"retired"; storageStatus:"metadata_only"|"verified"|"ready"|"failed"; verifiedAt:string|null; createdAt:string; updatedAt:string };
+export type ProductFileInput = Pick<ProductFile,"storageKey"|"displayName"|"mimeType"|"sizeBytes"|"checksumSha256"|"sortOrder">;
+export type ProductFileUpdateInput = Omit<ProductFileInput,"storageKey">;
+export type PublicationReadiness = { productId:string; ready:boolean; blockers:string[] };
 
 export interface AdminGateway {
   getStaffMember(userId: string): Promise<StaffMember | null>;
@@ -105,4 +111,15 @@ export interface AdminGateway {
   createPrice(actorUserId: string, requestId: string, versionId: string, input: ProductPriceInput): Promise<ProductPrice>;
   activatePrice(actorUserId: string, requestId: string, priceId: string): Promise<ProductPrice>;
   retirePrice(actorUserId: string, requestId: string, priceId: string): Promise<ProductPrice>;
+  listMedia(productId:string, options:PageOptions):Promise<{items:ProductMedia[];total:number}>;
+  createMedia(actor:string, requestId:string, productId:string, input:ProductMediaInput):Promise<ProductMedia>;
+  updateMedia(actor:string, requestId:string, mediaId:string, input:Omit<ProductMediaInput,"storageKey">):Promise<ProductMedia>;
+  setCover(actor:string, requestId:string, mediaId:string):Promise<ProductMedia>;
+  deactivateMedia(actor:string, requestId:string, mediaId:string):Promise<ProductMedia>;
+  listFiles(versionId:string, options:PageOptions):Promise<{items:ProductFile[];total:number}>;
+  getFile(fileId:string):Promise<ProductFile|null>;
+  createFile(actor:string, requestId:string, versionId:string, input:ProductFileInput):Promise<ProductFile>;
+  updateFile(actor:string, requestId:string, fileId:string, input:ProductFileUpdateInput):Promise<ProductFile>;
+  retireFile(actor:string, requestId:string, fileId:string):Promise<ProductFile>;
+  getPublicationReadiness(actor:string, productId:string):Promise<PublicationReadiness>;
 }

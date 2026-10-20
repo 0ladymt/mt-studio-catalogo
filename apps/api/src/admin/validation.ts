@@ -68,3 +68,12 @@ export const priceInputSchema = z.object({
   ({ validFrom, validUntil }) => !validUntil || new Date(validUntil) > new Date(validFrom),
   { message: "invalid price window", path: ["validUntil"] },
 );
+
+const safeStorageKey = z.string().min(10).max(700).refine((value) => !value.includes("..") && !/^\/?(?:https?:|data:|file:)/iu.test(value));
+export const mediaInputSchema = z.object({ storageKey:safeStorageKey.max(500), altText:normalizedName(240), sortOrder:z.number().int().min(0).max(100000) }).strict();
+export const mediaUpdateSchema = mediaInputSchema.omit({ storageKey:true });
+export const fileInputSchema = z.object({
+  storageKey:safeStorageKey, displayName:normalizedName(240), mimeType:z.string().trim().min(3).max(150).regex(/^[\w.+-]+\/[\w.+-]+$/u),
+  sizeBytes:z.number().int().positive().max(Number.MAX_SAFE_INTEGER), checksumSha256:z.string().toLowerCase().regex(/^[0-9a-f]{64}$/u), sortOrder:z.number().int().min(0).max(100000),
+}).strict();
+export const fileUpdateSchema = fileInputSchema.omit({ storageKey:true });

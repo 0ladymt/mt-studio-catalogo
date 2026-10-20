@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ApiEnvironment } from "../config/env.js";
-import type { AdminGateway, DraftProduct, ProductCategory, ProductPrice, ProductVersion, StaffMember } from "../types/admin.js";
+import type { AdminGateway, DraftProduct, ProductCategory, ProductFile, ProductMedia, ProductPrice, ProductVersion, PublicationReadiness, StaffMember } from "../types/admin.js";
 
 type CategoryRow = {
   id: string; slug: string; name: string; description: string | null; sort_order: number;
@@ -22,6 +22,8 @@ type PriceRow = {
   status: ProductPrice["status"]; valid_from: string; valid_until: string | null;
   locked_at: string | null; created_at: string; updated_at: string;
 };
+type MediaRow={id:string;product_id:string;media_type:ProductMedia["mediaType"];storage_key:string;alt_text:string;sort_order:number;status:ProductMedia["status"];created_at:string;updated_at:string};
+type FileRow={id:string;product_version_id:string;display_name:string;storage_key:string;mime_type:string;size_bytes:number;checksum_sha256:string;sort_order:number;status:ProductFile["status"];storage_status:ProductFile["storageStatus"];verified_at:string|null;created_at:string;updated_at:string};
 type RpcError = { code?: string } | null;
 type RpcCall = (name: string, parameters: Record<string, unknown>) => {
   single<T>(): PromiseLike<{ data: T | null; error: RpcError }>;
@@ -193,6 +195,17 @@ export function createAdminSupabaseGateway(environment: ApiEnvironment): AdminGa
     async retirePrice(actorUserId, requestId, priceId) {
       return priceRpc(rpc, "admin_retire_product_price", { p_actor_user_id: actorUserId, p_request_id: requestId, p_price_id: priceId });
     },
+    async listMedia(productId,{limit,offset}) { const {data,error,count}=await client.from("product_media").select("id,product_id,media_type,storage_key,alt_text,sort_order,status,created_at,updated_at",{count:"exact"}).eq("product_id",productId).order("sort_order").order("id").range(offset,offset+limit-1).returns<MediaRow[]>(); if(error)throw new AdminOperationError(error.code);return{items:(data??[]).map(mapMedia),total:count??0}; },
+    async createMedia(actor,requestId,productId,input){return mediaRpc(rpc,"admin_create_product_media",{p_actor_user_id:actor,p_request_id:requestId,p_product_id:productId,p_storage_key:input.storageKey,p_alt_text:input.altText,p_sort_order:input.sortOrder});},
+    async updateMedia(actor,requestId,mediaId,input){return mediaRpc(rpc,"admin_update_product_media",{p_actor_user_id:actor,p_request_id:requestId,p_media_id:mediaId,p_alt_text:input.altText,p_sort_order:input.sortOrder});},
+    async setCover(actor,requestId,mediaId){return mediaRpc(rpc,"admin_set_product_cover",{p_actor_user_id:actor,p_request_id:requestId,p_media_id:mediaId});},
+    async deactivateMedia(actor,requestId,mediaId){return mediaRpc(rpc,"admin_deactivate_product_media",{p_actor_user_id:actor,p_request_id:requestId,p_media_id:mediaId});},
+    async listFiles(versionId,{limit,offset}){const {data,error,count}=await client.from("product_files").select("id,product_version_id,display_name,storage_key,mime_type,size_bytes,checksum_sha256,sort_order,status,storage_status,verified_at,created_at,updated_at",{count:"exact"}).eq("product_version_id",versionId).order("sort_order").order("id").range(offset,offset+limit-1).returns<FileRow[]>();if(error)throw new AdminOperationError(error.code);return{items:(data??[]).map(mapFile),total:count??0};},
+    async getFile(fileId){const{data,error}=await client.from("product_files").select("id,product_version_id,display_name,storage_key,mime_type,size_bytes,checksum_sha256,sort_order,status,storage_status,verified_at,created_at,updated_at").eq("id",fileId).maybeSingle<FileRow>();if(error)throw new AdminOperationError(error.code);return data?mapFile(data):null;},
+    async createFile(actor,requestId,versionId,input){return fileRpc(rpc,"admin_create_product_file",{p_actor_user_id:actor,p_request_id:requestId,p_product_version_id:versionId,p_display_name:input.displayName,p_storage_key:input.storageKey,p_mime_type:input.mimeType,p_size_bytes:input.sizeBytes,p_checksum_sha256:input.checksumSha256,p_sort_order:input.sortOrder});},
+    async updateFile(actor,requestId,fileId,input){return fileRpc(rpc,"admin_update_product_file",{p_actor_user_id:actor,p_request_id:requestId,p_file_id:fileId,p_display_name:input.displayName,p_mime_type:input.mimeType,p_size_bytes:input.sizeBytes,p_checksum_sha256:input.checksumSha256,p_sort_order:input.sortOrder});},
+    async retireFile(actor,requestId,fileId){return fileRpc(rpc,"admin_retire_product_file",{p_actor_user_id:actor,p_request_id:requestId,p_file_id:fileId});},
+    async getPublicationReadiness(actor,productId){const{data,error}=await rpc("admin_product_publication_readiness",{p_actor_user_id:actor,p_product_id:productId}).single<PublicationReadiness>();if(error||!data)throw new AdminOperationError(error?.code);return data;},
   };
 }
 
@@ -217,6 +230,8 @@ export function unavailableAdminGateway(): AdminGateway {
     createPrice: unavailable,
     activatePrice: unavailable,
     retirePrice: unavailable,
+    listMedia:unavailable,createMedia:unavailable,updateMedia:unavailable,setCover:unavailable,deactivateMedia:unavailable,
+    listFiles:unavailable,getFile:unavailable,createFile:unavailable,updateFile:unavailable,retireFile:unavailable,getPublicationReadiness:unavailable,
   };
 }
 
@@ -257,6 +272,8 @@ function mapPrice(row: PriceRow): ProductPrice {
     createdAt: row.created_at, updatedAt: row.updated_at,
   };
 }
+function mapMedia(r:MediaRow):ProductMedia{return{id:r.id,productId:r.product_id,mediaType:r.media_type,storageKey:r.storage_key,altText:r.alt_text,sortOrder:r.sort_order,status:r.status,createdAt:r.created_at,updatedAt:r.updated_at};}
+function mapFile(r:FileRow):ProductFile{return{id:r.id,productVersionId:r.product_version_id,displayName:r.display_name,storageKey:r.storage_key,mimeType:r.mime_type,sizeBytes:r.size_bytes,checksumSha256:r.checksum_sha256,sortOrder:r.sort_order,status:r.status,storageStatus:r.storage_status,verifiedAt:r.verified_at,createdAt:r.created_at,updatedAt:r.updated_at};}
 
 function versionParameters(actorUserId: string, requestId: string, input: Parameters<AdminGateway["createVersion"]>[3], target: Record<string, unknown>): Record<string, unknown> {
   return {
@@ -290,3 +307,5 @@ async function priceRpc(rpc: RpcCall, name: string, parameters: Record<string, u
   if (error || !data) throw new AdminOperationError(error?.code);
   return mapPrice(data);
 }
+async function mediaRpc(rpc:RpcCall,name:string,parameters:Record<string,unknown>):Promise<ProductMedia>{const{data,error}=await rpc(name,parameters).single<MediaRow>();if(error||!data)throw new AdminOperationError(error?.code);return mapMedia(data);}
+async function fileRpc(rpc:RpcCall,name:string,parameters:Record<string,unknown>):Promise<ProductFile>{const{data,error}=await rpc(name,parameters).single<FileRow>();if(error||!data)throw new AdminOperationError(error?.code);return mapFile(data);}

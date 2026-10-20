@@ -42,6 +42,8 @@ function gateway(role: StaffMember["role"] = "catalog_manager", status: StaffMem
     listProducts: vi.fn(async () => ({ items: [product], total: 1 })), getProduct: vi.fn(async () => product), createDraftProduct: vi.fn(async () => product), updateDraftProduct: vi.fn(async () => product), archiveDraftProduct: vi.fn(async () => ({ ...product, status: "archived" } satisfies DraftProduct)),
     listVersions: vi.fn(async () => ({ items: [version], total: 1 })), getVersion: vi.fn(async () => version), createVersion: vi.fn(async () => version), updateVersion: vi.fn(async () => version), retireVersion: vi.fn(async () => ({ ...version, status: "retired" } satisfies ProductVersion)),
     listPrices: vi.fn(async () => ({ items: [price], total: 1 })), getPrice: vi.fn(async () => price), createPrice: vi.fn(async () => price), activatePrice: vi.fn(async () => ({ ...price, status: "active" } satisfies ProductPrice)), retirePrice: vi.fn(async () => ({ ...price, status: "retired" } satisfies ProductPrice)),
+    listMedia:vi.fn(async()=>({items:[],total:0})),createMedia:vi.fn(async()=>{throw new Error("unused");}),updateMedia:vi.fn(async()=>{throw new Error("unused");}),setCover:vi.fn(async()=>{throw new Error("unused");}),deactivateMedia:vi.fn(async()=>{throw new Error("unused");}),
+    listFiles:vi.fn(async()=>({items:[],total:0})),getFile:vi.fn(async()=>null),createFile:vi.fn(async()=>{throw new Error("unused");}),updateFile:vi.fn(async()=>{throw new Error("unused");}),retireFile:vi.fn(async()=>{throw new Error("unused");}),getPublicationReadiness:vi.fn(async()=>({productId,ready:false,blockers:["active_cover_missing"]})),
     ...overrides,
   };
 }
@@ -149,4 +151,15 @@ describe("administrative draft catalog API", () => {
     const badOrigin = await createApp(authGateway(), environment, gateway()).request(`/api/admin/prices/${priceId}/activate`, { method: "POST", headers: { ...mutationHeaders, Origin: "https://evil.invalid" }, body: "{}" });
     expect(deniedRole.status).toBe(403); expect(badOrigin.status).toBe(403);
   });
+
+  it("rejects unsafe media keys and client-controlled file verification", async () => {
+    const admin=gateway();const app=createApp(authGateway(),environment,admin);
+    const media=await app.request(`/api/admin/products/${productId}/media`,{method:"POST",headers:mutationHeaders,body:JSON.stringify({storageKey:"https://evil.invalid/a.jpg",altText:"Capa",sortOrder:0})});
+    const file=await app.request(`/api/admin/versions/${versionId}/files`,{method:"POST",headers:mutationHeaders,body:JSON.stringify({storageKey:`products/${productId}/versions/${versionId}/files/a.zip`,displayName:"Pack.zip",mimeType:"application/zip",sizeBytes:100,checksumSha256:"a".repeat(64),sortOrder:0,storageStatus:"ready"})});
+    expect(media.status).toBe(400);expect(file.status).toBe(400);expect(admin.createMedia).not.toHaveBeenCalled();expect(admin.createFile).not.toHaveBeenCalled();
+  });
+
+  it("returns explicit publication blockers without changing product state",async()=>{const admin=gateway();const response=await createApp(authGateway(),environment,admin).request(`/api/admin/products/${productId}/readiness`,{headers:readHeaders});expect(response.status).toBe(200);await expect(response.json()).resolves.toEqual({readiness:{productId,ready:false,blockers:["active_cover_missing"]}});});
+
+  it("keeps private file and readiness endpoints unavailable to support",async()=>{const app=createApp(authGateway(),environment,gateway("support"));expect((await app.request(`/api/admin/versions/${versionId}/files`,{headers:readHeaders})).status).toBe(403);expect((await app.request(`/api/admin/products/${productId}/readiness`,{headers:readHeaders})).status).toBe(403);});
 });
