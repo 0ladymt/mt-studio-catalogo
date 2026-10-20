@@ -836,6 +836,37 @@
         <div class="mt-shell mt-admin">
           <span class="mt-overline">Gestão da vitrine</span>
           <h2>PAINEL DE PRODUTOS.</h2>
+          <div id="adminAccessState" class="mt-admin-access" role="status" aria-live="polite">
+            <strong>Verificando acesso administrativo…</strong>
+            <p>Aguarde enquanto confirmamos sua sessão e permissões.</p>
+          </div>
+          <div id="adminAuthorizedContent" hidden>
+          <section class="mt-admin-connected" aria-labelledby="adminConnectedTitle">
+            <div class="mt-admin-list-head">
+              <span class="mt-overline">Banco comercial</span>
+              <h3 id="adminConnectedTitle">CATÁLOGO CONECTADO.</h3>
+              <p>Consulta somente leitura. Alterações e publicação pela interface ainda não estão habilitadas.</p>
+            </div>
+            <div id="adminConnectedSummary" class="mt-admin-summary" aria-live="polite"></div>
+            <div class="mt-admin-connected__layout">
+              <div>
+                <h4>Categorias</h4>
+                <div id="adminDatabaseCategories" class="mt-admin-read-list"></div>
+                <h4>Produtos reais</h4>
+                <div id="adminDatabaseProducts" class="mt-admin-read-list"></div>
+              </div>
+              <section id="adminDatabaseDetail" class="mt-admin-read-detail" aria-labelledby="adminDatabaseDetailTitle">
+                <h4 id="adminDatabaseDetailTitle">Detalhes do produto</h4>
+                <p>Selecione um produto para consultar versões, preços, mídias, arquivos e prontidão.</p>
+              </section>
+            </div>
+          </section>
+          <section class="mt-admin-local" aria-labelledby="adminLocalTitle">
+          <div class="mt-admin-list-head">
+            <span class="mt-overline">Legado local</span>
+            <h3 id="adminLocalTitle">RASCUNHOS DESTE NAVEGADOR.</h3>
+            <p>Separados do banco comercial. Continuam editáveis e exportáveis somente neste dispositivo.</p>
+          </div>
           <p class="mt-admin-note">
             Rascunho local para preparar a vitrine. Os dados ficam apenas neste
             navegador. Publicação, login seguro, Pix e entrega automática exigem
@@ -913,6 +944,8 @@
             /></label>
           </div>
           <div id="mtDraftProducts" class="mt-drafts"></div>
+          </section>
+          </div>
         </div>
       </section>
       <section id="page-projetos" class="page projects-page">
@@ -1093,6 +1126,7 @@
     <script src="background-composition.js?v=20261006-global-surface" defer></script>
     <script src="intro.js?v=20261005-intro-tag-painted" defer></script>
     <script src="mt-store-drafts.js?v=20261005-loja-slots" defer></script>
+    <script src="admin-connected.js?v=20261019-readonly" defer></script>
     <script type="module" src="app.js?v=20261004-grupo7d"></script>
   </body>
 </html>
