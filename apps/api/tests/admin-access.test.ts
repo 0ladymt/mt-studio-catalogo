@@ -78,6 +78,7 @@ function adminGateway(overrides: Partial<AdminGateway> = {}): AdminGateway {
     retirePrice: vi.fn(async () => { throw new Error("unused"); }),
     listMedia:vi.fn(async()=>({items:[],total:0})),createMedia:vi.fn(async()=>{throw new Error("unused");}),updateMedia:vi.fn(async()=>{throw new Error("unused");}),setCover:vi.fn(async()=>{throw new Error("unused");}),deactivateMedia:vi.fn(async()=>{throw new Error("unused");}),
     listFiles:vi.fn(async()=>({items:[],total:0})),getFile:vi.fn(async()=>null),createFile:vi.fn(async()=>{throw new Error("unused");}),updateFile:vi.fn(async()=>{throw new Error("unused");}),retireFile:vi.fn(async()=>{throw new Error("unused");}),getPublicationReadiness:vi.fn(async()=>({productId:"",ready:false,blockers:[]})),
+    publishProduct:vi.fn(async()=>{throw new Error("unused");}),unpublishProduct:vi.fn(async()=>{throw new Error("unused");}),
     ...overrides,
   };
 }

@@ -206,6 +206,8 @@ export function createAdminSupabaseGateway(environment: ApiEnvironment): AdminGa
     async updateFile(actor,requestId,fileId,input){return fileRpc(rpc,"admin_update_product_file",{p_actor_user_id:actor,p_request_id:requestId,p_file_id:fileId,p_display_name:input.displayName,p_mime_type:input.mimeType,p_size_bytes:input.sizeBytes,p_checksum_sha256:input.checksumSha256,p_sort_order:input.sortOrder});},
     async retireFile(actor,requestId,fileId){return fileRpc(rpc,"admin_retire_product_file",{p_actor_user_id:actor,p_request_id:requestId,p_file_id:fileId});},
     async getPublicationReadiness(actor,productId){const{data,error}=await rpc("admin_product_publication_readiness",{p_actor_user_id:actor,p_product_id:productId}).single<PublicationReadiness>();if(error||!data)throw new AdminOperationError(error?.code);return data;},
+    async publishProduct(actor,requestId,productId,versionId){return productRpc(rpc,"admin_publish_product",{p_actor_user_id:actor,p_request_id:requestId,p_product_id:productId,p_version_id:versionId});},
+    async unpublishProduct(actor,requestId,productId,reason){return productRpc(rpc,"admin_unpublish_product",{p_actor_user_id:actor,p_request_id:requestId,p_product_id:productId,p_reason:reason});},
   };
 }
 
@@ -232,6 +234,7 @@ export function unavailableAdminGateway(): AdminGateway {
     retirePrice: unavailable,
     listMedia:unavailable,createMedia:unavailable,updateMedia:unavailable,setCover:unavailable,deactivateMedia:unavailable,
     listFiles:unavailable,getFile:unavailable,createFile:unavailable,updateFile:unavailable,retireFile:unavailable,getPublicationReadiness:unavailable,
+    publishProduct:unavailable,unpublishProduct:unavailable,
   };
 }
 

@@ -77,3 +77,5 @@ export const fileInputSchema = z.object({
   sizeBytes:z.number().int().positive().max(Number.MAX_SAFE_INTEGER), checksumSha256:z.string().toLowerCase().regex(/^[0-9a-f]{64}$/u), sortOrder:z.number().int().min(0).max(100000),
 }).strict();
 export const fileUpdateSchema = fileInputSchema.omit({ storageKey:true });
+export const publishProductSchema=z.object({requestId:z.string().uuid(),versionId:z.string().uuid()}).strict();
+export const unpublishProductSchema=z.object({requestId:z.string().uuid(),reason:z.string().transform(v=>v.normalize("NFKC").trim().replace(/\s+/gu," ")).pipe(z.string().min(5).max(500))}).strict();

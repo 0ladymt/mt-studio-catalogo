@@ -122,4 +122,6 @@ export interface AdminGateway {
   updateFile(actor:string, requestId:string, fileId:string, input:ProductFileUpdateInput):Promise<ProductFile>;
   retireFile(actor:string, requestId:string, fileId:string):Promise<ProductFile>;
   getPublicationReadiness(actor:string, productId:string):Promise<PublicationReadiness>;
+  publishProduct(actor:string,requestId:string,productId:string,versionId:string):Promise<DraftProduct>;
+  unpublishProduct(actor:string,requestId:string,productId:string,reason:string):Promise<DraftProduct>;
 }

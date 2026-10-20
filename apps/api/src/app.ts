@@ -18,7 +18,7 @@ import type { AdminGateway } from "./types/admin.js";
 import { permissionsForRole } from "./auth/staff-permissions.js";
 import { requireStaff, type StaffVariables } from "./middleware/require-staff.js";
 import { AdminOperationError, unavailableAdminGateway } from "./services/admin-supabase.js";
-import { categoryInputSchema, fileInputSchema, fileUpdateSchema, identifierSchema, mediaInputSchema, mediaUpdateSchema, paginationSchema, priceInputSchema, productInputSchema, productListQuerySchema, versionInputSchema } from "./admin/validation.js";
+import { categoryInputSchema, fileInputSchema, fileUpdateSchema, identifierSchema, mediaInputSchema, mediaUpdateSchema, paginationSchema, priceInputSchema, productInputSchema, productListQuerySchema, publishProductSchema, unpublishProductSchema, versionInputSchema } from "./admin/validation.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
@@ -299,6 +299,8 @@ export function createApp(
   app.patch("/api/admin/files/:id",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=fileUpdateSchema.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_file_data"},400);try{return c.json({file:await adminGateway.updateFile(c.get("user").id,randomUUID(),id.data,i.data)});}catch(e){return adminErrorResponse(c,e);}});
   app.post("/api/admin/files/:id/retire",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=zEmptyObject.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_file_retire_data"},400);try{return c.json({file:await adminGateway.retireFile(c.get("user").id,randomUUID(),id.data)});}catch(e){return adminErrorResponse(c,e);}});
   app.get("/api/admin/products/:id/readiness",requireStaff(sessions,adminGateway,["catalog:read"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.json({error:"invalid_product_id"},400);try{return c.json({readiness:await adminGateway.getPublicationReadiness(c.get("user").id,id.data)});}catch(e){return adminErrorResponse(c,e);}});
+  app.post("/api/admin/products/:id/publish",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:publish"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=publishProductSchema.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_product_publication"},400);try{return c.json({product:await adminGateway.publishProduct(c.get("user").id,i.data.requestId,id.data,i.data.versionId)});}catch(e){return adminErrorResponse(c,e);}});
+  app.post("/api/admin/products/:id/unpublish",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:publish"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=unpublishProductSchema.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_product_unpublication"},400);try{return c.json({product:await adminGateway.unpublishProduct(c.get("user").id,i.data.requestId,id.data,i.data.reason)});}catch(e){return adminErrorResponse(c,e);}});
 
   app.get("/api/auth/csrf", (context) => {
     const csrfToken = issueCsrfCookie(context, environment);
