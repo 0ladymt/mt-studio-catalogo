@@ -2350,19 +2350,26 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
 #page-admin .mt-admin-connected__layout h4,#page-admin .mt-admin-read-detail > h4 { margin:28px 0 14px; font-size:1.35rem; }
 #page-admin .mt-admin-read-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:28px; }
 #page-admin .mt-admin-read-heading h4 { margin:0; }
-#page-admin .mt-admin-read-heading button,#page-admin .mt-admin-read-actions button,#page-admin .mt-admin-category-form #adminCancelCategory { min-height:44px; padding:9px 14px; border:1px solid var(--mt-purple-45); background:#211728; color:var(--text); border-radius:3px; }
-#page-admin .mt-admin-category-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:18px 0 24px; padding:20px; border:1px solid #43384c; background:#17151b; }
-#page-admin .mt-admin-category-form h5,#page-admin .mt-admin-category-form .admin-description,#page-admin .mt-admin-category-form .form-actions { grid-column:1/-1; }
-#page-admin .mt-admin-category-form h5 { margin:0; color:var(--lilac); font-size:1rem; }
-#page-admin .mt-admin-category-form label { display:flex; flex-direction:column; gap:7px; min-width:0; color:var(--muted); font-size:.76rem; }
-#page-admin .mt-admin-category-form input,#page-admin .mt-admin-category-form select,#page-admin .mt-admin-category-form textarea { width:100%; min-width:0; min-height:44px; padding:11px 12px; border:1px solid #51435d; border-radius:3px; background:#0f0d13; color:var(--text); }
-#page-admin .mt-admin-category-form textarea { resize:vertical; }
-#page-admin #adminCategoryStatus { min-height:1.5em; margin:0 0 16px; color:var(--lilac); font-size:.78rem; line-height:1.6; }
+#page-admin .mt-admin-read-heading button,#page-admin .mt-admin-read-actions button,#page-admin .mt-admin-category-form #adminCancelCategory,#page-admin .mt-admin-product-form #adminCancelProduct { min-height:44px; padding:9px 14px; border:1px solid var(--mt-purple-45); background:#211728; color:var(--text); border-radius:3px; }
+#page-admin .mt-admin-category-form,#page-admin .mt-admin-product-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:18px 0 24px; padding:20px; border:1px solid #43384c; background:#17151b; }
+#page-admin .mt-admin-category-form h5,#page-admin .mt-admin-category-form .admin-description,#page-admin .mt-admin-category-form .form-actions,#page-admin .mt-admin-product-form h5,#page-admin .mt-admin-product-form .admin-description,#page-admin .mt-admin-product-form .form-actions,#page-admin .mt-admin-product-form .mt-admin-form-note,#page-admin .mt-admin-product-form .mt-admin-check { grid-column:1/-1; }
+#page-admin .mt-admin-category-form h5,#page-admin .mt-admin-product-form h5 { margin:0; color:var(--lilac); font-size:1rem; }
+#page-admin .mt-admin-category-form label,#page-admin .mt-admin-product-form label { display:flex; flex-direction:column; gap:7px; min-width:0; color:var(--muted); font-size:.76rem; }
+#page-admin .mt-admin-category-form input,#page-admin .mt-admin-category-form select,#page-admin .mt-admin-category-form textarea,#page-admin .mt-admin-product-form input,#page-admin .mt-admin-product-form select,#page-admin .mt-admin-product-form textarea { width:100%; min-width:0; min-height:44px; padding:11px 12px; border:1px solid #51435d; border-radius:3px; background:#0f0d13; color:var(--text); }
+#page-admin .mt-admin-category-form textarea,#page-admin .mt-admin-product-form textarea { resize:vertical; }
+#page-admin .mt-admin-product-form .mt-admin-form-note { margin:0; color:var(--muted); font-size:.75rem; line-height:1.6; }
+#page-admin .mt-admin-product-form .mt-admin-check { flex-direction:row; align-items:center; min-height:44px; }
+#page-admin .mt-admin-product-form .mt-admin-check input { width:18px; min-height:18px; accent-color:var(--purple); }
+#page-admin #adminCategoryStatus,#page-admin #adminProductStatus { min-height:1.5em; margin:0 0 16px; color:var(--lilac); font-size:.78rem; line-height:1.6; }
 #page-admin .mt-admin-read-list { display:grid; gap:8px; }
 #page-admin .mt-admin-read-row,#page-admin .mt-admin-product-read { display:flex; flex-direction:column; align-items:flex-start; gap:5px; width:100%; min-width:0; padding:14px 16px; border:1px solid #3b3441; background:#141217; color:var(--text); text-align:left; overflow-wrap:anywhere; }
 #page-admin .mt-admin-read-row:has(.mt-admin-read-actions) { flex-direction:row; justify-content:space-between; align-items:center; gap:14px; }
 #page-admin .mt-admin-read-copy { display:flex; flex-direction:column; gap:5px; min-width:0; }
 #page-admin .mt-admin-read-actions { display:flex; flex-wrap:wrap; gap:8px; flex:none; }
+#page-admin .mt-admin-product-heading { margin-top:34px; }
+#page-admin .mt-admin-product-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; }
+#page-admin .mt-admin-product-actions { align-items:center; }
+#page-admin .mt-admin-read-actions .mt-admin-danger { border-color:#74505d; background:#2b1820; }
 #page-admin .mt-admin-product-read { min-height:60px; cursor:pointer; transition:border-color .18s ease,background-color .18s ease; }
 #page-admin .mt-admin-product-read:hover { border-color:var(--mt-purple-45); background:#1b1520; }
 #page-admin .mt-admin-product-read:focus-visible { border-color:var(--purple); }
@@ -2443,9 +2450,10 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
  #page-admin .mt-admin-read-detail { padding:18px; }
  #page-admin .mt-admin-summary { align-items:flex-start; }
  #page-admin .mt-admin-summary div { min-width:calc(50% - 12px); }
- #page-admin .mt-admin-category-form { grid-template-columns:1fr; padding:16px; }
+ #page-admin .mt-admin-category-form,#page-admin .mt-admin-product-form { grid-template-columns:1fr; padding:16px; }
  #page-admin .mt-admin-read-heading,#page-admin .mt-admin-read-row:has(.mt-admin-read-actions) { align-items:stretch; flex-direction:column; }
  #page-admin .mt-admin-read-heading button,#page-admin .mt-admin-read-actions button { width:100%; }
+ #page-admin .mt-admin-product-row { grid-template-columns:1fr; }
 }
 
 @media (prefers-reduced-motion:reduce) {

@@ -13,12 +13,18 @@
   const categoryStatus = document.getElementById("adminCategoryStatus");
   const newCategory = document.getElementById("adminNewCategory");
   const cancelCategory = document.getElementById("adminCancelCategory");
-  if (!state || !content || !summary || !categoriesNode || !productsNode || !detailNode || !categoryForm || !categoryStatus || !newCategory || !cancelCategory) return;
+  const productForm = document.getElementById("adminProductForm");
+  const productStatus = document.getElementById("adminProductStatus");
+  const newProduct = document.getElementById("adminNewProduct");
+  const cancelProduct = document.getElementById("adminCancelProduct");
+  if (!state || !content || !summary || !categoriesNode || !productsNode || !detailNode || !categoryForm || !categoryStatus || !newCategory || !cancelCategory || !productForm || !productStatus || !newProduct || !cancelProduct) return;
 
   let run = 0;
   let categoriesCache = [];
+  let productsCache = [];
   let canWriteCatalog = false;
   let activeAccess = null;
+  let connectedCategoryTotal = 0;
   let connectedProductTotal = 0;
   const labels = {
     draft: "Rascunho", published: "Publicado", unpublished: "Despublicado", archived: "Arquivado",
@@ -63,7 +69,7 @@
     }
     return access;
   }
-  async function mutateCategory(path, method, body) {
+  async function mutateCatalog(path, method, body) {
     const access = await authorize();
     if (!access.permissions.includes("catalog:write")) throw Object.assign(new Error("catalog-write-denied"), { status: 403 });
     const csrf = await request("/api/auth/csrf");
@@ -140,8 +146,10 @@
   }
   async function refreshCategories() {
     const categories = await request("/api/admin/categories?limit=100&offset=0");
+    connectedCategoryTotal = categories.total || 0;
     renderCategories(categories.items || []);
-    if (activeAccess) renderSummary(activeAccess, categories.total || 0, connectedProductTotal);
+    populateProductCategories(productForm.hidden ? "" : productForm.elements.categoryId.value);
+    if (activeAccess) renderSummary(activeAccess, connectedCategoryTotal, connectedProductTotal);
     return categories;
   }
   async function saveCategory(current, input, trigger) {
@@ -150,7 +158,7 @@
     categoryStatus.textContent = "Salvando categoria…";
     try {
       const categoryId = current?.id || categoryForm.dataset.categoryId;
-      await mutateCategory(categoryId ? `/api/admin/categories/${encodeURIComponent(categoryId)}` : "/api/admin/categories", categoryId ? "PATCH" : "POST", input);
+      await mutateCatalog(categoryId ? `/api/admin/categories/${encodeURIComponent(categoryId)}` : "/api/admin/categories", categoryId ? "PATCH" : "POST", input);
       await refreshCategories();
       resetCategoryForm(categoryId ? "Categoria atualizada com sucesso." : "Categoria criada com sucesso.");
     } catch (error) {
@@ -161,15 +169,124 @@
     } finally { trigger.disabled = false; }
   }
   function renderProducts(items) {
+    productsCache = items;
     productsNode.replaceChildren();
     if (!items.length) return productsNode.append(el("p", "mt-admin-read-empty", "Nenhum produto cadastrado no banco."));
     for (const product of items) {
+      const row = el("div", "mt-admin-product-row");
       const button = el("button", "mt-admin-product-read");
       button.type = "button";
-      button.append(el("strong", "", product.name), el("span", "", `${label(product.status)} · ${product.slug}`));
+      button.append(el("strong", "", product.name), el("span", "", `${label(product.status)} · ${product.featured ? "destaque · " : ""}${product.slug}`));
       button.addEventListener("click", () => loadDetail(product.id, button));
-      productsNode.append(button);
+      row.append(button);
+      if (canWriteCatalog && product.status === "draft") {
+        const actions = el("div", "mt-admin-read-actions mt-admin-product-actions");
+        const edit = el("button", "", "Editar"); edit.type = "button";
+        edit.addEventListener("click", () => openProductForm(product));
+        const archive = el("button", "", "Arquivar"); archive.type = "button";
+        archive.addEventListener("click", () => confirmProductArchive(product, actions));
+        actions.append(edit, archive); row.append(actions);
+      }
+      productsNode.append(row);
     }
+  }
+  function populateProductCategories(selectedId = "") {
+    const select = productForm.elements.categoryId;
+    select.replaceChildren();
+    const active = categoriesCache.filter(category => category.status === "active");
+    if (!active.length) {
+      const option = new Option("Nenhuma categoria ativa disponível", ""); option.disabled = true; option.selected = true; select.add(option);
+    } else {
+      select.add(new Option("Selecione uma categoria", ""));
+      active.forEach(category => select.add(new Option(category.name, category.id)));
+    }
+    if (selectedId && !active.some(category => category.id === selectedId)) {
+      const existing = categoriesCache.find(category => category.id === selectedId);
+      const option = new Option(`${existing?.name || "Categoria atual"} — inativa`, selectedId); option.disabled = true; select.add(option);
+    }
+    select.value = selectedId;
+    newProduct.disabled = !active.length;
+  }
+  function resetProductForm(message = "") {
+    productForm.reset();
+    delete productForm.dataset.productId;
+    document.getElementById("adminProductFormTitle").textContent = "NOVO PRODUTO EM RASCUNHO.";
+    productForm.hidden = true;
+    productStatus.textContent = message;
+    newProduct.focus({ preventScroll: true });
+  }
+  function openProductForm(product = null) {
+    if (!canWriteCatalog) return;
+    productForm.hidden = false;
+    productStatus.textContent = "";
+    populateProductCategories(product?.categoryId || "");
+    if (product) {
+      productForm.dataset.productId = product.id;
+      document.getElementById("adminProductFormTitle").textContent = "EDITAR PRODUTO EM RASCUNHO.";
+      productForm.elements.name.value = product.name;
+      productForm.elements.slug.value = product.slug;
+      productForm.elements.description.value = product.description;
+      productForm.elements.featured.checked = product.featured;
+    } else {
+      productForm.reset(); delete productForm.dataset.productId; populateProductCategories();
+      document.getElementById("adminProductFormTitle").textContent = "NOVO PRODUTO EM RASCUNHO.";
+    }
+    productForm.elements.name.focus({ preventScroll: true });
+  }
+  function productError(error) {
+    if (error.status === 400) return "Confira nome, slug, categoria, descrição e destaque.";
+    if (error.status === 409 && error.body?.error === "admin_state_conflict") return "Use uma categoria ativa. Somente produtos em rascunho podem ser alterados.";
+    if (error.status === 409) return "Já existe um produto com esse slug.";
+    if (error.status === 404) return "O produto não foi encontrado. Atualize o painel.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível salvar o produto. Tente novamente quando o serviço estiver disponível.";
+  }
+  async function refreshProducts() {
+    const products = await request("/api/admin/products?limit=100&offset=0");
+    connectedProductTotal = products.total || 0;
+    renderProducts(products.items || []);
+    if (activeAccess) renderSummary(activeAccess, connectedCategoryTotal, connectedProductTotal);
+    return products;
+  }
+  async function saveProduct(input, trigger) {
+    if (!canWriteCatalog) return;
+    trigger.disabled = true;
+    productStatus.textContent = "Salvando produto…";
+    try {
+      const productId = productForm.dataset.productId;
+      await mutateCatalog(productId ? `/api/admin/products/${encodeURIComponent(productId)}` : "/api/admin/products", productId ? "PATCH" : "POST", input);
+      await refreshProducts();
+      detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", "Selecione um produto para consultar os dados relacionados."));
+      resetProductForm(productId ? "Produto atualizado com sucesso." : "Produto criado como rascunho." );
+    } catch (error) {
+      productStatus.textContent = productError(error);
+      if (error.status === 401 || error.status === 403) {
+        canWriteCatalog = false; newCategory.hidden = true; newProduct.hidden = true; categoryForm.hidden = true; productForm.hidden = true;
+        renderCategories(categoriesCache); renderProducts(productsCache);
+      }
+    } finally { trigger.disabled = false; }
+  }
+  function confirmProductArchive(product, actions) {
+    actions.replaceChildren();
+    const confirm = el("button", "mt-admin-danger", "Confirmar arquivamento"); confirm.type = "button";
+    const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+    confirm.addEventListener("click", async () => {
+      confirm.disabled = true; cancel.disabled = true; productStatus.textContent = "Arquivando rascunho…";
+      try {
+        await mutateCatalog(`/api/admin/products/${encodeURIComponent(product.id)}/archive`, "POST", {});
+        await refreshProducts();
+        detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", "O produto foi arquivado e permanece preservado no histórico comercial."));
+        productStatus.textContent = "Produto arquivado com sucesso.";
+      } catch (error) {
+        productStatus.textContent = productError(error);
+        if (error.status === 401 || error.status === 403) { canWriteCatalog = false; newCategory.hidden = true; newProduct.hidden = true; categoryForm.hidden = true; productForm.hidden = true; renderCategories(categoriesCache); }
+        renderProducts(productsCache);
+      }
+    });
+    cancel.addEventListener("click", () => { renderProducts(productsCache); productStatus.textContent = "Arquivamento cancelado. Nenhum dado foi alterado."; });
+    actions.append(confirm, cancel);
+    confirm.focus({ preventScroll: true });
+    productStatus.textContent = `Confirme o arquivamento de ${product.name}.`;
   }
   function section(title, rows, empty) {
     const block = el("section", "mt-admin-detail-section");
@@ -234,15 +351,18 @@
       activeAccess = access;
       canWriteCatalog = access.permissions.includes("catalog:write");
       newCategory.hidden = !canWriteCatalog;
-      if (!canWriteCatalog) categoryForm.hidden = true;
+      newProduct.hidden = !canWriteCatalog;
+      if (!canWriteCatalog) { categoryForm.hidden = true; productForm.hidden = true; }
       const [categories, products] = await Promise.all([
         request("/api/admin/categories?limit=100&offset=0"),
         request("/api/admin/products?limit=100&offset=0"),
       ]);
+      connectedCategoryTotal = categories.total || 0;
       connectedProductTotal = products.total || 0;
       if (current !== run) return;
       renderSummary(access, categories.total || 0, products.total || 0);
       renderCategories(categories.items || []);
+      populateProductCategories();
       renderProducts(products.items || []);
       detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", products.items?.length ? "Selecione um produto para consultar os dados relacionados." : "O catálogo comercial ainda está vazio."));
       state.hidden = true;
@@ -260,6 +380,8 @@
   });
   newCategory.addEventListener("click", () => openCategoryForm());
   cancelCategory.addEventListener("click", () => resetCategoryForm("Edição cancelada. Nenhum dado foi alterado."));
+  newProduct.addEventListener("click", () => openProductForm());
+  cancelProduct.addEventListener("click", () => resetProductForm("Edição cancelada. Nenhum dado foi alterado."));
   categoryForm.addEventListener("submit", event => {
     event.preventDefault();
     categoryForm.elements.slug.value = String(categoryForm.elements.slug.value || "").normalize("NFKD").replace(/[\u0300-\u036f]/gu, "").toLowerCase().trim().replace(/[^a-z0-9]+/gu, "-").replace(/^-+|-+$/gu, "").replace(/-{2,}/gu, "-");
@@ -273,6 +395,19 @@
       description: String(values.get("description") || "").normalize("NFKC").trim().replace(/\s+/gu, " ") || null,
     };
     saveCategory(null, input, categoryForm.querySelector('button[type="submit"]'));
+  });
+  productForm.addEventListener("submit", event => {
+    event.preventDefault();
+    productForm.elements.slug.value = String(productForm.elements.slug.value || "").normalize("NFKD").replace(/[\u0300-\u036f]/gu, "").toLowerCase().trim().replace(/[^a-z0-9]+/gu, "-").replace(/^-+|-+$/gu, "").replace(/-{2,}/gu, "-");
+    if (!productForm.reportValidity()) return;
+    const values = new FormData(productForm);
+    saveProduct({
+      categoryId: String(values.get("categoryId") || ""),
+      name: String(values.get("name") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+      slug: String(values.get("slug") || ""),
+      description: String(values.get("description") || "").normalize("NFKC").replace(/\r\n?/gu, "\n").trim(),
+      featured: values.get("featured") === "on",
+    }, productForm.querySelector('button[type="submit"]'));
   });
   if (location.hash === "#admin") loadPanel();
 })();

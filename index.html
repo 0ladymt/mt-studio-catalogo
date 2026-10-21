@@ -845,7 +845,7 @@
             <div class="mt-admin-list-head">
               <span class="mt-overline">Banco comercial</span>
               <h3 id="adminConnectedTitle">CATÁLOGO CONECTADO.</h3>
-              <p>Consulta do catálogo comercial e gestão de categorias conforme as permissões da equipe. Produtos permanecem em modo somente leitura.</p>
+              <p>Gestão do catálogo comercial conforme as permissões da equipe. Categorias e produtos em rascunho são mantidos no PostgreSQL.</p>
             </div>
             <div id="adminConnectedSummary" class="mt-admin-summary" aria-live="polite"></div>
             <div class="mt-admin-connected__layout">
@@ -865,7 +865,21 @@
                 </form>
                 <p id="adminCategoryStatus" role="status" aria-live="polite"></p>
                 <div id="adminDatabaseCategories" class="mt-admin-read-list"></div>
-                <h4>Produtos reais</h4>
+                <div class="mt-admin-read-heading mt-admin-product-heading">
+                  <h4>Produtos comerciais</h4>
+                  <button id="adminNewProduct" type="button" hidden>Novo produto</button>
+                </div>
+                <form id="adminProductForm" class="mt-admin-product-form" hidden novalidate>
+                  <h5 id="adminProductFormTitle">NOVO PRODUTO EM RASCUNHO.</h5>
+                  <p class="mt-admin-form-note">Produtos novos são criados exclusivamente como rascunho.</p>
+                  <label>Nome<input name="name" required minlength="2" maxlength="120" /></label>
+                  <label>Slug<input name="slug" required minlength="2" maxlength="120" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" /></label>
+                  <label class="admin-description">Categoria<select name="categoryId" required></select></label>
+                  <label class="admin-description">Descrição<textarea name="description" required minlength="1" maxlength="5000" rows="5"></textarea></label>
+                  <label class="mt-admin-check"><input name="featured" type="checkbox" /> Destacar na futura vitrine</label>
+                  <div class="form-actions"><button class="mt-button" type="submit">Salvar rascunho</button><button id="adminCancelProduct" type="button">Cancelar</button></div>
+                </form>
+                <p id="adminProductStatus" role="status" aria-live="polite"></p>
                 <div id="adminDatabaseProducts" class="mt-admin-read-list"></div>
               </div>
               <section id="adminDatabaseDetail" class="mt-admin-read-detail" aria-labelledby="adminDatabaseDetailTitle">
