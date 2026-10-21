@@ -845,12 +845,25 @@
             <div class="mt-admin-list-head">
               <span class="mt-overline">Banco comercial</span>
               <h3 id="adminConnectedTitle">CATÁLOGO CONECTADO.</h3>
-              <p>Consulta somente leitura. Alterações e publicação pela interface ainda não estão habilitadas.</p>
+              <p>Consulta do catálogo comercial e gestão de categorias conforme as permissões da equipe. Produtos permanecem em modo somente leitura.</p>
             </div>
             <div id="adminConnectedSummary" class="mt-admin-summary" aria-live="polite"></div>
             <div class="mt-admin-connected__layout">
               <div>
-                <h4>Categorias</h4>
+                <div class="mt-admin-read-heading">
+                  <h4>Categorias</h4>
+                  <button id="adminNewCategory" type="button" hidden>Nova categoria</button>
+                </div>
+                <form id="adminCategoryForm" class="mt-admin-category-form" hidden novalidate>
+                  <h5 id="adminCategoryFormTitle">NOVA CATEGORIA.</h5>
+                  <label>Nome<input name="name" required minlength="2" maxlength="80" /></label>
+                  <label>Slug<input name="slug" required minlength="2" maxlength="120" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" /></label>
+                  <label>Ordem<input name="sortOrder" type="number" min="0" max="100000" step="1" required value="0" /></label>
+                  <label>Estado<select name="status"><option value="active">Ativa</option><option value="inactive">Inativa</option></select></label>
+                  <label class="admin-description">Descrição<textarea name="description" maxlength="500" rows="3"></textarea></label>
+                  <div class="form-actions"><button class="mt-button" type="submit">Salvar categoria</button><button id="adminCancelCategory" type="button">Cancelar</button></div>
+                </form>
+                <p id="adminCategoryStatus" role="status" aria-live="polite"></p>
                 <div id="adminDatabaseCategories" class="mt-admin-read-list"></div>
                 <h4>Produtos reais</h4>
                 <div id="adminDatabaseProducts" class="mt-admin-read-list"></div>
