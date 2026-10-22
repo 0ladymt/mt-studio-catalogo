@@ -23,6 +23,7 @@
   let categoriesCache = [];
   let productsCache = [];
   let canWriteCatalog = false;
+  let canPublishCatalog = false;
   let activeAccess = null;
   let connectedCategoryTotal = 0;
   let connectedProductTotal = 0;
@@ -84,9 +85,9 @@
     }
     return access;
   }
-  async function mutateCatalog(path, method, body) {
+  async function mutateCatalog(path, method, body, permission = "catalog:write") {
     const access = await authorize();
-    if (!access.permissions.includes("catalog:write")) throw Object.assign(new Error("catalog-write-denied"), { status: 403 });
+    if (!access.permissions.includes(permission)) throw Object.assign(new Error("catalog-permission-denied"), { status: 403 });
     const csrf = await request("/api/auth/csrf");
     if (!csrf?.csrfToken) throw Object.assign(new Error("csrf-unavailable"), { status: 503 });
     return request(path, {
@@ -216,24 +217,28 @@
     if (error?.status === 409) return "O upload ainda não está concluído ou seu estado mudou.";
     return "Não foi possível consultar ou solicitar a verificação agora.";
   }
-  function renderVerificationPanel(fileMeta) {
+  function renderVerificationPanel(fileMeta, product, version, productTrigger) {
     const panel = el("section", "mt-admin-verification"); panel.dataset.fileId = fileMeta.id;
     const title = el("strong", "", "Verificação de integridade");
     const status = el("span", "mt-admin-verification-state", "Consultando estado…");
-    const description = el("p", "mt-admin-verification-description", `${fileMeta.displayName} · ${size(fileMeta.sizeBytes)} · SHA-256 integral`);
+    const description = el("p", "mt-admin-verification-description", `${product.name} · versão ${version.versionLabel} · ${fileMeta.displayName} · ${size(fileMeta.sizeBytes)} · SHA-256 ${fileMeta.checksumSha256}`);
     const instructions = el("p", "mt-admin-verification-instructions", "A verificação é executada pela ferramenta administrativa local, nunca pelo navegador.");
     const command = el("code", "mt-admin-verification-command"); command.hidden = true;
     const controls = el("div", "mt-admin-read-actions");
     const requestButton = el("button", "mt-admin-verification-request", "Verificar integridade"); requestButton.type = "button"; requestButton.disabled = true;
+    const approveButton = el("button", "mt-admin-delivery-approve", "Aprovar para entrega"); approveButton.type = "button"; approveButton.hidden = true;
     const refreshButton = el("button", "", "Atualizar estado"); refreshButton.type = "button";
     const message = el("p", "mt-admin-verification-message", ""); message.setAttribute("role", "status"); message.setAttribute("aria-live", "polite");
-    controls.append(requestButton, refreshButton); panel.append(title, status, description, instructions, command, controls, message);
+    controls.append(requestButton, approveButton, refreshButton); panel.append(title, status, description, instructions, command, controls, message);
     let current = null, polling = 0;
     const present = verification => {
       current = verification; const job = verification.job;
-      command.hidden = true; requestButton.disabled = true;
-      if (verification.fileStorageStatus === "verified" || job?.status === "completed") {
+      command.hidden = true; requestButton.disabled = true; approveButton.hidden = true;
+      if (verification.fileStorageStatus === "ready") {
+        status.textContent = "Pronto para entrega"; panel.dataset.state = "ready"; instructions.textContent = "Aprovação comercial registrada. Isso não publica o produto nem cria direitos de download.";
+      } else if (verification.fileStorageStatus === "verified" || job?.status === "completed") {
         status.textContent = "Verificado"; panel.dataset.state = "completed"; instructions.textContent = "SHA-256 integral confirmado pelo verificador confiável. O arquivo ainda não está pronto para entrega.";
+        approveButton.hidden = !canPublishCatalog;
       } else if (job?.status === "verifying") {
         status.textContent = "Verificando"; panel.dataset.state = "verifying"; instructions.textContent = "A ferramenta local está lendo integralmente os bytes armazenados.";
       } else if (job?.status === "failed") {
@@ -256,6 +261,15 @@
       confirm.addEventListener("click", async () => { confirm.disabled = true; cancel.disabled = true; message.textContent = "Registrando solicitação segura…"; try { const body = await mutateCatalog(`/api/admin/storage-uploads/${encodeURIComponent(current.upload.id)}/verification-jobs`, "POST", { requestId:crypto.randomUUID() }); present({ ...current, job:body.verification.job }); controls.replaceChildren(...original); message.textContent = "Solicitação registrada. Execute a ferramenta local e autorize a operação no navegador."; } catch (error) { controls.replaceChildren(...original); message.textContent = verificationError(error); } });
       cancel.addEventListener("click", () => { controls.replaceChildren(...original); message.textContent = "Solicitação cancelada; nenhum job foi criado."; requestButton.focus(); });
       controls.append(confirm, cancel); confirm.focus();
+    });
+    approveButton.addEventListener("click", () => {
+      const original = [...controls.childNodes]; controls.replaceChildren();
+      const warning = el("p", "mt-admin-verification-instructions", "Confirme que este arquivo verificado pode ser usado em entregas futuras. A ação não publica o produto.");
+      const confirm = el("button", "mt-admin-delivery-confirm", "Confirmar aprovação"); confirm.type = "button";
+      const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+      controls.append(warning, confirm, cancel); confirm.focus();
+      confirm.addEventListener("click", async () => { confirm.disabled = true; cancel.disabled = true; message.textContent = "Registrando aprovação comercial…"; try { await mutateCatalog(`/api/admin/files/${encodeURIComponent(fileMeta.id)}/approve-delivery`, "POST", { requestId:crypto.randomUUID() }, "catalog:publish"); await loadDetail(product.id, productTrigger); detailStatus("Arquivo aprovado para entrega. O produto continua sem publicação automática.", "success"); } catch (error) { controls.replaceChildren(...original); message.textContent = error?.status === 409 ? "O arquivo ou a versão mudou e não pode mais ser aprovado." : verificationError(error); } });
+      cancel.addEventListener("click", () => { controls.replaceChildren(...original); message.textContent = "Aprovação cancelada; o arquivo permanece verificado."; approveButton.focus(); });
     });
     refreshButton.addEventListener("click", refresh);
     const refreshAfterUpload = event => {
@@ -763,7 +777,7 @@
       }
       card.append(row);
       if (mutable && file.status === "active" && file.storageStatus === "metadata_only") card.append(renderUploadPanel(file));
-      if (file.status === "active" && ["metadata_only", "verified"].includes(file.storageStatus)) card.append(renderVerificationPanel(file));
+      if (file.status === "active" && ["metadata_only", "verified", "ready"].includes(file.storageStatus)) card.append(renderVerificationPanel(file, product, version, productTrigger));
     }
   }
   function renderReadiness(readiness) {
@@ -920,6 +934,7 @@
       await pruneMultipartState();
       activeAccess = access;
       canWriteCatalog = access.permissions.includes("catalog:write");
+      canPublishCatalog = access.permissions.includes("catalog:publish");
       newCategory.hidden = !canWriteCatalog;
       newProduct.hidden = !canWriteCatalog;
       if (!canWriteCatalog) { categoryForm.hidden = true; productForm.hidden = true; }

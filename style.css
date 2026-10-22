@@ -3634,6 +3634,14 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 }
 
 /* Loja — etapa 1: abertura editorial e cards de categoria. */
+.mt-admin-verification[data-state="ready"] { border-color:color-mix(in srgb,#58c98b 48%,transparent); }
+.mt-admin-verification[data-state="ready"] .mt-admin-verification-state { color:#8ee5b4; }
+.mt-admin-delivery-approve,
+.mt-admin-delivery-confirm {
+  border-color:color-mix(in srgb,var(--mt-purple) 66%,#fff 8%);
+  background:color-mix(in srgb,var(--mt-purple) 17%,transparent);
+}
+
 #page-loja .mt-shop > .shop-release,
 #page-loja .mt-shop > .mt-page-head {
   display:grid;
