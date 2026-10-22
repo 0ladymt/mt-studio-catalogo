@@ -42,6 +42,7 @@ export interface ObjectStorage {
   listMultipartParts?(input:{objectKey:string;providerUploadId:string}):Promise<Array<{partNumber:number;sizeBytes:number;etag:string}>>;
   completeMultipart?(input:{objectKey:string;providerUploadId:string;parts:Array<{partNumber:number;etag:string}>}):Promise<void>;
   abortMultipart?(input:{objectKey:string;providerUploadId:string}):Promise<void>;
+  handleLocalMultipartRequest?(request:Request):Promise<Response>;
 }
 
 export interface StorageUploadGateway {

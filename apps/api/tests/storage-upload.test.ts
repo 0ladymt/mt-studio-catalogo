@@ -28,6 +28,11 @@ function uploads():StorageUploadGateway{
 async function begin(app:ReturnType<typeof createApp>,requestId=randomUUID()){const response=await app.request(`/api/admin/files/${fileId}/uploads`,{method:"POST",headers,body:JSON.stringify({requestId})});return{response,payload:await response.json() as {upload:{id:string;url:string;headers:Record<string,string>}}};}
 
 describe("local private object upload proof of concept",()=>{
+  it("creates a multipart transaction without issuing a single-object URL",async()=>{
+    const storage=new LocalS3Simulator(),presign=vi.spyOn(storage,"createPresignedPut"),gateway=uploads(),app=createApp(auth(),environment,admin(),storage,gateway);
+    const response=await app.request(`/api/admin/files/${fileId}/uploads`,{method:"POST",headers,body:JSON.stringify({requestId:randomUUID(),mode:"multipart"})});
+    expect(response.status).toBe(201);await expect(response.json()).resolves.toMatchObject({upload:{status:"initiated"}});expect(presign).not.toHaveBeenCalled();
+  });
   it("requires catalog write, Origin and CSRF before creating a transaction",async()=>{
     const storage=new LocalS3Simulator(),gateway=uploads();
     expect((await createApp(auth(),environment,admin("support"),storage,gateway).request(`/api/admin/files/${fileId}/uploads`,{method:"POST",headers,body:JSON.stringify({requestId:randomUUID()})})).status).toBe(403);

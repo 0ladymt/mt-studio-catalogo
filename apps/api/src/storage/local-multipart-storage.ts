@@ -12,7 +12,7 @@ export class LocalMultipartStorage {
   readonly #origin: string;
   readonly #secret = randomBytes(32);
 
-  constructor(root: string, origin = "http://multipart.local") { this.#root = resolve(root); this.#origin = origin; }
+  constructor(root: string, origin = "http://127.0.0.1:8787/api/storage-local/") { this.#root = resolve(root); this.#origin = origin; }
 
   async beginMultipart(input: { objectKey: string; contentType: string }) {
     this.#safe(input.objectKey);
@@ -26,14 +26,14 @@ export class LocalMultipartStorage {
     if (session.status !== "active" || !Number.isInteger(input.partNumber) || input.partNumber < 1 || input.partNumber > 10_000 || !Number.isInteger(input.sizeBytes) || input.sizeBytes < 1) throw new Error("invalid_part");
     const expires = Math.floor(input.expiresAt.getTime() / 1000);
     const signature = this.#sign(input.providerUploadId, input.partNumber, input.sizeBytes, expires);
-    const url = new URL(`/multipart/${input.providerUploadId}/${input.partNumber}`, this.#origin);
+    const url = new URL(`multipart/${input.providerUploadId}/${input.partNumber}`, this.#origin);
     url.searchParams.set("size", String(input.sizeBytes)); url.searchParams.set("expires", String(expires)); url.searchParams.set("signature", signature);
     return { url: url.toString(), method: "PUT" as const, headers: { "content-type": "application/octet-stream" }, expiresAt: input.expiresAt.toISOString() };
   }
 
   async handle(request: Request) {
     if (request.method !== "PUT") return new Response(null, { status: 404 });
-    const url = new URL(request.url), match = url.pathname.match(/^\/multipart\/([0-9a-f-]+)\/(\d+)$/);
+    const url = new URL(request.url), match = url.pathname.match(/\/multipart\/([0-9a-f-]+)\/(\d+)$/);
     if (!match) return new Response(null, { status: 404 });
     const id = match[1]!, partNumber = Number(match[2]!), size = Number(url.searchParams.get("size")), expires = Number(url.searchParams.get("expires")), signature = url.searchParams.get("signature") ?? "";
     if (expires < Math.floor(Date.now() / 1000) || !this.#valid(signature, this.#sign(id, partNumber, size, expires))) return new Response(null, { status: 403 });

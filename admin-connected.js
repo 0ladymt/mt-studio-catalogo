@@ -26,6 +26,9 @@
   let activeAccess = null;
   let connectedCategoryTotal = 0;
   let connectedProductTotal = 0;
+  const multipartStateKey = "mt-studio-multipart-uploads-v1";
+  const multipartControllers = new Map();
+  const multipartFiles = new Map();
   const labels = {
     draft: "Rascunho", published: "Publicado", unpublished: "Despublicado", archived: "Arquivado",
     active: "Ativo", inactive: "Inativo", retired: "Retirado", scheduled: "Agendado",
@@ -49,6 +52,14 @@
     return `${value < 0n ? "−" : ""}R$ ${(absolute / 100n).toLocaleString("pt-BR")},${String(absolute % 100n).padStart(2, "0")}`;
   };
   const size = bytes => Number(bytes).toLocaleString("pt-BR") + " bytes";
+  const readMultipartState = () => { try { const value = JSON.parse(localStorage.getItem(multipartStateKey) || "{}"); return value && typeof value === "object" ? value : {}; } catch { return {}; } };
+  const writeMultipartState = value => localStorage.setItem(multipartStateKey, JSON.stringify(value));
+  const rememberMultipart = (fileId, value) => { const state = readMultipartState(); if (value) state[fileId] = value; else delete state[fileId]; writeMultipartState(state); };
+  async function pruneMultipartState() {
+    const state = readMultipartState(), entries = Object.entries(state); let changed = false;
+    await Promise.all(entries.map(async ([fileId, record]) => { try { await request(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}`); } catch (error) { if (error.status === 404) { delete state[fileId]; changed = true; } } }));
+    if (changed) writeMultipartState(state);
+  }
   const setState = (kind, title, message) => {
     state.dataset.state = kind;
     state.replaceChildren(el("strong", "", title), el("p", "", message));
@@ -83,6 +94,119 @@
       headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.csrfToken },
       body: JSON.stringify(body),
     });
+  }
+  function uploadError(error) {
+    if (error?.name === "AbortError") return "Envio pausado. As partes já confirmadas foram preservadas.";
+    if (error?.status === 401 || error?.status === 403) return "Sua sessão ou permissão não autoriza este envio.";
+    if (error?.status === 409) return "O estado do upload mudou. Atualize a situação antes de continuar.";
+    return "Não foi possível continuar o envio. As partes confirmadas permanecem disponíveis para retomada.";
+  }
+  function setUploadPresentation(panel, status, confirmed, total) {
+    const count = Math.min(confirmed, total), percent = total ? Math.round(count / total * 100) : 0;
+    panel.dataset.state = status;
+    panel.dataset.confirmedParts = String(count); panel.dataset.totalParts = String(total);
+    panel.querySelector(".mt-admin-upload-state").textContent = status;
+    panel.querySelector(".mt-admin-upload-count").textContent = `${count} de ${total} partes confirmadas · ${total - count} pendentes`;
+    panel.querySelector("progress").value = percent;
+    panel.querySelector(".mt-admin-upload-percent").textContent = `${percent}%`;
+    const completed = status === "Envio concluído — aguardando verificação";
+    const startButton = panel.querySelector(".mt-admin-upload-start"), pauseButton = panel.querySelector(".mt-admin-upload-pause"), cancelButton = panel.querySelector(".mt-admin-upload-cancel");
+    if (completed && startButton) startButton.disabled = true;
+    if (completed && pauseButton) pauseButton.disabled = true;
+    if (completed && cancelButton) cancelButton.disabled = true;
+  }
+  async function refreshMultipart(panel, record) {
+    const body = await request(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}`);
+    const session = body.multipart, confirmed = session.parts?.length || 0;
+    setUploadPresentation(panel, session.status === "completed" ? "Envio concluído — aguardando verificação" : record.paused ? "Pausado" : "Aguardando retomada", confirmed, session.totalParts);
+    return session;
+  }
+  async function runMultipart(panel, fileMeta, record, browserFile) {
+    const action = panel.querySelector(".mt-admin-upload-start"), pause = panel.querySelector(".mt-admin-upload-pause");
+    await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}/reconcile`, "POST", {});
+    const session = await refreshMultipart(panel, { ...record, paused:false });
+    if (session.status === "completed") return;
+    if (!browserFile || browserFile.size !== Number(fileMeta.sizeBytes) || browserFile.name !== record.fileName) throw new Error("file_reselection_required");
+    const confirmed = new Set((session.parts || []).map(part => part.partNumber));
+    const pending = Array.from({ length:session.totalParts }, (_, index) => index + 1).filter(number => !confirmed.has(number));
+    const controller = new AbortController(); multipartControllers.set(fileMeta.id, controller); multipartFiles.set(fileMeta.id, browserFile);
+    record.paused = false; rememberMultipart(fileMeta.id, record); action.disabled = true; pause.disabled = false;
+    setUploadPresentation(panel, "Enviando", confirmed.size, session.totalParts);
+    const worker = async () => {
+      while (pending.length && !controller.signal.aborted) {
+        const partNumber = pending.shift(), start = (partNumber - 1) * session.partSizeBytes, end = Math.min(start + session.partSizeBytes, browserFile.size);
+        const signed = await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(session.id)}/part-url`, "POST", { partNumber });
+        const uploaded = await fetch(signed.part.url, { method:"PUT", headers:signed.part.headers, body:browserFile.slice(start, end), signal:controller.signal });
+        if (!uploaded.ok) throw Object.assign(new Error("part-upload-failed"), { status:uploaded.status });
+        await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(session.id)}/parts/${partNumber}/confirm`, "POST", {});
+        confirmed.add(partNumber); setUploadPresentation(panel, "Enviando", confirmed.size, session.totalParts);
+      }
+    };
+    try {
+      await Promise.all(Array.from({ length:Math.min(3, pending.length) }, worker));
+      if (controller.signal.aborted) return;
+      const reconciled = await refreshMultipart(panel, record);
+      if ((reconciled.parts || []).length !== reconciled.totalParts) throw Object.assign(new Error("multipart-reconciliation-failed"), { status:409 });
+      await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(session.id)}/complete`, "POST", { requestId:crypto.randomUUID() });
+      record.completed = true; rememberMultipart(fileMeta.id, record);
+      setUploadPresentation(panel, "Envio concluído — aguardando verificação", session.totalParts, session.totalParts);
+      panel.querySelector(".mt-admin-upload-message").textContent = "O staging foi concluído. O arquivo ainda precisa da verificação SHA-256 confiável.";
+      pause.disabled = true;
+    } catch (error) {
+      controller.abort();
+      throw error;
+    } finally {
+      if (controller.signal.aborted) setUploadPresentation(panel, "Pausado", confirmed.size, session.totalParts);
+      multipartControllers.delete(fileMeta.id); action.disabled = Boolean(record.completed);
+    }
+  }
+  function renderUploadPanel(fileMeta) {
+    const panel = el("section", "mt-admin-upload"); panel.dataset.fileId = fileMeta.id;
+    const title = el("strong", "", "Upload multipart local");
+    const state = el("span", "mt-admin-upload-state", "Nenhum envio iniciado");
+    const chooser = document.createElement("input"); chooser.type = "file"; chooser.accept = ".zip,application/zip"; chooser.setAttribute("aria-label", `Selecionar ZIP para ${fileMeta.displayName}`);
+    const info = el("span", "mt-admin-upload-file", `ZIP esperado: ${fileMeta.displayName} · ${size(fileMeta.sizeBytes)}`);
+    const progress = document.createElement("progress"); progress.max = 100; progress.value = 0; progress.setAttribute("aria-label", "Progresso do upload");
+    const percent = el("span", "mt-admin-upload-percent", "0%");
+    const count = el("span", "mt-admin-upload-count", "0 partes confirmadas");
+    const controls = el("div", "mt-admin-read-actions");
+    const start = el("button", "mt-admin-upload-start", "Iniciar envio"); start.type = "button";
+    const pause = el("button", "mt-admin-upload-pause", "Pausar"); pause.type = "button"; pause.disabled = true;
+    const cancel = el("button", "mt-admin-upload-cancel", "Cancelar envio"); cancel.type = "button"; cancel.disabled = true;
+    const message = el("p", "mt-admin-upload-message", "O multipart concluído continuará como somente metadados até a verificação integral."); message.setAttribute("role", "status"); message.setAttribute("aria-live", "polite");
+    const bar = el("div", "mt-admin-upload-progress"); bar.append(progress, percent);
+    panel.append(title, state, info, chooser, bar, count, controls, message); controls.append(start, pause, cancel);
+    const saved = readMultipartState()[fileMeta.id];
+    if (saved?.multipartId) {
+      cancel.disabled = false; start.textContent = "Retomar envio";
+      refreshMultipart(panel, { ...saved, paused:true }).catch(() => { rememberMultipart(fileMeta.id, null); setUploadPresentation(panel, "Aguardando novo envio", 0, 0); });
+    }
+    chooser.addEventListener("change", () => { const selected = chooser.files?.[0]; if (selected) { multipartFiles.set(fileMeta.id, selected); info.textContent = `${selected.name} · ${size(selected.size)}`; } });
+    start.addEventListener("click", async () => {
+      start.disabled = true; message.textContent = "Preparando envio seguro…";
+      try {
+        let record = readMultipartState()[fileMeta.id], selected = multipartFiles.get(fileMeta.id) || chooser.files?.[0];
+        if (!selected) throw new Error("file_reselection_required");
+        if (!selected.name.toLowerCase().endsWith(".zip") || selected.size !== Number(fileMeta.sizeBytes)) throw new Error("file_mismatch");
+        if (!record?.multipartId) {
+          const created = await mutateCatalog(`/api/admin/files/${encodeURIComponent(fileMeta.id)}/uploads`, "POST", { requestId:crypto.randomUUID(), mode:"multipart" });
+          const opened = await mutateCatalog(`/api/admin/storage-uploads/${encodeURIComponent(created.upload.id)}/multipart`, "POST", { requestId:crypto.randomUUID(), partSizeBytes:8 * 1024 * 1024 });
+          record = { multipartId:opened.multipart.id, uploadId:created.upload.id, fileName:selected.name, sizeBytes:selected.size, paused:false, completed:false };
+          rememberMultipart(fileMeta.id, record); cancel.disabled = false; start.textContent = "Retomar envio";
+        }
+        if (record.fileName !== selected.name || record.sizeBytes !== selected.size) throw new Error("file_mismatch");
+        await runMultipart(panel, fileMeta, record, selected);
+      } catch (error) {
+        message.textContent = error.message === "file_reselection_required" ? "Selecione novamente o mesmo ZIP para retomar com segurança." : error.message === "file_mismatch" ? "O ZIP selecionado não corresponde ao nome e tamanho registrados para este envio." : uploadError(error);
+      } finally { start.disabled = false; }
+    });
+    pause.addEventListener("click", () => { const controller = multipartControllers.get(fileMeta.id); controller?.abort(); const record = readMultipartState()[fileMeta.id]; if (record) { record.paused = true; rememberMultipart(fileMeta.id, record); } pause.disabled = true; start.disabled = false; setUploadPresentation(panel, "Pausado", Number(panel.dataset.confirmedParts || 0), Number(panel.dataset.totalParts || 0)); message.textContent = "Envio pausado. Reabra ou selecione novamente o mesmo ZIP para continuar."; });
+    cancel.addEventListener("click", () => confirmDetailAction(controls, "Confirmar cancelamento", async () => {
+      multipartControllers.get(fileMeta.id)?.abort(); const record = readMultipartState()[fileMeta.id];
+      if (record?.multipartId) await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}/cancel`, "POST", { requestId:crypto.randomUUID() });
+      rememberMultipart(fileMeta.id, null); multipartFiles.delete(fileMeta.id); chooser.value = ""; setUploadPresentation(panel, "Cancelado", 0, 0); message.textContent = "Upload cancelado. Nenhum arquivo final verificado foi removido."; controls.replaceChildren(start, pause, cancel); cancel.disabled = true; start.textContent = "Iniciar envio";
+    }, () => { controls.replaceChildren(start, pause, cancel); message.textContent = "Cancelamento descartado; o upload foi preservado."; }, uploadError));
+    return panel;
   }
   function renderSummary(access, categoryTotal, productTotal) {
     summary.replaceChildren();
@@ -579,6 +703,7 @@
         row.append(actions);
       }
       card.append(row);
+      if (mutable && file.status === "active" && file.storageStatus === "metadata_only") card.append(renderUploadPanel(file));
     }
   }
   function renderReadiness(readiness) {
@@ -732,6 +857,7 @@
     setState("loading", "Verificando acesso administrativo…", "Aguarde enquanto confirmamos sua sessão e permissões.");
     try {
       const access = await authorize();
+      await pruneMultipartState();
       activeAccess = access;
       canWriteCatalog = access.permissions.includes("catalog:write");
       newCategory.hidden = !canWriteCatalog;
