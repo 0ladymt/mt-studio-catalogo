@@ -1,11 +1,16 @@
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListPartsCommand,
   PutObjectCommand,
   type S3Client,
+  UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createConfiguredObjectStorage, R2S3Storage, toStagingKey } from "../src/storage/r2-s3-storage.js";
@@ -20,6 +25,17 @@ const finalKey = "private/products/product/versions/version/files/file/upload.bi
 class FakeS3Client {
   readonly objects = new Map<string, Buffer>();
   readonly commands: unknown[] = [];
+  readonly multiparts = new Map<string, { key: string; parts: Map<number, { body: Buffer; etag: string }> }>();
+  listPageSize = 1_000;
+  failCompleteOnce = false;
+
+  uploadPart(uploadId: string, partNumber: number, value: Buffer) {
+    const upload = this.multiparts.get(uploadId);
+    if (!upload) throw noSuchUpload();
+    const etag = `"${createHash("md5").update(value).digest("hex")}"`;
+    upload.parts.set(partNumber, { body: Buffer.from(value), etag });
+    return etag;
+  }
 
   async send(command: unknown): Promise<Record<string, unknown>> {
     this.commands.push(command);
@@ -44,6 +60,38 @@ class FakeS3Client {
     }
     if (command instanceof DeleteObjectCommand) {
       this.objects.delete(command.input.Key!);
+      return {};
+    }
+    if (command instanceof CreateMultipartUploadCommand) {
+      const uploadId = `upload-${this.multiparts.size + 1}`;
+      this.multiparts.set(uploadId, { key: command.input.Key!, parts: new Map() });
+      return { UploadId: uploadId };
+    }
+    if (command instanceof ListPartsCommand) {
+      const upload = this.multiparts.get(command.input.UploadId!);
+      if (!upload) throw noSuchUpload();
+      const marker = Number(command.input.PartNumberMarker ?? 0);
+      const all = [...upload.parts.entries()].filter(([number]) => number > marker).sort(([left], [right]) => left - right);
+      const page = all.slice(0, this.listPageSize);
+      const truncated = page.length < all.length;
+      return { Parts: page.map(([PartNumber, part]) => ({ PartNumber, Size: part.body.length, ETag: part.etag })), IsTruncated: truncated, NextPartNumberMarker: truncated ? String(page.at(-1)![0]) : undefined };
+    }
+    if (command instanceof CompleteMultipartUploadCommand) {
+      if (this.failCompleteOnce) { this.failCompleteOnce = false; throw new Error("network"); }
+      const upload = this.multiparts.get(command.input.UploadId!);
+      if (!upload) throw noSuchUpload();
+      const selected = command.input.MultipartUpload?.Parts ?? [];
+      const chunks = selected.map(({ PartNumber, ETag }) => {
+        const part = upload.parts.get(PartNumber!);
+        if (!part || part.etag !== ETag) throw Object.assign(new Error("invalid part"), { name: "InvalidPart", $metadata: { httpStatusCode: 400 } });
+        return part.body;
+      });
+      this.objects.set(upload.key, Buffer.concat(chunks));
+      this.multiparts.delete(command.input.UploadId!);
+      return {};
+    }
+    if (command instanceof AbortMultipartUploadCommand) {
+      if (!this.multiparts.delete(command.input.UploadId!)) throw noSuchUpload();
       return {};
     }
     throw new Error("unexpected command");
@@ -135,6 +183,58 @@ describe("Cloudflare R2 S3 adapter", () => {
       integrity: "unverified",
     });
   });
+
+  it("rehashes every staging byte before recovering a lost completion response", async () => {
+    const client = new FakeS3Client();
+    client.objects.set(toStagingKey(finalKey), body);
+    await expect(adapter(client).inspectStagingObject!(finalKey)).resolves.toEqual({
+      exists: true,
+      sizeBytes: body.byteLength,
+      checksumSha256: checksum,
+      integrity: "trusted_full_object",
+    });
+  });
+
+  it("creates, signs, paginates, reconciles and completes multipart staging", async () => {
+    const client = new FakeS3Client();
+    client.listPageSize = 1;
+    const store = adapter(client);
+    const { providerUploadId } = await store.beginMultipart!({ objectKey: finalKey, contentType: "application/octet-stream" });
+    const signedPart = await store.createMultipartPartUrl!({ objectKey: finalKey, providerUploadId, partNumber: 2, sizeBytes: 4, expiresAt: new Date(Date.now() + 600_000) });
+    const uploadCommand = signed.mock.calls.at(-1)![1] as UploadPartCommand;
+    expect(uploadCommand.input).toMatchObject({ Key: toStagingKey(finalKey), UploadId: providerUploadId, PartNumber: 2 });
+    expect(signedPart.url).not.toContain("private-test-secret");
+    const second = client.uploadPart(providerUploadId, 2, Buffer.from("segunda"));
+    const first = client.uploadPart(providerUploadId, 1, Buffer.from("primeira"));
+    await expect(store.listMultipartParts!({ objectKey: finalKey, providerUploadId })).resolves.toEqual([
+      { partNumber: 1, sizeBytes: 8, etag: first }, { partNumber: 2, sizeBytes: 7, etag: second },
+    ]);
+    await store.completeMultipart!({ objectKey: finalKey, providerUploadId, parts: [{ partNumber: 1, etag: first }, { partNumber: 2, etag: second }] });
+    expect(client.objects.get(toStagingKey(finalKey))).toEqual(Buffer.from("primeirasegunda"));
+    await expect(store.completeMultipart!({ objectKey: finalKey, providerUploadId, parts: [{ partNumber: 1, etag: first }, { partNumber: 2, etag: second }] })).rejects.toMatchObject({ code: "storage_failure" });
+  });
+
+  it("detects replacement of a part and never accepts the stale ETag", async () => {
+    const client = new FakeS3Client(), store = adapter(client);
+    const { providerUploadId } = await store.beginMultipart!({ objectKey: finalKey, contentType: "application/octet-stream" });
+    const original = client.uploadPart(providerUploadId, 1, Buffer.from("original"));
+    const replacement = client.uploadPart(providerUploadId, 1, Buffer.from("alterado"));
+    expect(replacement).not.toBe(original);
+    await expect(store.completeMultipart!({ objectKey: finalKey, providerUploadId, parts: [{ partNumber: 1, etag: original }] })).rejects.toMatchObject({ code: "storage_failure" });
+    expect(client.objects.has(toStagingKey(finalKey))).toBe(false);
+  });
+
+  it("recovers a partial completion failure and aborts idempotently", async () => {
+    const client = new FakeS3Client(), store = adapter(client);
+    const { providerUploadId } = await store.beginMultipart!({ objectKey: finalKey, contentType: "application/octet-stream" });
+    const etag = client.uploadPart(providerUploadId, 1, body);
+    client.failCompleteOnce = true;
+    await expect(store.completeMultipart!({ objectKey: finalKey, providerUploadId, parts: [{ partNumber: 1, etag }] })).rejects.toMatchObject({ code: "storage_failure" });
+    await expect(store.completeMultipart!({ objectKey: finalKey, providerUploadId, parts: [{ partNumber: 1, etag }] })).resolves.toBeUndefined();
+    const cancelled = await store.beginMultipart!({ objectKey: finalKey, contentType: "application/octet-stream" });
+    await expect(store.abortMultipart!({ objectKey: finalKey, providerUploadId: cancelled.providerUploadId })).resolves.toBeUndefined();
+    await expect(store.abortMultipart!({ objectKey: finalKey, providerUploadId: cancelled.providerUploadId })).resolves.toBeUndefined();
+  });
 });
 
 function notFound() {
@@ -143,4 +243,8 @@ function notFound() {
 
 function preconditionFailed() {
   return Object.assign(new Error("precondition failed"), { name: "PreconditionFailed", $metadata: { httpStatusCode: 412 } });
+}
+
+function noSuchUpload() {
+  return Object.assign(new Error("upload not found"), { name: "NoSuchUpload", $metadata: { httpStatusCode: 404 } });
 }

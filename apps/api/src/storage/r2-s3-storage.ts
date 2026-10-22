@@ -1,9 +1,14 @@
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListPartsCommand,
   PutObjectCommand,
   S3Client,
+  UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
@@ -105,12 +110,115 @@ export class R2S3Storage implements ObjectStorage {
     };
   }
 
+  async beginMultipart(input: { objectKey: string; contentType: string }) {
+    try {
+      const result = await this.#client.send(new CreateMultipartUploadCommand({
+        Bucket: this.#bucket,
+        Key: toStagingKey(input.objectKey),
+        ContentType: input.contentType,
+      }));
+      if (!result.UploadId) throw new R2StorageError("storage_failure");
+      return { providerUploadId: result.UploadId };
+    } catch (error) {
+      if (error instanceof R2StorageError) throw error;
+      throw new R2StorageError("storage_failure");
+    }
+  }
+
+  async createMultipartPartUrl(input: { objectKey: string; providerUploadId: string; partNumber: number; sizeBytes: number; expiresAt: Date }) {
+    if (!Number.isInteger(input.partNumber) || input.partNumber < 1 || input.partNumber > 10_000 || !Number.isInteger(input.sizeBytes) || input.sizeBytes < 1) {
+      throw new R2StorageError("storage_failure");
+    }
+    const requestedTtl = Math.floor((input.expiresAt.getTime() - Date.now()) / 1000);
+    const expiresIn = Math.max(1, Math.min(requestedTtl, this.#uploadUrlTtlSeconds));
+    const command = new UploadPartCommand({
+      Bucket: this.#bucket,
+      Key: toStagingKey(input.objectKey),
+      UploadId: input.providerUploadId,
+      PartNumber: input.partNumber,
+    });
+    try {
+      return {
+        url: await getSignedUrl(this.#client, command, { expiresIn }),
+        method: "PUT" as const,
+        headers: { "content-type": "application/octet-stream" },
+        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      };
+    } catch {
+      throw new R2StorageError("storage_failure");
+    }
+  }
+
+  async listMultipartParts(input: { objectKey: string; providerUploadId: string }) {
+    const parts: Array<{ partNumber: number; sizeBytes: number; etag: string }> = [];
+    let marker: string | undefined;
+    try {
+      do {
+        const page = await this.#client.send(new ListPartsCommand({
+          Bucket: this.#bucket,
+          Key: toStagingKey(input.objectKey),
+          UploadId: input.providerUploadId,
+          PartNumberMarker: marker,
+          MaxParts: 1_000,
+        }));
+        for (const part of page.Parts ?? []) {
+          if (!part.PartNumber || part.Size === undefined || !part.ETag) throw new R2StorageError("storage_failure");
+          parts.push({ partNumber: part.PartNumber, sizeBytes: part.Size, etag: part.ETag });
+        }
+        marker = page.IsTruncated ? page.NextPartNumberMarker : undefined;
+        if (page.IsTruncated && !marker) throw new R2StorageError("storage_failure");
+      } while (marker);
+      return parts.sort((left, right) => left.partNumber - right.partNumber);
+    } catch (error) {
+      if (error instanceof R2StorageError) throw error;
+      if (isNoSuchUpload(error)) return [];
+      throw new R2StorageError("storage_failure");
+    }
+  }
+
+  async completeMultipart(input: { objectKey: string; providerUploadId: string; parts: Array<{ partNumber: number; etag: string }> }) {
+    const key = toStagingKey(input.objectKey);
+    const normalized = [...input.parts].sort((left, right) => left.partNumber - right.partNumber);
+    if (!normalized.length || normalized.some((part, index) => part.partNumber !== index + 1 || !part.etag)) {
+      throw new R2StorageError("storage_failure");
+    }
+    try {
+      await this.#client.send(new CompleteMultipartUploadCommand({
+        Bucket: this.#bucket,
+        Key: key,
+        UploadId: input.providerUploadId,
+        MultipartUpload: { Parts: normalized.map((part) => ({ PartNumber: part.partNumber, ETag: part.etag })) },
+      }));
+    } catch { throw new R2StorageError("storage_failure"); }
+  }
+
+  async abortMultipart(input: { objectKey: string; providerUploadId: string }) {
+    try {
+      await this.#client.send(new AbortMultipartUploadCommand({
+        Bucket: this.#bucket,
+        Key: toStagingKey(input.objectKey),
+        UploadId: input.providerUploadId,
+      }));
+    } catch (error) {
+      if (!isNoSuchUpload(error)) throw new R2StorageError("storage_failure");
+    }
+  }
+
   async inspectObject(
     objectKey: string,
     expected?: { sizeBytes: number; checksumSha256: string },
   ): Promise<ObjectInspection> {
     if (!expected) return this.#inspectWithoutTrust(toStagingKey(objectKey));
     return this.#verifyAndFinalize(toStagingKey(objectKey), objectKey, expected);
+  }
+
+  async inspectStagingObject(objectKey: string): Promise<ObjectInspection> {
+    try { return await this.#downloadAndHash(toStagingKey(objectKey)); }
+    catch (error) {
+      if (isNotFound(error)) return missingInspection();
+      if (error instanceof R2StorageError) throw error;
+      throw new R2StorageError("storage_failure");
+    }
   }
 
   async #verifyAndFinalize(
@@ -206,4 +314,11 @@ function isPreconditionFailure(error: unknown): boolean {
     ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
     : undefined;
   return status === 412 || (error instanceof Error && error.name === "PreconditionFailed");
+}
+
+function isNoSuchUpload(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null && "$metadata" in error
+    ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+    : undefined;
+  return (error instanceof Error && error.name === "NoSuchUpload") || status === 404;
 }

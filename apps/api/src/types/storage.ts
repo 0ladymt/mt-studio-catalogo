@@ -36,6 +36,7 @@ export interface ObjectStorage {
     objectKey: string,
     expected?: { sizeBytes: number; checksumSha256: string },
   ): Promise<ObjectInspection>;
+  inspectStagingObject?(objectKey:string):Promise<ObjectInspection>;
   beginMultipart?(input:{objectKey:string;contentType:string}):Promise<{providerUploadId:string}>;
   createMultipartPartUrl?(input:{objectKey:string;providerUploadId:string;partNumber:number;sizeBytes:number;expiresAt:Date}):Promise<{url:string;method:"PUT";headers:Record<string,string>;expiresAt:string}>;
   listMultipartParts?(input:{objectKey:string;providerUploadId:string}):Promise<Array<{partNumber:number;sizeBytes:number;etag:string}>>;
