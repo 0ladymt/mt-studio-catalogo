@@ -1,4 +1,4 @@
-/* Read-only administrative catalog. Authorization remains server-side. */
+/* Connected administrative catalog. Authorization remains server-side. */
 (() => {
   const apiBase = ["127.0.0.1", "localhost"].includes(location.hostname)
     ? `${location.protocol}//${location.hostname}:8787`
@@ -43,7 +43,11 @@
     return node;
   };
   const label = value => labels[value] || value || "—";
-  const money = cents => Number(cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const money = cents => {
+    const value = BigInt(cents);
+    const absolute = value < 0n ? -value : value;
+    return `${value < 0n ? "−" : ""}R$ ${(absolute / 100n).toLocaleString("pt-BR")},${String(absolute % 100n).padStart(2, "0")}`;
+  };
   const size = bytes => Number(bytes).toLocaleString("pt-BR") + " bytes";
   const setState = (kind, title, message) => {
     state.dataset.state = kind;
@@ -300,6 +304,209 @@
     row.append(el("strong", "", primary), el("span", "", secondary));
     return row;
   }
+  const toLocalDateTime = value => {
+    if (!value) return "";
+    const date = new Date(value);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+  const toIsoDateTime = value => value ? new Date(value).toISOString() : null;
+  function parseBrlCents(value) {
+    const normalized = String(value || "").trim().replace(/^R\$\s*/iu, "").replace(/\s/gu, "");
+    if (!/^\d{1,10}(?:,\d{1,2})?$/u.test(normalized)) return null;
+    const [units, fraction = ""] = normalized.split(",");
+    const cents = BigInt(units) * 100n + BigInt(fraction.padEnd(2, "0"));
+    return cents > 0n && cents <= 999999999999n ? Number(cents) : null;
+  }
+  function detailStatus(message = "", kind = "") {
+    const node = document.getElementById("adminCatalogDetailStatus");
+    if (!node) return;
+    node.textContent = message;
+    node.dataset.state = kind;
+  }
+  function versionError(error) {
+    if (error.status === 400) return "Confira o rótulo, a sequência e as datas da versão.";
+    if (error.status === 409) return "A sequência já existe ou esta versão não permite a operação solicitada.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível salvar a versão. Tente novamente quando o serviço estiver disponível.";
+  }
+  function priceError(error) {
+    if (error.status === 400) return "Confira o valor em reais e o período de vigência do preço.";
+    if (error.status === 409) return "O preço ou a versão não permite esta operação.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível atualizar o preço. Tente novamente quando o serviço estiver disponível.";
+  }
+  function versionPayload(form) {
+    const values = new FormData(form);
+    return {
+      versionLabel: String(values.get("versionLabel") || "").normalize("NFKC").trim(),
+      releaseSequence: Number(values.get("releaseSequence")),
+      releaseNotes: String(values.get("releaseNotes") || "").normalize("NFKC").replace(/\r\n?/gu, "\n").trim() || null,
+      availableFrom: toIsoDateTime(String(values.get("availableFrom") || "")),
+      availableUntil: toIsoDateTime(String(values.get("availableUntil") || "")),
+    };
+  }
+  function versionForm(product, version, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>${version ? "EDITAR VERSÃO EM RASCUNHO." : "NOVA VERSÃO EM RASCUNHO."}</h6>
+      <label>Rótulo<input name="versionLabel" required maxlength="40"></label>
+      <label>Sequência<input name="releaseSequence" type="number" required min="1" max="2147483647" step="1"></label>
+      <label class="admin-description">Notas da versão<textarea name="releaseNotes" maxlength="5000" rows="4"></textarea></label>
+      <label>Disponível a partir de<input name="availableFrom" type="datetime-local"></label>
+      <label>Disponível até<input name="availableUntil" type="datetime-local"></label>
+      <div class="form-actions"><button class="mt-button" type="submit">Salvar versão</button><button type="button" data-cancel>Cancelar</button></div>`;
+    if (version) {
+      form.elements.versionLabel.value = version.versionLabel;
+      form.elements.releaseSequence.value = String(version.releaseSequence);
+      form.elements.releaseNotes.value = version.releaseNotes || "";
+      form.elements.availableFrom.value = toLocalDateTime(version.availableFrom);
+      form.elements.availableUntil.value = toLocalDateTime(version.availableUntil);
+    }
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Salvando versão…");
+      try {
+        const path = version ? `/api/admin/versions/${encodeURIComponent(version.id)}` : `/api/admin/products/${encodeURIComponent(product.id)}/versions`;
+        await mutateCatalog(path, version ? "PATCH" : "POST", versionPayload(form));
+        await loadDetail(product.id, productTrigger);
+        detailStatus(version ? "Versão atualizada com sucesso." : "Versão criada como rascunho.", "success");
+      } catch (error) { detailStatus(versionError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function priceForm(product, version, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form mt-admin-price-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>NOVO PREÇO AGENDADO.</h6>
+      <label>Valor em reais<input name="amount" required inputmode="decimal" placeholder="149,90" pattern="[0-9]{1,10}(?:,[0-9]{1,2})?"></label>
+      <label>Vigente a partir de<input name="validFrom" type="datetime-local" required></label>
+      <label>Vigente até<input name="validUntil" type="datetime-local"></label>
+      <p class="mt-admin-form-note">O valor será convertido e enviado ao servidor como centavos inteiros.</p>
+      <div class="form-actions"><button class="mt-button" type="submit">Cadastrar preço</button><button type="button" data-cancel>Cancelar</button></div>`;
+    form.elements.validFrom.value = toLocalDateTime(new Date().toISOString());
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const amountCents = parseBrlCents(form.elements.amount.value);
+      if (!amountCents) { detailStatus("Informe um valor válido, como 149,90.", "error"); form.elements.amount.focus(); return; }
+      if (!form.reportValidity()) return;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Cadastrando preço…");
+      try {
+        await mutateCatalog(`/api/admin/versions/${encodeURIComponent(version.id)}/prices`, "POST", {
+          amountCents,
+          validFrom: toIsoDateTime(form.elements.validFrom.value),
+          validUntil: toIsoDateTime(form.elements.validUntil.value),
+        });
+        await loadDetail(product.id, productTrigger);
+        detailStatus("Preço cadastrado no histórico como agendado.", "success");
+      } catch (error) { detailStatus(priceError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function renderVersionManager(product, related, productTrigger) {
+    const manager = el("section", "mt-admin-detail-section mt-admin-version-manager");
+    const heading = el("div", "mt-admin-detail-heading");
+    heading.append(el("h5", "", "Versões e preços"));
+    if (canWriteCatalog && product.status !== "archived") {
+      const add = el("button", "", "Nova versão"); add.type = "button";
+      add.addEventListener("click", () => {
+        const existing = manager.querySelector(".mt-admin-detail-form"); if (existing) existing.remove();
+        const form = versionForm(product, null, productTrigger, () => { form.remove(); detailStatus("Criação de versão cancelada."); add.focus(); });
+        heading.after(form); form.elements.versionLabel.focus();
+      });
+      heading.append(add);
+    }
+    manager.append(heading);
+    if (!related.length) manager.append(el("p", "mt-admin-read-empty", "Nenhuma versão cadastrada."));
+    for (const entry of related) {
+      const version = entry.version;
+      const card = el("article", "mt-admin-version-card");
+      const title = el("div", "mt-admin-version-card__title");
+      title.append(el("strong", "", `Versão ${version.versionLabel}`));
+      const stateText = `${label(version.status)} · sequência ${version.releaseSequence}${version.lockedAt ? " · congelada" : ""}`;
+      title.append(el("span", "", stateText)); card.append(title);
+      if (version.releaseNotes) card.append(el("p", "", version.releaseNotes));
+      const dates = [version.availableFrom ? `Início ${new Date(version.availableFrom).toLocaleString("pt-BR")}` : "Início não definido", version.availableUntil ? `Fim ${new Date(version.availableUntil).toLocaleString("pt-BR")}` : "Sem encerramento"].join(" · ");
+      card.append(el("p", "mt-admin-version-dates", dates));
+      const controls = el("div", "mt-admin-read-actions");
+      if (canWriteCatalog && version.status === "draft" && !version.lockedAt) {
+        const edit = el("button", "", "Editar versão"); edit.type = "button";
+        edit.addEventListener("click", () => {
+          const old = card.querySelector(".mt-admin-detail-form"); if (old) old.remove();
+          const form = versionForm(product, version, productTrigger, () => { form.remove(); detailStatus("Edição de versão cancelada."); edit.focus(); });
+          controls.after(form); form.elements.versionLabel.focus();
+        }); controls.append(edit);
+      }
+      if (canWriteCatalog && version.status !== "retired" && !version.lockedAt && product.currentVersionId !== version.id) {
+        const retire = el("button", "", "Retirar versão"); retire.type = "button";
+        retire.addEventListener("click", () => confirmDetailAction(controls, "Confirmar retirada", async () => {
+          await mutateCatalog(`/api/admin/versions/${encodeURIComponent(version.id)}/retire`, "POST", {});
+          await loadDetail(product.id, productTrigger); detailStatus("Versão retirada e histórico preservado.", "success");
+        }, () => detailStatus("Retirada da versão cancelada."), versionError)); controls.append(retire);
+      }
+      if (controls.children.length) card.append(controls);
+      const priceHeading = el("div", "mt-admin-price-heading"); priceHeading.append(el("h6", "", "Histórico de preços"));
+      if (canWriteCatalog && version.status !== "retired") {
+        const addPrice = el("button", "", "Novo preço"); addPrice.type = "button";
+        addPrice.addEventListener("click", () => {
+          const old = card.querySelector(".mt-admin-price-form"); if (old) old.remove();
+          const form = priceForm(product, version, productTrigger, () => { form.remove(); detailStatus("Cadastro de preço cancelado."); addPrice.focus(); });
+          priceHeading.after(form); form.elements.amount.focus();
+        }); priceHeading.append(addPrice);
+      }
+      card.append(priceHeading);
+      if (!entry.prices.length) card.append(el("p", "mt-admin-read-empty", "Nenhum preço cadastrado."));
+      for (const price of entry.prices) {
+        const priceRow = el("div", "mt-admin-price-row");
+        const copy = el("div", "mt-admin-read-copy");
+        const frozen = price.lockedAt ? " · congelado" : "";
+        copy.append(el("strong", "", money(price.amountCents)), el("span", "", `${label(price.status)}${frozen} · BRL · desde ${new Date(price.validFrom).toLocaleString("pt-BR")}`));
+        priceRow.append(copy);
+        if (canWriteCatalog) {
+          const actions = el("div", "mt-admin-read-actions");
+          if (price.status === "scheduled" && !price.lockedAt) {
+            const activate = el("button", "", "Ativar"); activate.type = "button";
+            activate.addEventListener("click", () => confirmDetailAction(actions, "Confirmar ativação", async () => {
+              await mutateCatalog(`/api/admin/prices/${encodeURIComponent(price.id)}/activate`, "POST", {});
+              await loadDetail(product.id, productTrigger); detailStatus("Preço ativado; o histórico anterior foi preservado.", "success");
+            }, () => detailStatus("Ativação do preço cancelada."), priceError)); actions.append(activate);
+          }
+          if (price.status !== "retired") {
+            const retire = el("button", "", "Retirar"); retire.type = "button";
+            retire.addEventListener("click", () => confirmDetailAction(actions, "Confirmar retirada", async () => {
+              await mutateCatalog(`/api/admin/prices/${encodeURIComponent(price.id)}/retire`, "POST", {});
+              await loadDetail(product.id, productTrigger); detailStatus("Preço retirado e mantido no histórico.", "success");
+            }, () => detailStatus("Retirada do preço cancelada."), priceError)); actions.append(retire);
+          }
+          if (actions.children.length) priceRow.append(actions);
+        }
+        card.append(priceRow);
+      }
+      manager.append(card);
+    }
+    manager.append(el("p", "mt-admin-detail-status", ""));
+    manager.lastElementChild.id = "adminCatalogDetailStatus";
+    manager.lastElementChild.setAttribute("role", "status");
+    manager.lastElementChild.setAttribute("aria-live", "polite");
+    return manager;
+  }
+  function confirmDetailAction(container, confirmation, action, cancelAction, errorMessage) {
+    const original = [...container.childNodes];
+    container.replaceChildren();
+    const confirm = el("button", "mt-admin-danger", confirmation); confirm.type = "button";
+    const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+    confirm.addEventListener("click", async () => {
+      confirm.disabled = true; cancel.disabled = true; detailStatus("Salvando alteração…");
+      try { await action(); } catch (error) { detailStatus(errorMessage(error), "error"); container.replaceChildren(...original); }
+    });
+    cancel.addEventListener("click", () => { container.replaceChildren(...original); cancelAction(); });
+    container.append(confirm, cancel); confirm.focus();
+  }
   async function loadDetail(productId, trigger) {
     const current = ++run;
     detailNode.setAttribute("aria-busy", "true");
@@ -329,13 +536,10 @@
         : (readiness.blockers || []).map(item => dataRow("Pendente", blockers[item] || item));
       detailNode.append(section("Prontidão", readinessRows, "Prontidão indisponível."));
       detailNode.append(section("Mídias", (mediaBody.items || []).map(item => dataRow(item.altText || "Mídia", `${item.mediaType === "cover" ? "Capa" : "Galeria"} · ${label(item.status)}`)), "Nenhuma mídia cadastrada."));
-      const versionRows = [];
-      for (const entry of related) {
-        versionRows.push(dataRow(`Versão ${entry.version.versionLabel}`, `${label(entry.version.status)} · sequência ${entry.version.releaseSequence}`));
-        entry.prices.forEach(item => versionRows.push(dataRow(money(item.amountCents), `Preço ${label(item.status)} · BRL`)));
-        entry.files.forEach(item => versionRows.push(dataRow(item.displayName, `${size(item.sizeBytes)} · ${label(item.storageStatus)} · ${label(item.status)}`)));
-      }
-      detailNode.append(section("Versões, preços e arquivos", versionRows, "Nenhuma versão cadastrada."));
+      detailNode.append(renderVersionManager(product, related, trigger));
+      const fileRows = [];
+      for (const entry of related) entry.files.forEach(item => fileRows.push(dataRow(item.displayName, `${size(item.sizeBytes)} · ${label(item.storageStatus)} · ${label(item.status)}`)));
+      detailNode.append(section("Arquivos", fileRows, "Nenhum arquivo cadastrado."));
       trigger.focus({ preventScroll: true });
     } catch (error) {
       if (current !== run) return;

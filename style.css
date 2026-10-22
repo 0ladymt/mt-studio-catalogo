@@ -2382,6 +2382,25 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
 #page-admin .mt-admin-detail-section { margin-top:26px; padding-top:22px; border-top:1px solid var(--line); }
 #page-admin .mt-admin-detail-section h5 { margin:0 0 12px; color:var(--text); font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; }
 #page-admin .mt-admin-detail-section .mt-admin-read-row + .mt-admin-read-row { margin-top:7px; }
+#page-admin .mt-admin-detail-heading,#page-admin .mt-admin-price-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#page-admin .mt-admin-detail-heading h5,#page-admin .mt-admin-price-heading h6 { margin:0; }
+#page-admin .mt-admin-detail-heading button,#page-admin .mt-admin-price-heading button,#page-admin .mt-admin-detail-form button,#page-admin .mt-admin-version-card .mt-admin-read-actions button { min-height:44px; padding:9px 12px; border:1px solid var(--mt-purple-45); border-radius:3px; background:#211728; color:var(--text); }
+#page-admin .mt-admin-version-card { margin-top:12px; padding:16px; border:1px solid #3b3441; background:#141217; min-width:0; }
+#page-admin .mt-admin-version-card__title { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+#page-admin .mt-admin-version-card__title strong { color:var(--text); overflow-wrap:anywhere; }
+#page-admin .mt-admin-version-card__title span,#page-admin .mt-admin-version-card > p,#page-admin .mt-admin-version-dates { color:var(--muted); font-size:.74rem; line-height:1.6; overflow-wrap:anywhere; }
+#page-admin .mt-admin-version-card > .mt-admin-read-actions { margin-top:12px; }
+#page-admin .mt-admin-price-heading { margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+#page-admin .mt-admin-price-heading h6,#page-admin .mt-admin-detail-form h6 { color:var(--lilac); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; }
+#page-admin .mt-admin-price-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:8px; padding:12px; border:1px solid #342d39; background:#101014; min-width:0; }
+#page-admin .mt-admin-detail-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; margin:14px 0; padding:16px; border:1px solid #51435d; background:#0f0d13; }
+#page-admin .mt-admin-detail-form h6,#page-admin .mt-admin-detail-form .admin-description,#page-admin .mt-admin-detail-form .form-actions,#page-admin .mt-admin-detail-form .mt-admin-form-note { grid-column:1/-1; margin-top:0; }
+#page-admin .mt-admin-detail-form label { display:flex; flex-direction:column; gap:7px; min-width:0; color:var(--muted); font-size:.74rem; }
+#page-admin .mt-admin-detail-form input,#page-admin .mt-admin-detail-form textarea { width:100%; min-width:0; min-height:44px; padding:10px 11px; border:1px solid #51435d; border-radius:3px; background:#09080b; color:var(--text); }
+#page-admin .mt-admin-detail-form textarea { resize:vertical; }
+#page-admin .mt-admin-detail-form .mt-admin-form-note { color:var(--muted); font-size:.72rem; line-height:1.6; }
+#page-admin .mt-admin-detail-status { min-height:1.5em; margin:14px 0 0; color:var(--lilac); font-size:.76rem; line-height:1.6; }
+#page-admin .mt-admin-detail-status[data-state="error"] { color:#ffb5c2; }
 #page-admin .mt-admin-local > .mt-admin-list-head { margin-top:0; }
 #page-loja [hidden],#page-admin [hidden] { display:none!important; }
 #page-loja a:focus-visible,#page-loja button:focus-visible,#page-admin a:focus-visible,#page-admin button:focus-visible,#page-admin input:focus-visible,#page-admin select:focus-visible,#page-admin textarea:focus-visible { outline:2px solid var(--lilac); outline-offset:4px; }
@@ -2454,6 +2473,10 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
  #page-admin .mt-admin-read-heading,#page-admin .mt-admin-read-row:has(.mt-admin-read-actions) { align-items:stretch; flex-direction:column; }
  #page-admin .mt-admin-read-heading button,#page-admin .mt-admin-read-actions button { width:100%; }
  #page-admin .mt-admin-product-row { grid-template-columns:1fr; }
+ #page-admin .mt-admin-version-card__title,#page-admin .mt-admin-price-row { align-items:stretch; flex-direction:column; }
+ #page-admin .mt-admin-detail-form { grid-template-columns:1fr; padding:14px; }
+ #page-admin .mt-admin-detail-heading,#page-admin .mt-admin-price-heading { align-items:stretch; flex-direction:column; }
+ #page-admin .mt-admin-detail-heading button,#page-admin .mt-admin-price-heading button,#page-admin .mt-admin-price-row .mt-admin-read-actions button { width:100%; }
 }
 
 @media (prefers-reduced-motion:reduce) {
