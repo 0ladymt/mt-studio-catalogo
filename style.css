@@ -2393,6 +2393,15 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
 #page-admin .mt-admin-price-heading { margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
 #page-admin .mt-admin-price-heading h6,#page-admin .mt-admin-detail-form h6 { color:var(--lilac); font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; }
 #page-admin .mt-admin-price-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:8px; padding:12px; border:1px solid #342d39; background:#101014; min-width:0; }
+#page-admin .mt-admin-media-row,#page-admin .mt-admin-file-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; margin-top:8px; padding:13px; border:1px solid #342d39; background:#101014; min-width:0; }
+#page-admin .mt-admin-media-row > .mt-admin-detail-form,#page-admin .mt-admin-file-row > .mt-admin-detail-form { grid-column:1/-1; width:100%; }
+#page-admin .mt-admin-file-heading { margin-top:20px; }
+#page-admin .mt-admin-checksum { display:block; margin-top:5px; color:#bdb1c6; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:.68rem; line-height:1.55; overflow-wrap:anywhere; }
+#page-admin .mt-admin-readiness { border-left:2px solid #776982; padding-left:16px; }
+#page-admin .mt-admin-readiness.is-ready { border-left-color:var(--mt-purple); }
+#page-admin .mt-admin-readiness__state { display:block; color:var(--lilac); }
+#page-admin .mt-admin-readiness > p { margin:8px 0 0; color:var(--muted); font-size:.74rem; line-height:1.65; }
+#page-admin .mt-admin-readiness__list { margin:10px 0 0; padding-left:20px; color:var(--text); font-size:.76rem; line-height:1.8; }
 #page-admin .mt-admin-detail-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; margin:14px 0; padding:16px; border:1px solid #51435d; background:#0f0d13; }
 #page-admin .mt-admin-detail-form h6,#page-admin .mt-admin-detail-form .admin-description,#page-admin .mt-admin-detail-form .form-actions,#page-admin .mt-admin-detail-form .mt-admin-form-note { grid-column:1/-1; margin-top:0; }
 #page-admin .mt-admin-detail-form label { display:flex; flex-direction:column; gap:7px; min-width:0; color:var(--muted); font-size:.74rem; }
@@ -2474,6 +2483,8 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
  #page-admin .mt-admin-read-heading button,#page-admin .mt-admin-read-actions button { width:100%; }
  #page-admin .mt-admin-product-row { grid-template-columns:1fr; }
  #page-admin .mt-admin-version-card__title,#page-admin .mt-admin-price-row { align-items:stretch; flex-direction:column; }
+ #page-admin .mt-admin-media-row,#page-admin .mt-admin-file-row { grid-template-columns:1fr; align-items:stretch; }
+ #page-admin .mt-admin-media-row > .mt-admin-detail-form,#page-admin .mt-admin-file-row > .mt-admin-detail-form { grid-column:auto; }
  #page-admin .mt-admin-detail-form { grid-template-columns:1fr; padding:14px; }
  #page-admin .mt-admin-detail-heading,#page-admin .mt-admin-price-heading { align-items:stretch; flex-direction:column; }
  #page-admin .mt-admin-detail-heading button,#page-admin .mt-admin-price-heading button,#page-admin .mt-admin-price-row .mt-admin-read-actions button { width:100%; }

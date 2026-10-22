@@ -336,6 +336,18 @@
     if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
     return "Não foi possível atualizar o preço. Tente novamente quando o serviço estiver disponível.";
   }
+  function mediaError(error) {
+    if (error.status === 400) return "Confira o caminho interno, o texto alternativo e a ordem da mídia.";
+    if (error.status === 409) return "Esta mídia ou produto não permite a operação solicitada.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível atualizar a mídia. Tente novamente quando o serviço estiver disponível.";
+  }
+  function fileError(error) {
+    if (error.status === 400) return "Confira nome, tipo, tamanho, SHA-256 e ordem do arquivo.";
+    if (error.status === 409) return "Esta versão ou arquivo não permite a operação solicitada.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível atualizar o arquivo. Tente novamente quando o serviço estiver disponível.";
+  }
   function versionPayload(form) {
     const values = new FormData(form);
     return {
@@ -407,6 +419,179 @@
       } catch (error) { detailStatus(priceError(error), "error"); submit.disabled = false; }
     });
     return form;
+  }
+  function mediaForm(product, media, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form mt-admin-media-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>${media ? "EDITAR MÍDIA." : "REGISTRAR MÍDIA."}</h6>
+      ${media ? "" : '<label class="admin-description">Caminho interno<input name="storageKey" required minlength="10" maxlength="500" autocomplete="off" placeholder="products/produto/media/capa.webp"></label>'}
+      <label class="admin-description">Texto alternativo<input name="altText" required minlength="2" maxlength="240"></label>
+      <label>Ordem<input name="sortOrder" type="number" required min="0" max="100000" step="1"></label>
+      <p class="mt-admin-form-note">Somente metadados são registrados. Nenhuma imagem é enviada por este formulário.</p>
+      <div class="form-actions"><button class="mt-button" type="submit">Salvar mídia</button><button type="button" data-cancel>Cancelar</button></div>`;
+    if (media) {
+      form.elements.altText.value = media.altText;
+      form.elements.sortOrder.value = String(media.sortOrder);
+    } else {
+      form.elements.storageKey.placeholder = `products/${product.id}/media/capa.webp`;
+      form.elements.sortOrder.value = "0";
+    }
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const values = new FormData(form);
+      const input = {
+        altText: String(values.get("altText") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+        sortOrder: Number(values.get("sortOrder")),
+      };
+      if (!media) input.storageKey = String(values.get("storageKey") || "").normalize("NFKC").trim();
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Salvando mídia…");
+      try {
+        await mutateCatalog(media ? `/api/admin/media/${encodeURIComponent(media.id)}` : `/api/admin/products/${encodeURIComponent(product.id)}/media`, media ? "PATCH" : "POST", input);
+        await loadDetail(product.id, productTrigger);
+        detailStatus(media ? "Mídia atualizada com sucesso." : "Metadados da mídia registrados sem upload.", "success");
+      } catch (error) { detailStatus(mediaError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function fileForm(product, version, file, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form mt-admin-file-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>${file ? "EDITAR METADADOS DO ARQUIVO." : "REGISTRAR ARQUIVO PRIVADO."}</h6>
+      ${file ? "" : '<label class="admin-description">Chave privada de armazenamento<input name="storageKey" required minlength="10" maxlength="700" autocomplete="off" placeholder="products/produto/versions/1/files/pack.zip"></label>'}
+      <label>Nome apresentado<input name="displayName" required minlength="2" maxlength="240"></label>
+      <label>Tipo MIME<input name="mimeType" required minlength="3" maxlength="150" placeholder="application/zip"></label>
+      <label>Tamanho em bytes<input name="sizeBytes" type="number" required min="1" max="9007199254740991" step="1"></label>
+      <label class="admin-description">Checksum SHA-256<input name="checksumSha256" required minlength="64" maxlength="64" pattern="[0-9a-fA-F]{64}" autocomplete="off"></label>
+      <label>Ordem<input name="sortOrder" type="number" required min="0" max="100000" step="1"></label>
+      <p class="mt-admin-form-note">O registro começa como <strong>Somente metadados</strong>. Verificação e prontidão dependem do futuro armazenamento seguro.</p>
+      <div class="form-actions"><button class="mt-button" type="submit">Salvar arquivo</button><button type="button" data-cancel>Cancelar</button></div>`;
+    if (file) {
+      for (const key of ["displayName", "mimeType", "sizeBytes", "checksumSha256", "sortOrder"]) form.elements[key].value = String(file[key]);
+    } else {
+      form.elements.storageKey.placeholder = `products/${product.id}/versions/${version.id}/files/pack.zip`;
+      form.elements.sortOrder.value = "0";
+    }
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const values = new FormData(form);
+      const input = {
+        displayName: String(values.get("displayName") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+        mimeType: String(values.get("mimeType") || "").trim(),
+        sizeBytes: Number(values.get("sizeBytes")),
+        checksumSha256: String(values.get("checksumSha256") || "").trim().toLowerCase(),
+        sortOrder: Number(values.get("sortOrder")),
+      };
+      if (!file) input.storageKey = String(values.get("storageKey") || "").normalize("NFKC").trim();
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Salvando metadados do arquivo…");
+      try {
+        await mutateCatalog(file ? `/api/admin/files/${encodeURIComponent(file.id)}` : `/api/admin/versions/${encodeURIComponent(version.id)}/files`, file ? "PATCH" : "POST", input);
+        await loadDetail(product.id, productTrigger);
+        detailStatus(file ? "Metadados do arquivo atualizados." : "Arquivo registrado como somente metadados; nenhum upload foi realizado.", "success");
+      } catch (error) { detailStatus(fileError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function renderMediaManager(product, items, productTrigger) {
+    const manager = el("section", "mt-admin-detail-section mt-admin-media-manager");
+    const heading = el("div", "mt-admin-detail-heading");
+    heading.append(el("h5", "", "Mídias comerciais"));
+    if (canWriteCatalog && product.status !== "archived") {
+      const add = el("button", "", "Registrar mídia"); add.type = "button";
+      add.addEventListener("click", () => {
+        const old = manager.querySelector(".mt-admin-media-form"); if (old) old.remove();
+        const form = mediaForm(product, null, productTrigger, () => { form.remove(); detailStatus("Cadastro de mídia cancelado."); add.focus(); });
+        heading.after(form); form.elements.storageKey.focus();
+      });
+      heading.append(add);
+    }
+    manager.append(heading);
+    if (!items.length) manager.append(el("p", "mt-admin-read-empty", "Nenhuma mídia cadastrada."));
+    for (const media of items) {
+      const row = el("article", "mt-admin-media-row");
+      const copy = el("div", "mt-admin-read-copy");
+      copy.append(el("strong", "", media.altText), el("span", "", `${media.mediaType === "cover" ? "Capa principal" : "Galeria"} · ${label(media.status)} · ordem ${media.sortOrder}`));
+      row.append(copy);
+      if (canWriteCatalog && media.status === "active") {
+        const actions = el("div", "mt-admin-read-actions");
+        const edit = el("button", "", "Editar mídia"); edit.type = "button";
+        edit.addEventListener("click", () => {
+          const old = row.querySelector(".mt-admin-media-form"); if (old) old.remove();
+          const form = mediaForm(product, media, productTrigger, () => { form.remove(); detailStatus("Edição de mídia cancelada."); edit.focus(); });
+          actions.after(form); form.elements.altText.focus();
+        }); actions.append(edit);
+        if (media.mediaType !== "cover") {
+          const cover = el("button", "", "Definir como capa"); cover.type = "button";
+          cover.addEventListener("click", () => confirmDetailAction(actions, "Confirmar capa", async () => {
+            await mutateCatalog(`/api/admin/media/${encodeURIComponent(media.id)}/cover`, "POST", {});
+            await loadDetail(product.id, productTrigger); detailStatus("Capa principal atualizada; a mídia anterior foi preservada.", "success");
+          }, () => detailStatus("Seleção de capa cancelada."), mediaError)); actions.append(cover);
+        }
+        const deactivate = el("button", "", "Desativar mídia"); deactivate.type = "button";
+        deactivate.addEventListener("click", () => confirmDetailAction(actions, "Confirmar desativação", async () => {
+          await mutateCatalog(`/api/admin/media/${encodeURIComponent(media.id)}/deactivate`, "POST", {});
+          await loadDetail(product.id, productTrigger); detailStatus("Mídia desativada sem exclusão do histórico.", "success");
+        }, () => detailStatus("Desativação da mídia cancelada."), mediaError)); actions.append(deactivate);
+        row.append(actions);
+      }
+      manager.append(row);
+    }
+    return manager;
+  }
+  function renderFileManager(product, entry, productTrigger, card) {
+    const { version, files } = entry;
+    const heading = el("div", "mt-admin-price-heading mt-admin-file-heading");
+    heading.append(el("h6", "", "Arquivos privados"));
+    const mutable = canWriteCatalog && version.status !== "retired" && !version.lockedAt;
+    if (mutable) {
+      const add = el("button", "", "Registrar arquivo"); add.type = "button";
+      add.addEventListener("click", () => {
+        const old = card.querySelector(".mt-admin-file-form"); if (old) old.remove();
+        const form = fileForm(product, version, null, productTrigger, () => { form.remove(); detailStatus("Cadastro de arquivo cancelado."); add.focus(); });
+        heading.after(form); form.elements.storageKey.focus();
+      }); heading.append(add);
+    }
+    card.append(heading);
+    if (!files.length) card.append(el("p", "mt-admin-read-empty", "Nenhum arquivo privado registrado para esta versão."));
+    for (const file of files) {
+      const row = el("div", "mt-admin-file-row");
+      const copy = el("div", "mt-admin-read-copy");
+      copy.append(el("strong", "", file.displayName), el("span", "", `${label(file.storageStatus)} · ${label(file.status)} · ${file.mimeType} · ${size(file.sizeBytes)} · ordem ${file.sortOrder}`), el("code", "mt-admin-checksum", `SHA-256 ${file.checksumSha256}`));
+      row.append(copy);
+      if (mutable && file.status !== "retired") {
+        const actions = el("div", "mt-admin-read-actions");
+        const edit = el("button", "", "Editar arquivo"); edit.type = "button";
+        edit.addEventListener("click", () => {
+          const old = row.querySelector(".mt-admin-file-form"); if (old) old.remove();
+          const form = fileForm(product, version, file, productTrigger, () => { form.remove(); detailStatus("Edição de arquivo cancelada."); edit.focus(); });
+          actions.after(form); form.elements.displayName.focus();
+        }); actions.append(edit);
+        const retire = el("button", "", "Retirar arquivo"); retire.type = "button";
+        retire.addEventListener("click", () => confirmDetailAction(actions, "Confirmar retirada", async () => {
+          await mutateCatalog(`/api/admin/files/${encodeURIComponent(file.id)}/retire`, "POST", {});
+          await loadDetail(product.id, productTrigger); detailStatus("Arquivo retirado e metadados preservados no histórico.", "success");
+        }, () => detailStatus("Retirada do arquivo cancelada."), fileError)); actions.append(retire);
+        row.append(actions);
+      }
+      card.append(row);
+    }
+  }
+  function renderReadiness(readiness) {
+    const manager = el("section", `mt-admin-detail-section mt-admin-readiness${readiness.ready ? " is-ready" : ""}`);
+    manager.append(el("h5", "", "Prontidão para publicação"));
+    manager.append(el("strong", "mt-admin-readiness__state", readiness.ready ? "Pronto para publicação" : "Configuração incompleta"));
+    if (readiness.ready) manager.append(el("p", "", "Todas as verificações atuais foram atendidas. Esta consulta não publica nem altera o produto."));
+    else {
+      const list = el("ul", "mt-admin-readiness__list");
+      for (const item of readiness.blockers || []) list.append(el("li", "", blockers[item] || item));
+      manager.append(list, el("p", "mt-admin-form-note", "Arquivos em estado somente metadados não contam como prontos para entrega."));
+    }
+    return manager;
   }
   function renderVersionManager(product, related, productTrigger) {
     const manager = el("section", "mt-admin-detail-section mt-admin-version-manager");
@@ -487,6 +672,7 @@
         }
         card.append(priceRow);
       }
+      renderFileManager(product, entry, productTrigger, card);
       manager.append(card);
     }
     manager.append(el("p", "mt-admin-detail-status", ""));
@@ -531,15 +717,9 @@
       const readiness = readinessBody.readiness;
       detailNode.replaceChildren();
       detailNode.append(el("h4", "", product.name), el("p", "", product.description), dataRow("Estado", label(product.status)), dataRow("Slug", product.slug));
-      const readinessRows = readiness.ready
-        ? [dataRow("Pronto para publicação", "Todas as verificações atuais foram atendidas")]
-        : (readiness.blockers || []).map(item => dataRow("Pendente", blockers[item] || item));
-      detailNode.append(section("Prontidão", readinessRows, "Prontidão indisponível."));
-      detailNode.append(section("Mídias", (mediaBody.items || []).map(item => dataRow(item.altText || "Mídia", `${item.mediaType === "cover" ? "Capa" : "Galeria"} · ${label(item.status)}`)), "Nenhuma mídia cadastrada."));
+      detailNode.append(renderReadiness(readiness));
+      detailNode.append(renderMediaManager(product, mediaBody.items || [], trigger));
       detailNode.append(renderVersionManager(product, related, trigger));
-      const fileRows = [];
-      for (const entry of related) entry.files.forEach(item => fileRows.push(dataRow(item.displayName, `${size(item.sizeBytes)} · ${label(item.storageStatus)} · ${label(item.status)}`)));
-      detailNode.append(section("Arquivos", fileRows, "Nenhum arquivo cadastrado."));
       trigger.focus({ preventScroll: true });
     } catch (error) {
       if (current !== run) return;
