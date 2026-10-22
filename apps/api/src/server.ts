@@ -3,12 +3,16 @@ import { createApp } from "./app.js";
 import { readEnvironment } from "./config/env.js";
 import { createSupabaseAuthGateway } from "./services/supabase.js";
 import { createAdminSupabaseGateway } from "./services/admin-supabase.js";
+import { createStorageUploadSupabaseGateway } from "./services/storage-upload-supabase.js";
+import { unavailableObjectStorage } from "./storage/object-storage.js";
 
 const environment = readEnvironment();
 const app = createApp(
   createSupabaseAuthGateway(environment),
   environment,
   createAdminSupabaseGateway(environment),
+  unavailableObjectStorage(),
+  createStorageUploadSupabaseGateway(environment),
 );
 
 serve({

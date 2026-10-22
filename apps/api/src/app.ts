@@ -18,7 +18,11 @@ import type { AdminGateway } from "./types/admin.js";
 import { permissionsForRole } from "./auth/staff-permissions.js";
 import { requireStaff, type StaffVariables } from "./middleware/require-staff.js";
 import { AdminOperationError, unavailableAdminGateway } from "./services/admin-supabase.js";
-import { categoryInputSchema, fileInputSchema, fileUpdateSchema, identifierSchema, mediaInputSchema, mediaUpdateSchema, paginationSchema, priceInputSchema, productInputSchema, productListQuerySchema, publishProductSchema, unpublishProductSchema, versionInputSchema } from "./admin/validation.js";
+import { categoryInputSchema, fileInputSchema, fileUpdateSchema, identifierSchema, mediaInputSchema, mediaUpdateSchema, paginationSchema, priceInputSchema, productInputSchema, productListQuerySchema, publishProductSchema, storageUploadRequestSchema, unpublishProductSchema, versionInputSchema } from "./admin/validation.js";
+import type { ObjectStorage } from "./types/storage.js";
+import type { StorageUploadGateway } from "./types/storage.js";
+import { unavailableObjectStorage, StorageUnavailableError } from "./storage/object-storage.js";
+import { unavailableStorageUploadGateway } from "./services/storage-upload-supabase.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
@@ -29,6 +33,8 @@ export function createApp(
   gateway: AuthGateway,
   environment: ApiEnvironment,
   adminGateway: AdminGateway = unavailableAdminGateway(),
+  objectStorage: ObjectStorage = unavailableObjectStorage(),
+  storageUploads: StorageUploadGateway = unavailableStorageUploadGateway(),
 ) {
   const app = new Hono<{ Variables: AuthVariables & StaffVariables }>();
   const sessions = new SessionManager(gateway, environment);
@@ -298,6 +304,30 @@ export function createApp(
   app.get("/api/admin/files/:id",requireStaff(sessions,adminGateway,["catalog:read"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.json({error:"invalid_file_id"},400);try{const file=await adminGateway.getFile(id.data);return file?c.json({file}):c.json({error:"file_not_found"},404);}catch(e){return adminErrorResponse(c,e);}});
   app.patch("/api/admin/files/:id",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=fileUpdateSchema.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_file_data"},400);try{return c.json({file:await adminGateway.updateFile(c.get("user").id,randomUUID(),id.data,i.data)});}catch(e){return adminErrorResponse(c,e);}});
   app.post("/api/admin/files/:id/retire",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=zEmptyObject.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_file_retire_data"},400);try{return c.json({file:await adminGateway.retireFile(c.get("user").id,randomUUID(),id.data)});}catch(e){return adminErrorResponse(c,e);}});
+  app.post("/api/admin/files/:id/uploads",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{
+    const fileId=identifierSchema.safeParse(c.req.param("id")),input=storageUploadRequestSchema.safeParse(await safeJson(c));
+    if(!fileId.success||!input.success)return c.json({error:"invalid_storage_upload_data"},400);
+    try{
+      const file=await adminGateway.getFile(fileId.data);
+      if(!file)return c.json({error:"file_not_found"},404);
+      const expiresAt=new Date(Date.now()+10*60*1000);
+      const upload=await storageUploads.beginUpload(c.get("user").id,input.data.requestId,file.id,expiresAt.toISOString());
+      if(upload.status!=="initiated"||new Date(upload.expiresAt).getTime()<=Date.now())return c.json({error:"storage_upload_expired"},409);
+      const signed=await objectStorage.createPresignedPut({objectKey:upload.objectKey,contentType:file.mimeType,sizeBytes:file.sizeBytes,expiresAt:new Date(upload.expiresAt)});
+      return c.json({upload:{id:upload.id,status:upload.status,method:signed.method,url:signed.url,headers:signed.headers,expiresAt:signed.expiresAt}},201);
+    }catch(e){if(e instanceof StorageUnavailableError)return c.json({error:"object_storage_unavailable"},503);return adminErrorResponse(c,e);}
+  });
+  app.post("/api/admin/storage-uploads/:id/confirm",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{
+    const uploadId=identifierSchema.safeParse(c.req.param("id")),input=storageUploadRequestSchema.safeParse(await safeJson(c));
+    if(!uploadId.success||!input.success)return c.json({error:"invalid_storage_confirmation_data"},400);
+    try{
+      const upload=await storageUploads.getUpload(uploadId.data);
+      if(!upload)return c.json({error:"storage_upload_not_found"},404);
+      const inspection=await objectStorage.inspectObject(upload.objectKey);
+      const result=await storageUploads.confirmUpload(c.get("user").id,input.data.requestId,upload.id,inspection);
+      return c.json({upload:{id:result.id,status:result.status,failureCode:result.failureCode},fileStorageStatus:result.status==="verified"?"verified":"metadata_only"});
+    }catch(e){if(e instanceof StorageUnavailableError)return c.json({error:"object_storage_unavailable"},503);return adminErrorResponse(c,e);}
+  });
   app.get("/api/admin/products/:id/readiness",requireStaff(sessions,adminGateway,["catalog:read"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.json({error:"invalid_product_id"},400);try{return c.json({readiness:await adminGateway.getPublicationReadiness(c.get("user").id,id.data)});}catch(e){return adminErrorResponse(c,e);}});
   app.post("/api/admin/products/:id/publish",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:publish"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=publishProductSchema.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_product_publication"},400);try{return c.json({product:await adminGateway.publishProduct(c.get("user").id,i.data.requestId,id.data,i.data.versionId)});}catch(e){return adminErrorResponse(c,e);}});
   app.post("/api/admin/products/:id/unpublish",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:publish"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),i=unpublishProductSchema.safeParse(await safeJson(c));if(!id.success||!i.success)return c.json({error:"invalid_product_unpublication"},400);try{return c.json({product:await adminGateway.unpublishProduct(c.get("user").id,i.data.requestId,id.data,i.data.reason)});}catch(e){return adminErrorResponse(c,e);}});
