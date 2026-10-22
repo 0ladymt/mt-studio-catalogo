@@ -27,7 +27,7 @@ const uploads=createStorageUploadSupabaseGateway(environment);
 const jobs=createStorageVerificationGateway(environment);
 const upload=await uploads.getUpload(uploadId);
 if(!upload)throw new Error("storage-upload-not-found");
-const job=await jobs.create(actor,upload.id);
+const job=(await jobs.getByUpload(upload.id))??await jobs.create(actor,upload.id);
 if(job.status==="completed"){
   console.info("Verification already completed; no object was changed.");
   process.exit(0);

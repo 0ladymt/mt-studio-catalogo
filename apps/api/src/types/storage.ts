@@ -48,6 +48,7 @@ export interface ObjectStorage {
 export interface StorageUploadGateway {
   beginUpload(actorUserId: string, requestId: string, productFileId: string, expiresAt: string): Promise<StorageUpload>;
   getUpload(uploadId: string): Promise<StorageUpload | null>;
+  getLatestForFile?(productFileId: string): Promise<StorageUpload | null>;
   confirmUpload(
     actorUserId: string,
     requestId: string,
@@ -61,8 +62,18 @@ export type MultipartPart={partNumber:number;sizeBytes:number;providerEtag:strin
 export interface MultipartUploadGateway{
   begin(actor:string,requestId:string,storageUploadId:string,providerUploadId:string,partSizeBytes:number):Promise<MultipartSession>;
   get(id:string):Promise<MultipartSession|null>;
+  getByUpload?(storageUploadId:string):Promise<MultipartSession|null>;
   listParts(id:string):Promise<MultipartPart[]>;
   recordPart(actor:string,id:string,part:MultipartPart):Promise<MultipartPart>;
   complete(actor:string,requestId:string,id:string):Promise<MultipartSession>;
   cancel(actor:string,requestId:string,id:string):Promise<MultipartSession>;
+}
+
+export type VerificationJob={id:string;storageUploadId:string;status:"pending"|"verifying"|"completed"|"failed"|"expired";attempts:number;leaseOwner:string|null;observedSizeBytes:number|null;observedChecksumSha256:string|null;failureCode:string|null};
+export interface StorageVerificationGateway{
+  create(actor:string,uploadId:string,idempotencyKey?:string):Promise<VerificationJob>;
+  getByUpload(uploadId:string):Promise<VerificationJob|null>;
+  claim(actor:string,jobId:string,workerId:string,leaseSeconds:number):Promise<VerificationJob>;
+  heartbeat(actor:string,jobId:string,workerId:string,leaseSeconds:number):Promise<VerificationJob>;
+  finish(actor:string,jobId:string,workerId:string,input:{succeeded:boolean;sizeBytes:number|null;checksumSha256:string|null;failureCode:string|null},requestId?:string):Promise<VerificationJob>;
 }

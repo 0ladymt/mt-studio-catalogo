@@ -2408,6 +2408,15 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
 #page-admin .mt-admin-upload-message { min-height:1.4em; margin:0; color:var(--muted); font-size:.72rem; line-height:1.6; }
 #page-admin .mt-admin-upload[data-state="Envio concluído — aguardando verificação"] { border-left:2px solid var(--purple); }
 #page-admin .mt-admin-upload[data-state="Pausado"],#page-admin .mt-admin-upload[data-state="Aguardando retomada"] { border-left:2px solid #8f7b9e; }
+#page-admin .mt-admin-verification { display:grid; gap:10px; margin:10px 0 18px; padding:16px; border:1px solid #43384c; background:#121016; min-width:0; }
+#page-admin .mt-admin-verification > strong { color:var(--lilac); font-size:.78rem; letter-spacing:.06em; text-transform:uppercase; }
+#page-admin .mt-admin-verification-state { color:var(--text); font-size:.78rem; font-weight:700; }
+#page-admin .mt-admin-verification-description,#page-admin .mt-admin-verification-instructions,#page-admin .mt-admin-verification-message { margin:0; color:var(--muted); font-size:.72rem; line-height:1.6; overflow-wrap:anywhere; }
+#page-admin .mt-admin-verification-command { display:block; padding:10px; border:1px solid #51435d; background:#0b0a0d; color:#ddd; font-size:.7rem; overflow-wrap:anywhere; user-select:all; }
+#page-admin .mt-admin-verification-command[hidden] { display:none; }
+#page-admin .mt-admin-verification[data-state="completed"] { border-left:2px solid #62b98a; }
+#page-admin .mt-admin-verification[data-state="failed"] { border-left:2px solid #d46a77; }
+#page-admin .mt-admin-verification[data-state="pending"],#page-admin .mt-admin-verification[data-state="verifying"],#page-admin .mt-admin-verification[data-state="awaiting"] { border-left:2px solid var(--purple); }
 #page-admin .mt-admin-readiness { border-left:2px solid #776982; padding-left:16px; }
 #page-admin .mt-admin-readiness.is-ready { border-left-color:var(--mt-purple); }
 #page-admin .mt-admin-readiness__state { display:block; color:var(--lilac); }
@@ -2483,6 +2492,9 @@ body { background-color:#000; background-image:url("assets/brand/wall-grain.svg"
  #page-admin .mt-admin-upload { padding:13px; }
  #page-admin .mt-admin-upload .mt-admin-read-actions { display:grid; grid-template-columns:1fr; width:100%; }
  #page-admin .mt-admin-upload .mt-admin-read-actions button { width:100%; }
+ #page-admin .mt-admin-verification { padding:13px; }
+ #page-admin .mt-admin-verification .mt-admin-read-actions { display:grid; grid-template-columns:1fr; width:100%; }
+ #page-admin .mt-admin-verification .mt-admin-read-actions button { width:100%; }
 }
 
 @media (max-width:820px) {

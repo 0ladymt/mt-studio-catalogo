@@ -44,6 +44,11 @@ export function createStorageUploadSupabaseGateway(environment: ApiEnvironment):
       if (error) throw new AdminOperationError(error.code);
       return data ? mapUpload(data) : null;
     },
+    async getLatestForFile(productFileId) {
+      const { data, error } = await client.from("storage_uploads").select(UPLOAD_COLUMNS).eq("product_file_id", productFileId).order("created_at", { ascending:false }).limit(1).maybeSingle<UploadRow>();
+      if (error) throw new AdminOperationError(error.code);
+      return data ? mapUpload(data) : null;
+    },
     async confirmUpload(actorUserId, requestId, uploadId, inspection) {
       return uploadRpc(rpc, "admin_confirm_storage_upload", {
         p_actor_user_id: actorUserId,
@@ -59,7 +64,7 @@ export function createStorageUploadSupabaseGateway(environment: ApiEnvironment):
 }
 
 export function unavailableStorageUploadGateway(): StorageUploadGateway {
-  return { beginUpload: unavailable, getUpload: unavailable, confirmUpload: unavailable };
+  return { beginUpload: unavailable, getUpload: unavailable, getLatestForFile: unavailable, confirmUpload: unavailable };
 }
 
 async function unavailable(): Promise<never> {

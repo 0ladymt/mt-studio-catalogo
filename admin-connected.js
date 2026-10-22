@@ -153,6 +153,7 @@
       record.completed = true; rememberMultipart(fileMeta.id, record);
       setUploadPresentation(panel, "Envio concluído — aguardando verificação", session.totalParts, session.totalParts);
       panel.querySelector(".mt-admin-upload-message").textContent = "O staging foi concluído. O arquivo ainda precisa da verificação SHA-256 confiável.";
+      document.dispatchEvent(new CustomEvent("mt-storage-upload-completed", { detail:{ fileId:fileMeta.id } }));
       pause.disabled = true;
     } catch (error) {
       controller.abort();
@@ -208,6 +209,62 @@
       if (record?.multipartId) await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}/cancel`, "POST", { requestId:crypto.randomUUID() });
       rememberMultipart(fileMeta.id, null); multipartFiles.delete(fileMeta.id); chooser.value = ""; setUploadPresentation(panel, "Cancelado", 0, 0); message.textContent = "Upload cancelado. Nenhum arquivo final verificado foi removido."; controls.replaceChildren(start, pause, cancel); cancel.disabled = true; start.textContent = "Iniciar envio";
     }, () => { controls.replaceChildren(start, pause, cancel); message.textContent = "Cancelamento descartado; o upload foi preservado."; }, uploadError));
+    return panel;
+  }
+  function verificationError(error) {
+    if (error?.status === 401 || error?.status === 403) return "Sua sessão ou permissão não autoriza esta verificação.";
+    if (error?.status === 409) return "O upload ainda não está concluído ou seu estado mudou.";
+    return "Não foi possível consultar ou solicitar a verificação agora.";
+  }
+  function renderVerificationPanel(fileMeta) {
+    const panel = el("section", "mt-admin-verification"); panel.dataset.fileId = fileMeta.id;
+    const title = el("strong", "", "Verificação de integridade");
+    const status = el("span", "mt-admin-verification-state", "Consultando estado…");
+    const description = el("p", "mt-admin-verification-description", `${fileMeta.displayName} · ${size(fileMeta.sizeBytes)} · SHA-256 integral`);
+    const instructions = el("p", "mt-admin-verification-instructions", "A verificação é executada pela ferramenta administrativa local, nunca pelo navegador.");
+    const command = el("code", "mt-admin-verification-command"); command.hidden = true;
+    const controls = el("div", "mt-admin-read-actions");
+    const requestButton = el("button", "mt-admin-verification-request", "Verificar integridade"); requestButton.type = "button"; requestButton.disabled = true;
+    const refreshButton = el("button", "", "Atualizar estado"); refreshButton.type = "button";
+    const message = el("p", "mt-admin-verification-message", ""); message.setAttribute("role", "status"); message.setAttribute("aria-live", "polite");
+    controls.append(requestButton, refreshButton); panel.append(title, status, description, instructions, command, controls, message);
+    let current = null, polling = 0;
+    const present = verification => {
+      current = verification; const job = verification.job;
+      command.hidden = true; requestButton.disabled = true;
+      if (verification.fileStorageStatus === "verified" || job?.status === "completed") {
+        status.textContent = "Verificado"; panel.dataset.state = "completed"; instructions.textContent = "SHA-256 integral confirmado pelo verificador confiável. O arquivo ainda não está pronto para entrega.";
+      } else if (job?.status === "verifying") {
+        status.textContent = "Verificando"; panel.dataset.state = "verifying"; instructions.textContent = "A ferramenta local está lendo integralmente os bytes armazenados.";
+      } else if (job?.status === "failed") {
+        status.textContent = "Falha na verificação"; panel.dataset.state = "failed"; requestButton.disabled = !canWriteCatalog; requestButton.textContent = "Solicitar nova tentativa"; instructions.textContent = "A falha não promoveu o arquivo. Uma nova execução exige autorização explícita.";
+      } else if (job?.status === "pending") {
+        status.textContent = "Verificação solicitada"; panel.dataset.state = "pending"; command.textContent = `npm run storage:verify -- ${verification.upload.id}`; command.hidden = false; instructions.textContent = "Execute o comando abaixo no computador local. A CLI abrirá a autorização autenticada de uso único.";
+      } else if (verification.multipartStatus === "completed" && verification.upload) {
+        status.textContent = "Envio concluído — aguardando verificação"; panel.dataset.state = "awaiting"; requestButton.disabled = !canWriteCatalog; requestButton.textContent = "Verificar integridade";
+      } else {
+        status.textContent = "Aguardando conclusão do envio"; panel.dataset.state = "uploading"; instructions.textContent = "Conclua o staging multipart antes de solicitar a verificação.";
+      }
+      if (["pending", "verifying"].includes(job?.status) && !polling) polling = window.setTimeout(async () => { polling = 0; if (panel.isConnected) await refresh(); }, 2000);
+    };
+    const refresh = async () => { try { const body = await request(`/api/admin/files/${encodeURIComponent(fileMeta.id)}/verification`); present(body.verification); message.textContent = ""; } catch (error) { message.textContent = verificationError(error); } };
+    requestButton.addEventListener("click", () => {
+      if (!current?.upload?.id) return;
+      const original = [...controls.childNodes]; controls.replaceChildren();
+      const confirm = el("button", "mt-admin-verification-confirm", "Confirmar solicitação"); confirm.type = "button";
+      const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+      confirm.addEventListener("click", async () => { confirm.disabled = true; cancel.disabled = true; message.textContent = "Registrando solicitação segura…"; try { const body = await mutateCatalog(`/api/admin/storage-uploads/${encodeURIComponent(current.upload.id)}/verification-jobs`, "POST", { requestId:crypto.randomUUID() }); present({ ...current, job:body.verification.job }); controls.replaceChildren(...original); message.textContent = "Solicitação registrada. Execute a ferramenta local e autorize a operação no navegador."; } catch (error) { controls.replaceChildren(...original); message.textContent = verificationError(error); } });
+      cancel.addEventListener("click", () => { controls.replaceChildren(...original); message.textContent = "Solicitação cancelada; nenhum job foi criado."; requestButton.focus(); });
+      controls.append(confirm, cancel); confirm.focus();
+    });
+    refreshButton.addEventListener("click", refresh);
+    const refreshAfterUpload = event => {
+      if (event.detail?.fileId !== fileMeta.id || !panel.isConnected) return;
+      document.removeEventListener("mt-storage-upload-completed", refreshAfterUpload);
+      refresh();
+    };
+    document.addEventListener("mt-storage-upload-completed", refreshAfterUpload);
+    refresh();
     return panel;
   }
   function renderSummary(access, categoryTotal, productTotal) {
@@ -706,6 +763,7 @@
       }
       card.append(row);
       if (mutable && file.status === "active" && file.storageStatus === "metadata_only") card.append(renderUploadPanel(file));
+      if (file.status === "active" && ["metadata_only", "verified"].includes(file.storageStatus)) card.append(renderVerificationPanel(file));
     }
   }
   function renderReadiness(readiness) {
