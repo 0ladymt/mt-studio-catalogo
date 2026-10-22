@@ -24,6 +24,11 @@ approval and consumption. Creation and consumption are enabled only in local
 development/test, reject browser Origin headers and are rate-limited. A UUID
 supplied by the operator is never accepted as proof of authorization.
 
+The CLI polls at ten-second intervals so a three-minute authorization stays
+below the loopback BFF fixed-window limit. HTTP 429 and temporary connection
+failures are treated as transient only until the authorization deadline; they
+do not extend it, create a second authorization or bypass explicit consent.
+
 For normal application operation, `STORAGE_PROVIDER=disabled` remains the
 default. A controlled verification run must enable the provider only in its
 private process environment. Output contains status and sanitized failure
@@ -68,7 +73,13 @@ future, separately approved work.
 ## Future job compatibility
 
 An on-demand Railway worker can reuse the storage adapter, streaming integrity
-core and job RPCs. It needs shared private environment variables and the same
-short-lived/managed worker identity model; it must not embed an operator UUID.
+core and job RPCs. In production it must use a dedicated server-side service
+identity with narrowly scoped verification permission and short-lived job
+credentials issued by the BFF or a trusted scheduler. That identity must be
+stored in the deployment secret manager, independently revocable, bound to one
+job/upload and recorded in the audit log. It must not reuse a personal browser
+session, the local consent endpoint, a copied Supabase token or an embedded
+operator UUID. The local CLI endpoints remain disabled outside development and
+test.
 Multipart/resumable upload, automated staging cleanup, `verified` to `ready`,
 customer downloads and product publication are outside this phase.

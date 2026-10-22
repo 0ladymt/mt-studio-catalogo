@@ -2,6 +2,7 @@
 node_modules/
 coverage/
 .build/
+.local-storage/
 
 # Local environment files. Examples remain tracked.
 .env

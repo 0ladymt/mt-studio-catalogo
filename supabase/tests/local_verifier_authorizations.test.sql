@@ -22,11 +22,11 @@ select throws_ok($$select public.approve_local_verifier_authorization('b1000000-
 select throws_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000003',gen_random_uuid(),(select id from public.local_verifier_authorizations limit 1))$$,'42501',null,'inactive staff cannot approve');
 select lives_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000001','b7000000-0000-4000-8000-000000000001',(select id from public.local_verifier_authorizations limit 1))$$,'writer approves explicitly');
 select is((select status from public.local_verifier_authorizations limit 1),'approved','authorization is approved');
-select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorized'),1,'approval is audited');
+select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorized' and entity_id='b5000000-0000-4000-8000-000000000001'),1,'approval is audited');
 select throws_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations limit 1),repeat('b',64))$$,'42501',null,'wrong in-memory secret is rejected');
 select lives_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations limit 1),repeat('a',64))$$,'matching secret consumes once');
 select is((select status from public.local_verifier_authorizations limit 1),'consumed','authorization is consumed');
-select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorization_consumed'),1,'consumption is audited');
+select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorization_consumed' and entity_id='b5000000-0000-4000-8000-000000000001'),1,'consumption is audited');
 select throws_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations limit 1),repeat('a',64))$$,'42501',null,'replay is rejected');
 select lives_ok($$select public.create_local_verifier_authorization((select id from public.storage_uploads limit 1),repeat('c',64),now()+interval '3 minutes')$$,'second authorization created');
 update public.local_verifier_authorizations set expires_at=now()-interval '1 second' where secret_hash=repeat('c',64);

@@ -52,10 +52,12 @@ function failureFor(exists:boolean,size:number|null,hash:string|null,expectedSiz
 function safeFailure(error:unknown){if(error instanceof StreamIntegrityError)return error.code;if(error instanceof R2StorageError)return error.code;return"storage_failure";}
 async function waitForAuthorization(base:string,authorizationId:string,authorizationSecret:string,expiresAt:number):Promise<{actorUserId:string;uploadId:string}>{
   while(Date.now()<expiresAt){
-    const response=await fetch(`${base}/api/local-verifier/authorizations/${authorizationId}/consume`,{method:"POST",headers:{"content-type":"application/json","x-mt-studio-cli":"1"},body:JSON.stringify({secret:authorizationSecret})});
+    let response:Response;
+    try{response=await fetch(`${base}/api/local-verifier/authorizations/${authorizationId}/consume`,{method:"POST",headers:{"content-type":"application/json","x-mt-studio-cli":"1"},body:JSON.stringify({secret:authorizationSecret})});}
+    catch{await new Promise(resolve=>setTimeout(resolve,10_000));continue;}
     if(response.ok){const value=z.object({authorization:z.object({status:z.literal("consumed"),actorUserId:id,uploadId:id})}).parse(await response.json());return value.authorization;}
-    if(response.status!==409&&response.status!==403)throw new Error("local-verifier-authorization-failed");
-    await new Promise(resolve=>setTimeout(resolve,2000));
+    if(![403,409,429].includes(response.status))throw new Error(`local-verifier-authorization-failed:${response.status}`);
+    await new Promise(resolve=>setTimeout(resolve,10_000));
   }
   throw new Error("local-verifier-authorization-expired");
 }

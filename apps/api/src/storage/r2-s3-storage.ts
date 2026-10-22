@@ -9,10 +9,12 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
 import type { ObjectInspection, ObjectStorage } from "../types/storage.js";
 import { asReadable, byteCountingStream, hashReadable } from "./stream-integrity.js";
+import { LocalFilesystemStorage } from "./local-filesystem-storage.js";
 
 const optionalSecret = z.preprocess((value) => value === "" ? undefined : value, z.string().min(1).optional());
 const r2EnvironmentSchema = z.object({
-  STORAGE_PROVIDER: z.enum(["disabled", "r2"]).default("disabled"),
+  STORAGE_PROVIDER: z.enum(["disabled", "r2", "local_filesystem"]).default("disabled"),
+  LOCAL_STORAGE_ROOT: z.string().min(1).default(".local-storage"),
   R2_ENDPOINT: optionalSecret,
   R2_REGION: z.string().min(1).default("auto"),
   R2_BUCKET: optionalSecret,
@@ -50,7 +52,8 @@ export class R2StorageError extends Error {
 
 export function createConfiguredObjectStorage(source: NodeJS.ProcessEnv): ObjectStorage | null {
   const value = r2EnvironmentSchema.parse(source);
-  if (value.STORAGE_PROVIDER !== "r2") return null;
+  if (value.STORAGE_PROVIDER === "disabled") return null;
+  if (value.STORAGE_PROVIDER === "local_filesystem")return new LocalFilesystemStorage(value.LOCAL_STORAGE_ROOT,{maxBytes:value.STORAGE_VERIFY_MAX_BYTES,timeoutMs:value.STORAGE_VERIFY_TIMEOUT_SECONDS*1000});
   return new R2S3Storage({
     endpoint: value.R2_ENDPOINT!,
     region: value.R2_REGION,
