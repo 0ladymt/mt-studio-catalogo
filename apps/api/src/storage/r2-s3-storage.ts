@@ -1,10 +1,3 @@
-import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pipeline } from "node:stream/promises";
-import { Transform } from "node:stream";
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -15,6 +8,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
 import type { ObjectInspection, ObjectStorage } from "../types/storage.js";
+import { asReadable, byteCountingStream, hashReadable } from "./stream-integrity.js";
 
 const optionalSecret = z.preprocess((value) => value === "" ? undefined : value, z.string().min(1).optional());
 const r2EnvironmentSchema = z.object({
@@ -25,6 +19,8 @@ const r2EnvironmentSchema = z.object({
   R2_ACCESS_KEY_ID: optionalSecret,
   R2_SECRET_ACCESS_KEY: optionalSecret,
   R2_UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
+  STORAGE_VERIFY_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024 * 1024),
+  STORAGE_VERIFY_TIMEOUT_SECONDS: z.coerce.number().int().min(30).max(7200).default(1800),
 }).superRefine((value, context) => {
   if (value.STORAGE_PROVIDER !== "r2") return;
   for (const field of ["R2_ENDPOINT", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const) {
@@ -42,6 +38,8 @@ type R2Configuration = {
   accessKeyId: string;
   secretAccessKey: string;
   uploadUrlTtlSeconds: number;
+  verifyMaxBytes?: number;
+  verifyTimeoutSeconds?: number;
 };
 
 export class R2StorageError extends Error {
@@ -60,6 +58,8 @@ export function createConfiguredObjectStorage(source: NodeJS.ProcessEnv): Object
     accessKeyId: value.R2_ACCESS_KEY_ID!,
     secretAccessKey: value.R2_SECRET_ACCESS_KEY!,
     uploadUrlTtlSeconds: value.R2_UPLOAD_URL_TTL_SECONDS,
+    verifyMaxBytes: value.STORAGE_VERIFY_MAX_BYTES,
+    verifyTimeoutSeconds: value.STORAGE_VERIFY_TIMEOUT_SECONDS,
   });
 }
 
@@ -68,10 +68,12 @@ export class R2S3Storage implements ObjectStorage {
   readonly #client: S3Client;
   readonly #bucket: string;
   readonly #uploadUrlTtlSeconds: number;
+  readonly #limits: { maxBytes: number; timeoutMs: number };
 
   constructor(configuration: R2Configuration, client?: S3Client) {
     this.#bucket = configuration.bucket;
     this.#uploadUrlTtlSeconds = configuration.uploadUrlTtlSeconds;
+    this.#limits = { maxBytes: configuration.verifyMaxBytes ?? 5 * 1024 ** 3, timeoutMs: (configuration.verifyTimeoutSeconds ?? 1800) * 1000 };
     this.#client = client ?? new S3Client({
       endpoint: configuration.endpoint,
       region: configuration.region,
@@ -116,19 +118,19 @@ export class R2S3Storage implements ObjectStorage {
     const existing = await this.#inspectFinal(finalKey, expected);
     if (existing) return existing;
 
-    const temporaryDirectory = await mkdtemp(join(tmpdir(), "mt-studio-r2-"));
-    const temporaryFile = join(temporaryDirectory, "object.bin");
     try {
-      const observed = await this.#downloadAndHash(stagingKey, temporaryFile);
+      const observed = await this.#downloadAndHash(stagingKey);
       if (!observed.exists || observed.sizeBytes !== expected.sizeBytes || observed.checksumSha256 !== expected.checksumSha256.toLowerCase()) {
         return observed;
       }
 
       try {
+        const source = await this.#client.send(new GetObjectCommand({ Bucket: this.#bucket, Key: stagingKey }));
+        if (!source.Body) throw new R2StorageError("object_missing");
         await this.#client.send(new PutObjectCommand({
           Bucket: this.#bucket,
           Key: finalKey,
-          Body: createReadStream(temporaryFile),
+          Body: asReadable(source.Body as NodeJS.ReadableStream).pipe(byteCountingStream(this.#limits.maxBytes)),
           ContentLength: expected.sizeBytes,
           IfNoneMatch: "*",
           Metadata: { "sha256-full-object": expected.checksumSha256.toLowerCase() },
@@ -138,7 +140,7 @@ export class R2S3Storage implements ObjectStorage {
         throw error;
       }
 
-      const finalized = await this.#downloadAndHash(finalKey, join(temporaryDirectory, "final.bin"));
+      const finalized = await this.#downloadAndHash(finalKey);
       if (!finalized.exists || finalized.sizeBytes !== expected.sizeBytes || finalized.checksumSha256 !== expected.checksumSha256.toLowerCase()) {
         throw new R2StorageError("storage_failure");
       }
@@ -148,8 +150,6 @@ export class R2S3Storage implements ObjectStorage {
       if (error instanceof R2StorageError) throw error;
       if (isNotFound(error)) return missingInspection();
       throw new R2StorageError("storage_failure");
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
     }
   }
 
@@ -160,14 +160,9 @@ export class R2S3Storage implements ObjectStorage {
       if (isNotFound(error)) return null;
       throw error;
     }
-    const temporaryDirectory = await mkdtemp(join(tmpdir(), "mt-studio-r2-existing-"));
-    try {
-      const existing = await this.#downloadAndHash(finalKey, join(temporaryDirectory, "object.bin"));
-      if (existing.sizeBytes === expected.sizeBytes && existing.checksumSha256 === expected.checksumSha256.toLowerCase()) return existing;
-      throw new R2StorageError("final_object_conflict");
-    } finally {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
+    const existing = await this.#downloadAndHash(finalKey);
+    if (existing.sizeBytes === expected.sizeBytes && existing.checksumSha256 === expected.checksumSha256.toLowerCase()) return existing;
+    throw new R2StorageError("final_object_conflict");
   }
 
   async #inspectWithoutTrust(key: string): Promise<ObjectInspection> {
@@ -180,20 +175,11 @@ export class R2S3Storage implements ObjectStorage {
     }
   }
 
-  async #downloadAndHash(key: string, destination: string): Promise<ObjectInspection> {
+  async #downloadAndHash(key: string): Promise<ObjectInspection> {
     const result = await this.#client.send(new GetObjectCommand({ Bucket: this.#bucket, Key: key }));
     if (!result.Body) return missingInspection();
-    const hash = createHash("sha256");
-    let sizeBytes = 0;
-    const hasher = new Transform({
-      transform(chunk: Buffer, _encoding, callback) {
-        sizeBytes += chunk.byteLength;
-        hash.update(chunk);
-        callback(null, chunk);
-      },
-    });
-    await pipeline(result.Body as NodeJS.ReadableStream, hasher, createWriteStream(destination));
-    return { exists: true, sizeBytes, checksumSha256: hash.digest("hex"), integrity: "trusted_full_object" };
+    const measured = await hashReadable(result.Body as NodeJS.ReadableStream, this.#limits);
+    return { exists: true, ...measured, integrity: "trusted_full_object" };
   }
 }
 

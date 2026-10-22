@@ -13,6 +13,7 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
+    "storage:verify": "npm run build:api && node .build/api/cli/verify-storage-upload.js",
     "test": "npm run typecheck && npm run test:api && npm run test:site"
   },
   "dependencies": {
