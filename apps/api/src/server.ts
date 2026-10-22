@@ -7,6 +7,7 @@ import { createStorageUploadSupabaseGateway } from "./services/storage-upload-su
 import { unavailableObjectStorage } from "./storage/object-storage.js";
 import { createConfiguredObjectStorage } from "./storage/r2-s3-storage.js";
 import { createVerifierAuthorizationGateway } from "./services/verifier-authorization-supabase.js";
+import { createMultipartUploadGateway } from "./services/multipart-upload-supabase.js";
 
 loadPrivateEnvironmentFile();
 const environment = readEnvironment();
@@ -17,6 +18,7 @@ const app = createApp(
   createConfiguredObjectStorage(process.env) ?? unavailableObjectStorage(),
   createStorageUploadSupabaseGateway(environment),
   createVerifierAuthorizationGateway(environment),
+  createMultipartUploadGateway(environment),
 );
 
 serve({

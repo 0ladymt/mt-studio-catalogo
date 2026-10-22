@@ -36,6 +36,11 @@ export interface ObjectStorage {
     objectKey: string,
     expected?: { sizeBytes: number; checksumSha256: string },
   ): Promise<ObjectInspection>;
+  beginMultipart?(input:{objectKey:string;contentType:string}):Promise<{providerUploadId:string}>;
+  createMultipartPartUrl?(input:{objectKey:string;providerUploadId:string;partNumber:number;sizeBytes:number;expiresAt:Date}):Promise<{url:string;method:"PUT";headers:Record<string,string>;expiresAt:string}>;
+  listMultipartParts?(input:{objectKey:string;providerUploadId:string}):Promise<Array<{partNumber:number;sizeBytes:number;etag:string}>>;
+  completeMultipart?(input:{objectKey:string;providerUploadId:string;parts:Array<{partNumber:number;etag:string}>}):Promise<void>;
+  abortMultipart?(input:{objectKey:string;providerUploadId:string}):Promise<void>;
 }
 
 export interface StorageUploadGateway {
@@ -47,4 +52,15 @@ export interface StorageUploadGateway {
     uploadId: string,
     inspection: ObjectInspection,
   ): Promise<StorageUpload>;
+}
+
+export type MultipartSession={id:string;storageUploadId:string;providerUploadId:string;initiatedBy:string;status:"initiated"|"uploading"|"completed"|"cancelled"|"expired";partSizeBytes:number;totalParts:number;expiresAt:string};
+export type MultipartPart={partNumber:number;sizeBytes:number;providerEtag:string};
+export interface MultipartUploadGateway{
+  begin(actor:string,requestId:string,storageUploadId:string,providerUploadId:string,partSizeBytes:number):Promise<MultipartSession>;
+  get(id:string):Promise<MultipartSession|null>;
+  listParts(id:string):Promise<MultipartPart[]>;
+  recordPart(actor:string,id:string,part:MultipartPart):Promise<MultipartPart>;
+  complete(actor:string,requestId:string,id:string):Promise<MultipartSession>;
+  cancel(actor:string,requestId:string,id:string):Promise<MultipartSession>;
 }

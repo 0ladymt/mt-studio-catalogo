@@ -3,6 +3,7 @@ node_modules/
 coverage/
 .build/
 .local-storage/
+.multipart-benchmark/
 
 # Local environment files. Examples remain tracked.
 .env
