@@ -26,11 +26,4 @@ export function createStorageVerificationGateway(environment: ApiEnvironment) {
   };
 }
 
-export async function authenticateVerifier(environment:ApiEnvironment,accessToken:string):Promise<string>{
-  const client=createClient(environment.SUPABASE_URL,environment.SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:false,persistSession:false,detectSessionInUrl:false}});
-  const {data,error}=await client.auth.getUser(accessToken);
-  if(error||!data.user)throw new Error("verifier-authentication-failed");
-  return data.user.id;
-}
-
 function map(row:JobRow):VerificationJob{return{id:row.id,storageUploadId:row.storage_upload_id,status:row.status,attempts:row.attempts,leaseOwner:row.lease_owner,observedSizeBytes:row.observed_size_bytes,observedChecksumSha256:row.observed_checksum_sha256,failureCode:row.failure_code};}

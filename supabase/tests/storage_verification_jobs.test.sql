@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(28);
 
 insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
 ('00000000-0000-0000-0000-000000000000','a1000000-0000-4000-8000-000000000001','authenticated','authenticated','verifier@example.invalid','x',now(),'{}','{}',now(),now()),
@@ -24,6 +24,7 @@ select is((select attempts from public.storage_verification_jobs),1,'claim incre
 select isnt((select lease_expires_at from public.storage_verification_jobs),null,'claim has lease');
 select throws_ok($$select public.admin_claim_storage_verification_job('a1000000-0000-4000-8000-000000000001',(select id from public.storage_verification_jobs),'a8000000-0000-4000-8000-000000000002',300)$$,'55P03',null,'concurrent worker is blocked');
 select lives_ok($$select public.admin_heartbeat_storage_verification_job('a1000000-0000-4000-8000-000000000001',(select id from public.storage_verification_jobs),'a8000000-0000-4000-8000-000000000001',300)$$,'lease owner heartbeats');
+select ok((select lease_expires_at>now()+interval '4 minutes' from public.storage_verification_jobs),'heartbeat extends a long-running lease');
 select throws_ok($$select public.admin_heartbeat_storage_verification_job('a1000000-0000-4000-8000-000000000001',(select id from public.storage_verification_jobs),'a8000000-0000-4000-8000-000000000002',300)$$,'55P03',null,'other worker cannot heartbeat');
 update public.storage_verification_jobs set lease_expires_at=now()-interval '1 second';
 select lives_ok($$select public.admin_claim_storage_verification_job('a1000000-0000-4000-8000-000000000001',(select id from public.storage_verification_jobs),'a8000000-0000-4000-8000-000000000002',300)$$,'new worker recovers an interrupted expired lease');
@@ -40,6 +41,8 @@ select is((select status from public.storage_verification_jobs),'completed','job
 select is((select storage_status from public.product_files where id='a5000000-0000-4000-8000-000000000001'),'verified','file advances only to verified');
 select isnt((select storage_status from public.product_files where id='a5000000-0000-4000-8000-000000000001'),'ready','job never marks ready');
 select lives_ok($$select public.admin_finish_storage_verification_job('a1000000-0000-4000-8000-000000000001','a9000000-0000-4000-8000-000000000002',(select id from public.storage_verification_jobs),'a8000000-0000-4000-8000-000000000003',true,100,repeat('a',64),null)$$,'completion replay is idempotent');
+update public.storage_verification_jobs set status='failed',lease_owner=null,lease_expires_at=null where true;
+select throws_ok($$select public.admin_claim_storage_verification_job('a1000000-0000-4000-8000-000000000001',(select id from public.storage_verification_jobs),'a8000000-0000-4000-8000-000000000004',300)$$,'55000',null,'three attempts is a hard retry limit');
 
 reset role; set local role authenticated;
 select throws_ok($$select * from public.storage_verification_jobs$$,'42501',null,'authenticated cannot inspect jobs');

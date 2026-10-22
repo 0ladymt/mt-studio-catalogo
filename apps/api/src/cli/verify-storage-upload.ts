@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { loadPrivateEnvironmentFile, readEnvironment } from "../config/env.js";
 import { createStorageUploadSupabaseGateway } from "../services/storage-upload-supabase.js";
-import { authenticateVerifier, createStorageVerificationGateway } from "../services/storage-verification-supabase.js";
+import { createStorageVerificationGateway } from "../services/storage-verification-supabase.js";
 import { createConfiguredObjectStorage, R2StorageError } from "../storage/r2-s3-storage.js";
 import { StreamIntegrityError } from "../storage/stream-integrity.js";
 
@@ -10,11 +10,19 @@ const id=z.string().uuid();
 const uploadId=id.parse(process.argv[2]);
 loadPrivateEnvironmentFile();
 const environment=readEnvironment();
-const accessToken=z.string().min(20).parse(process.env.STORAGE_VERIFIER_ACCESS_TOKEN);
+if(!["development","test"].includes(environment.APP_ENV))throw new Error("local-verifier-disabled-outside-development");
+const bffUrl=z.string().url().parse(process.env.LOCAL_VERIFIER_BFF_URL??`http://${environment.API_HOST}:${environment.API_PORT}`);
+const secret=randomBytes(32).toString("base64url"),secretHash=createHash("sha256").update(secret).digest("hex");
+const authorizationResponse=await fetch(`${bffUrl}/api/local-verifier/authorizations`,{method:"POST",headers:{"content-type":"application/json","x-mt-studio-cli":"1"},body:JSON.stringify({uploadId,secretHash})});
+if(!authorizationResponse.ok)throw new Error("local-verifier-authorization-start-failed");
+const started=z.object({authorization:z.object({id:id,status:z.literal("pending"),expiresAt:z.string(),approvalUrl:z.string().url()})}).parse(await authorizationResponse.json());
+console.info(`Abra esta página local para autorizar a verificação: ${started.authorization.approvalUrl}`);
+const consumed=await waitForAuthorization(bffUrl,started.authorization.id,secret,new Date(started.authorization.expiresAt).getTime());
+if(consumed.uploadId!==uploadId)throw new Error("local-verifier-scope-mismatch");
 const storage=createConfiguredObjectStorage(process.env);
 if(!storage)throw new Error("storage-provider-disabled");
 
-const actor=await authenticateVerifier(environment,accessToken);
+const actor=consumed.actorUserId;
 const uploads=createStorageUploadSupabaseGateway(environment);
 const jobs=createStorageVerificationGateway(environment);
 const upload=await uploads.getUpload(uploadId);
@@ -42,3 +50,12 @@ try{
 
 function failureFor(exists:boolean,size:number|null,hash:string|null,expectedSize:number,expectedHash:string){if(!exists)return"object_missing";if(size!==expectedSize)return"size_mismatch";if(hash!==expectedHash)return"checksum_mismatch";return"storage_failure";}
 function safeFailure(error:unknown){if(error instanceof StreamIntegrityError)return error.code;if(error instanceof R2StorageError)return error.code;return"storage_failure";}
+async function waitForAuthorization(base:string,authorizationId:string,authorizationSecret:string,expiresAt:number):Promise<{actorUserId:string;uploadId:string}>{
+  while(Date.now()<expiresAt){
+    const response=await fetch(`${base}/api/local-verifier/authorizations/${authorizationId}/consume`,{method:"POST",headers:{"content-type":"application/json","x-mt-studio-cli":"1"},body:JSON.stringify({secret:authorizationSecret})});
+    if(response.ok){const value=z.object({authorization:z.object({status:z.literal("consumed"),actorUserId:id,uploadId:id})}).parse(await response.json());return value.authorization;}
+    if(response.status!==409&&response.status!==403)throw new Error("local-verifier-authorization-failed");
+    await new Promise(resolve=>setTimeout(resolve,2000));
+  }
+  throw new Error("local-verifier-authorization-expired");
+}

@@ -5,7 +5,7 @@ import type { AuthGateway } from "./types/auth.js";
 import type { ApiEnvironment } from "./config/env.js";
 import { SessionManager } from "./auth/session.js";
 import { protectMutation, restrictedCors } from "./middleware/security.js";
-import { issueCsrfCookie } from "./auth/cookies.js";
+import { issueCsrfCookie, validCsrf } from "./auth/cookies.js";
 import { FixedWindowRateLimiter } from "./auth/rate-limit.js";
 import { confirmationSchema, emailSchema, loginSchema, passwordConfirmationSchema, passwordResetSchema, passwordSetupSchema, profileUpdateSchema, signupSchema } from "./auth/validation.js";
 import { SingleFlight } from "./auth/single-flight.js";
@@ -23,6 +23,8 @@ import type { ObjectStorage } from "./types/storage.js";
 import type { StorageUploadGateway } from "./types/storage.js";
 import { unavailableObjectStorage, StorageUnavailableError } from "./storage/object-storage.js";
 import { unavailableStorageUploadGateway } from "./services/storage-upload-supabase.js";
+import type { VerifierAuthorizationGateway } from "./types/verifier-authorization.js";
+import { unavailableVerifierAuthorizationGateway } from "./services/verifier-authorization-supabase.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
@@ -35,6 +37,7 @@ export function createApp(
   adminGateway: AdminGateway = unavailableAdminGateway(),
   objectStorage: ObjectStorage = unavailableObjectStorage(),
   storageUploads: StorageUploadGateway = unavailableStorageUploadGateway(),
+  verifierAuthorizations: VerifierAuthorizationGateway = unavailableVerifierAuthorizationGateway(),
 ) {
   const app = new Hono<{ Variables: AuthVariables & StaffVariables }>();
   const sessions = new SessionManager(gateway, environment);
@@ -54,10 +57,35 @@ export function createApp(
   const oauthTransactions = new OAuthTransactionStore(environment.OAUTH_TRANSACTION_TTL_SECONDS * 1000);
   const googleLinkTransactions = new OAuthTransactionStore(environment.OAUTH_TRANSACTION_TTL_SECONDS * 1000);
   const sensitiveAuthorizations = new SensitiveAuthorizationStore(environment.SENSITIVE_AUTHORIZATION_TTL_SECONDS * 1000);
+  const localVerifierLimiter = new FixedWindowRateLimiter(20, 5 * 60 * 1000);
+  const verifierRequestSchema=z.object({uploadId:identifierSchema,secretHash:z.string().regex(/^[0-9a-f]{64}$/)}).strict();
+  const verifierConsumeSchema=z.object({secret:z.string().regex(/^[A-Za-z0-9_-]{43}$/)}).strict();
+  const localApiOrigin=`http://${environment.API_HOST}:${environment.API_PORT}`;
 
   app.use("/api/*", restrictedCors(environment));
 
   app.get("/api/health", (context) => context.json({ status: "ok" }));
+
+  app.post("/api/local-verifier/authorizations",async c=>{
+    if(!["development","test"].includes(environment.APP_ENV)||c.req.header("origin")||c.req.header("x-mt-studio-cli")!=="1")return c.json({error:"local_verifier_unavailable"},403);
+    const rate=localVerifierLimiter.consume("create");if(!rate.allowed)return c.json({error:"too_many_requests"},429);
+    const input=verifierRequestSchema.safeParse(await safeJson(c));if(!input.success)return c.json({error:"invalid_verifier_authorization"},400);
+    try{const authorization=await verifierAuthorizations.create(input.data.uploadId,input.data.secretHash,new Date(Date.now()+3*60*1000).toISOString());return c.json({authorization:{id:authorization.id,status:authorization.status,expiresAt:authorization.expiresAt,approvalUrl:`${localApiOrigin}/api/admin/verifier-authorizations/${authorization.id}/consent`}},201);}catch(e){return adminErrorResponse(c,e);}
+  });
+  app.post("/api/local-verifier/authorizations/:id/consume",async c=>{
+    if(!["development","test"].includes(environment.APP_ENV)||c.req.header("origin")||c.req.header("x-mt-studio-cli")!=="1")return c.json({error:"local_verifier_unavailable"},403);
+    const rate=localVerifierLimiter.consume("consume");if(!rate.allowed)return c.json({error:"too_many_requests"},429);
+    const id=identifierSchema.safeParse(c.req.param("id")),input=verifierConsumeSchema.safeParse(await safeJson(c));if(!id.success||!input.success)return c.json({error:"invalid_verifier_authorization"},400);
+    try{const secretHash=(await import("node:crypto")).createHash("sha256").update(input.data.secret).digest("hex"),authorization=await verifierAuthorizations.consume(id.data,secretHash);if(authorization.status!=="consumed"||!authorization.approvedBy)return c.json({authorization:{status:authorization.status,expiresAt:authorization.expiresAt}},409);return c.json({authorization:{status:"consumed",actorUserId:authorization.approvedBy,uploadId:authorization.storageUploadId}});}catch{return c.json({error:"verifier_authorization_denied"},403);}
+  });
+  app.get("/api/admin/verifier-authorizations/:id/consent",requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{
+    const id=identifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.text("Solicitação inválida.",400);
+    const authorization=await verifierAuthorizations.get(id.data);if(!authorization)return c.text("Solicitação não encontrada.",404);
+    const safeId=authorization.id;
+    return c.html(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Autorizar verificação — MT STUDIO</title><style>body{margin:0;background:#111;color:#eee;font:16px Arial;display:grid;place-items:center;min-height:100vh}.box{max-width:32rem;padding:2rem;border:1px solid #444}button{min-height:44px;background:#a432dc;color:#fff;border:0;padding:.75rem 1rem}p{line-height:1.5}</style><main class="box"><h1>Autorizar verificação local</h1><p>Autorize uma única verificação administrativa. A permissão expira em poucos minutos e não concede acesso a outros uploads.</p><button id="approve">Autorizar esta verificação</button><p id="status" role="status"></p></main><script>document.querySelector('#approve').onclick=async()=>{const s=document.querySelector('#status');try{const c=await fetch('/api/auth/csrf',{credentials:'include'}).then(r=>r.json());const r=await fetch('/api/admin/verifier-authorizations/${safeId}/approve',{method:'POST',credentials:'include',headers:{'content-type':'application/json','x-csrf-token':c.csrfToken},body:'{}'});s.textContent=r.ok?'Autorização concluída. Você pode fechar esta janela.':'Não foi possível autorizar.';}catch{s.textContent='Não foi possível autorizar.';}};</script></html>`);
+  });
+  app.post("/api/admin/verifier-authorizations/:id/approve",async(c,next)=>{if(c.req.header("origin")!==localApiOrigin||!validCsrf(c))return c.json({error:"verifier_consent_rejected"},403);await next();},requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),input=zEmptyObject.safeParse(await safeJson(c));if(!id.success||!input.success)return c.json({error:"invalid_verifier_authorization"},400);try{const a=await verifierAuthorizations.approve(c.get("user").id,randomUUID(),id.data);return c.json({authorization:{id:a.id,status:a.status,expiresAt:a.expiresAt}});}catch(e){return adminErrorResponse(c,e);}});
+  app.post("/api/admin/verifier-authorizations/:id/revoke",protectMutation(environment),requireStaff(sessions,adminGateway,["catalog:write"]),async c=>{const id=identifierSchema.safeParse(c.req.param("id")),input=zEmptyObject.safeParse(await safeJson(c));if(!id.success||!input.success)return c.json({error:"invalid_verifier_authorization"},400);try{const a=await verifierAuthorizations.revoke(c.get("user").id,randomUUID(),id.data);return c.json({authorization:{id:a.id,status:a.status}});}catch(e){return adminErrorResponse(c,e);}});
 
   app.get(
     "/api/admin/access",

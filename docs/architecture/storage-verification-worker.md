@@ -10,18 +10,29 @@ only from `metadata_only` to `verified` through a privileged transactional RPC.
 ## Authorization
 
 `npm run storage:verify -- <storage-upload-uuid>` accepts only a non-secret
-upload identifier. The operator identity is derived from a short-lived
-Supabase access token stored as `STORAGE_VERIFIER_ACCESS_TOKEN` in the ignored
-`.env.local`. The token is validated by Supabase Auth, and PostgreSQL then
-revalidates the resulting UUID against active `staff_members` with
-`catalog:write`. A UUID supplied by the operator is never accepted as proof of
-authorization. The service-role and storage credentials stay in the private
-environment and are never command-line arguments.
+upload identifier. The CLI generates a 256-bit secret in memory, sends only
+its SHA-256 to the loopback BFF and prints a local consent URL. The operator
+opens that URL and approves with the existing HttpOnly session, explicit
+`catalog:write` authorization, Origin and CSRF protection. PostgreSQL binds the
+short-lived approval to exactly one upload. The CLI consumes it once using the
+in-memory secret. No Supabase token, cookie, service key or operator UUID is
+copied into a command, browser form or terminal history.
+
+The authorization expires after three minutes, is replay-resistant and can be
+revoked before consumption. PostgreSQL revalidates active staff both on
+approval and consumption. Creation and consumption are enabled only in local
+development/test, reject browser Origin headers and are rate-limited. A UUID
+supplied by the operator is never accepted as proof of authorization.
 
 For normal application operation, `STORAGE_PROVIDER=disabled` remains the
 default. A controlled verification run must enable the provider only in its
 private process environment. Output contains status and sanitized failure
 codes only—never credentials, signed URLs, object keys, tokens or hashes.
+
+If the CLI is interrupted after consumption, its job lease expires after five
+minutes. A new run requires fresh browser consent and may recover the job; the
+previous worker cannot finish after recovery. Heartbeats every minute keep
+legitimate long operations alive. Three claims are the hard retry cap.
 
 ## Streaming and immutable finalization
 
