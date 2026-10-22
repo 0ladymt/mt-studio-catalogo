@@ -347,7 +347,7 @@ export function createApp(
     try{
       const file=await adminGateway.getFile(fileId.data);
       if(!file)return c.json({error:"file_not_found"},404);
-      const expiresAt=new Date(Date.now()+10*60*1000);
+      const expiresAt=new Date(Date.now()+24*60*60*1000);
       const upload=await storageUploads.beginUpload(c.get("user").id,input.data.requestId,file.id,expiresAt.toISOString());
       if(upload.status!=="initiated"||new Date(upload.expiresAt).getTime()<=Date.now())return c.json({error:"storage_upload_expired"},409);
       if(input.data.mode==="multipart")return c.json({upload:{id:upload.id,status:upload.status,expiresAt:upload.expiresAt}},201);

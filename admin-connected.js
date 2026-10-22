@@ -98,6 +98,7 @@
   function uploadError(error) {
     if (error?.name === "AbortError") return "Envio pausado. As partes já confirmadas foram preservadas.";
     if (error?.status === 401 || error?.status === 403) return "Sua sessão ou permissão não autoriza este envio.";
+    if (error?.body?.error === "multipart_session_unavailable") return "A sessão de envio expirou ou foi cancelada. Cancele este registro e inicie um novo envio; nenhuma parte será apresentada como retomável.";
     if (error?.status === 409) return "O estado do upload mudou. Atualize a situação antes de continuar.";
     return "Não foi possível continuar o envio. As partes confirmadas permanecem disponíveis para retomada.";
   }
@@ -143,7 +144,8 @@
       }
     };
     try {
-      await Promise.all(Array.from({ length:Math.min(3, pending.length) }, worker));
+      const concurrency = browserFile.size < 64 * 1024 * 1024 ? 1 : 3;
+      await Promise.all(Array.from({ length:Math.min(concurrency, pending.length) }, worker));
       if (controller.signal.aborted) return;
       const reconciled = await refreshMultipart(panel, record);
       if ((reconciled.parts || []).length !== reconciled.totalParts) throw Object.assign(new Error("multipart-reconciliation-failed"), { status:409 });

@@ -23,9 +23,9 @@ select throws_ok($$select public.admin_confirm_storage_upload('90000000-0000-400
 
 reset role; set local role service_role;
 select throws_ok($$select public.admin_begin_storage_upload('90000000-0000-4000-8000-000000000002',gen_random_uuid(),'94000000-0000-4000-8000-000000000001',now()+interval '10 minutes')$$,'42501',null,'support cannot begin uploads');
-select throws_ok($$select public.admin_begin_storage_upload('90000000-0000-4000-8000-000000000001',gen_random_uuid(),'94000000-0000-4000-8000-000000000001',now()+interval '31 minutes')$$,'22023',null,'excessive authorization lifetime is rejected');
+select throws_ok($$select public.admin_begin_storage_upload('90000000-0000-4000-8000-000000000001',gen_random_uuid(),'94000000-0000-4000-8000-000000000001',now()+interval '25 hours')$$,'22023',null,'excessive authorization lifetime is rejected');
 
-select lives_ok($$select public.admin_begin_storage_upload('90000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001','94000000-0000-4000-8000-000000000001',now()+interval '10 minutes')$$,'writer begins a private upload');
+select lives_ok($$select public.admin_begin_storage_upload('90000000-0000-4000-8000-000000000001','95000000-0000-4000-8000-000000000001','94000000-0000-4000-8000-000000000001',now()+interval '24 hours')$$,'writer begins a private upload with a slow-network lifetime');
 select is((select count(*)::integer from public.storage_uploads),1,'one upload transaction exists');
 select matches((select object_key from public.storage_uploads),'^private/products/.+/versions/.+/files/.+/.+\.bin$','database generates a private unique object key');
 select is((select count(*)::integer from public.admin_audit_log where request_id='95000000-0000-4000-8000-000000000001'),1,'upload initiation is audited atomically');
