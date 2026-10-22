@@ -47,18 +47,30 @@ semantics, billing, multipart behavior, regional latency or provider outage
 handling. The production server intentionally uses `unavailableObjectStorage`
 until a real provider adapter is explicitly configured.
 
-## Future R2 adapter
+## R2 adapter prepared for a controlled proof
 
-The R2 implementation should use the AWS S3 client behind `ObjectStorage`, with
-credentials supplied only through server environment variables. Required
-configuration will include an S3 endpoint, bucket, region (`auto`), access key
-and secret key. No variable is needed or accepted by the frontend.
+`R2S3Storage` uses the AWS S3-compatible client behind `ObjectStorage`, with
+credentials supplied only through server environment variables. It is disabled
+by default and refuses to start in `r2` mode when any private configuration is
+missing or when the endpoint is not a Cloudflare account endpoint. No storage
+credential is needed or accepted by the frontend.
 
-For the real proof, use a staging key and either a provider-supported immutable
-conditional write or a server-side copy to a final immutable key after trusted
-verification. This closes the interval in which a still-valid presigned `PUT`
-could replace an object after inspection. Confirm R2 multipart checksum behavior
-before relying on it for the commercial full-file SHA-256.
+The browser can write only `staging/<database-controlled-final-key>`. A trusted
+Node process streams that object to a temporary file while calculating SHA-256
+over every byte. Only an exact size and hash match is uploaded to the final key
+with `If-None-Match: *`. The adapter downloads and hashes the final object once
+more, then removes staging. An existing final key is accepted only when its
+complete bytes match; any different object is a hard conflict. A browser URL can
+therefore never overwrite the final object, even while the staging URL remains
+valid. Staging itself may be replaced while its short-lived URL is valid; it is
+never a deliverable object, and each finalization verifies one complete snapshot
+before writing the protected final key.
+
+This proof intentionally reads the fictitious object through the local trusted
+verifier. It must not run on Railway for commercial packs until runtime, transfer
+and timeout costs are measured and an asynchronous verifier is approved. R2
+ETag, browser metadata and multipart checksum semantics are never treated as the
+commercial full-file SHA-256.
 
 Multipart can later extend the adapter without changing the commercial rules:
 initiate, sign individual parts, complete, inspect, verify, finalize and audit.
@@ -72,3 +84,11 @@ Incomplete multipart uploads need a short lifecycle cleanup rule.
 - Delete the object, token and bucket after the proof if the provider is not yet
   approved for production.
 - Do not route pack bytes through Railway during normal upload or download.
+
+## Private local configuration for the real proof
+
+Copy only the storage variables from `.env.example` into the existing ignored
+root `.env.local`, fill them directly on the development computer, and change
+`STORAGE_PROVIDER` to `r2`. Never place these values in `supabase/.env.local`,
+browser code, command arguments, screenshots or chat. Keep the provider disabled
+until the owner explicitly authorizes the external test.

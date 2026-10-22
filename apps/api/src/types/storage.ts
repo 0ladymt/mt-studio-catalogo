@@ -32,7 +32,10 @@ export interface ObjectStorage {
     sizeBytes: number;
     expiresAt: Date;
   }): Promise<{ url: string; method: "PUT"; headers: Record<string, string>; expiresAt: string }>;
-  inspectObject(objectKey: string): Promise<ObjectInspection>;
+  inspectObject(
+    objectKey: string,
+    expected?: { sizeBytes: number; checksumSha256: string },
+  ): Promise<ObjectInspection>;
 }
 
 export interface StorageUploadGateway {

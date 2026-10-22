@@ -1,17 +1,19 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
-import { readEnvironment } from "./config/env.js";
+import { loadPrivateEnvironmentFile, readEnvironment } from "./config/env.js";
 import { createSupabaseAuthGateway } from "./services/supabase.js";
 import { createAdminSupabaseGateway } from "./services/admin-supabase.js";
 import { createStorageUploadSupabaseGateway } from "./services/storage-upload-supabase.js";
 import { unavailableObjectStorage } from "./storage/object-storage.js";
+import { createConfiguredObjectStorage } from "./storage/r2-s3-storage.js";
 
+loadPrivateEnvironmentFile();
 const environment = readEnvironment();
 const app = createApp(
   createSupabaseAuthGateway(environment),
   environment,
   createAdminSupabaseGateway(environment),
-  unavailableObjectStorage(),
+  createConfiguredObjectStorage(process.env) ?? unavailableObjectStorage(),
   createStorageUploadSupabaseGateway(environment),
 );
 

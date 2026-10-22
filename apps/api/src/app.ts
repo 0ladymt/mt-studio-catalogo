@@ -323,7 +323,10 @@ export function createApp(
     try{
       const upload=await storageUploads.getUpload(uploadId.data);
       if(!upload)return c.json({error:"storage_upload_not_found"},404);
-      const inspection=await objectStorage.inspectObject(upload.objectKey);
+      const inspection=await objectStorage.inspectObject(upload.objectKey, {
+        sizeBytes: upload.expectedSizeBytes,
+        checksumSha256: upload.expectedChecksumSha256,
+      });
       const result=await storageUploads.confirmUpload(c.get("user").id,input.data.requestId,upload.id,inspection);
       return c.json({upload:{id:result.id,status:result.status,failureCode:result.failureCode},fileStorageStatus:result.status==="verified"?"verified":"metadata_only"});
     }catch(e){if(e instanceof StorageUnavailableError)return c.json({error:"object_storage_unavailable"},503);return adminErrorResponse(c,e);}

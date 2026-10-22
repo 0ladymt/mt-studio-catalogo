@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 
 const environmentSchema = z.object({
   APP_ENV: z.enum(["development", "test", "staging", "production"]).default("development"),
@@ -17,6 +19,10 @@ const environmentSchema = z.object({
 });
 
 export type ApiEnvironment = z.infer<typeof environmentSchema>;
+
+export function loadPrivateEnvironmentFile(path = ".env.local"): void {
+  if (existsSync(path)) loadEnvFile(path);
+}
 
 export function readEnvironment(source: NodeJS.ProcessEnv = process.env): ApiEnvironment {
   return environmentSchema.parse(source);
