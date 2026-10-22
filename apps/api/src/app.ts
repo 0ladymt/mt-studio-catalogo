@@ -27,6 +27,9 @@ import type { VerifierAuthorizationGateway } from "./types/verifier-authorizatio
 import { unavailableVerifierAuthorizationGateway } from "./services/verifier-authorization-supabase.js";
 import { unavailableMultipartUploadGateway } from "./services/multipart-upload-supabase.js";
 import { unavailableStorageVerificationGateway } from "./services/storage-verification-supabase.js";
+import type { CommerceGateway } from "./types/commerce.js";
+import { CommerceOperationError, unavailableCommerceGateway } from "./services/commerce-supabase.js";
+import { addCartItemSchema, checkoutSchema, commerceIdentifierSchema } from "./commerce/validation.js";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
@@ -42,6 +45,7 @@ export function createApp(
   verifierAuthorizations: VerifierAuthorizationGateway = unavailableVerifierAuthorizationGateway(),
   multipartUploads: MultipartUploadGateway = unavailableMultipartUploadGateway(),
   verificationJobs: StorageVerificationGateway = unavailableStorageVerificationGateway(),
+  commerce: CommerceGateway = unavailableCommerceGateway(),
 ) {
   const app = new Hono<{ Variables: AuthVariables & StaffVariables }>();
   const sessions = new SessionManager(gateway, environment);
@@ -74,6 +78,13 @@ export function createApp(
   });
 
   app.get("/api/health", (context) => context.json({ status: "ok" }));
+
+  app.get("/api/store/products",async c=>{try{return c.json({products:await commerce.listStoreProducts()});}catch(e){return commerceErrorResponse(c,e);}});
+  app.get("/api/cart",authenticate(sessions),async c=>{try{return c.json({cart:await commerce.getCart(c.get("user").id)});}catch(e){return commerceErrorResponse(c,e);}});
+  app.post("/api/cart/items",protectMutation(environment),authenticate(sessions),async c=>{const input=addCartItemSchema.safeParse(await safeJson(c));if(!input.success)return c.json({error:"invalid_cart_item"},400);try{return c.json({cart:await commerce.addCartItem(c.get("user").id,input.data.productId)},201);}catch(e){return commerceErrorResponse(c,e);}});
+  app.delete("/api/cart/items/:id",protectMutation(environment),authenticate(sessions),async c=>{const id=commerceIdentifierSchema.safeParse(c.req.param("id")),body=zEmptyObject.safeParse(await safeJson(c));if(!id.success||!body.success)return c.json({error:"invalid_cart_item"},400);try{return c.json({cart:await commerce.removeCartItem(c.get("user").id,id.data)});}catch(e){return commerceErrorResponse(c,e);}});
+  app.post("/api/orders",protectMutation(environment),authenticate(sessions),async c=>{const input=checkoutSchema.safeParse(await safeJson(c));if(!input.success)return c.json({error:"invalid_checkout"},400);try{return c.json({order:await commerce.checkout(c.get("user").id,input.data.requestId)},201);}catch(e){return commerceErrorResponse(c,e);}});
+  app.get("/api/orders/:id",authenticate(sessions),async c=>{const id=commerceIdentifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.json({error:"invalid_order"},400);try{const order=await commerce.getOrder(c.get("user").id,id.data);return order?c.json({order}):c.json({error:"order_not_found"},404);}catch(e){return commerceErrorResponse(c,e);}});
 
   app.post("/api/local-verifier/authorizations",async c=>{
     if(!["development","test"].includes(environment.APP_ENV)||c.req.header("origin")||c.req.header("x-mt-studio-cli")!=="1")return c.json({error:"local_verifier_unavailable"},403);
@@ -798,3 +809,5 @@ function adminErrorResponse(context: Context, error: unknown) {
   if (code === "42501") return context.json({ error: "admin_access_denied" }, 403);
   return context.json({ error: "admin_operation_unavailable" }, 503);
 }
+
+function commerceErrorResponse(context:Context,error:unknown){const code=error instanceof CommerceOperationError?error.databaseCode:undefined;if(code==="P0002")return context.json({error:"commerce_resource_not_found"},404);if(["23503","23505","23514","55000"].includes(code??""))return context.json({error:"commerce_state_conflict"},409);if(code==="42501")return context.json({error:"commerce_access_denied"},403);return context.json({error:"commerce_unavailable"},503);}

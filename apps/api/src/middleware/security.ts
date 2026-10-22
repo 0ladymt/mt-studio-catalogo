@@ -8,7 +8,7 @@ export function restrictedCors(environment: ApiEnvironment): MiddlewareHandler {
   const origins = allowedOrigins(environment);
   return cors({
     origin: (origin) => origins.has(origin) ? origin : undefined,
-    allowMethods: ["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "X-CSRF-Token", "Authorization"],
     credentials: true,
     maxAge: 600,

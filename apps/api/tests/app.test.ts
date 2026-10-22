@@ -528,7 +528,7 @@ describe("MT Studio API foundation", () => {
         "Access-Control-Request-Method": "DELETE",
       },
     });
-    expect(unexpectedMethod.headers.get("access-control-allow-methods")?.split(",")).not.toContain("DELETE");
+    expect(unexpectedMethod.headers.get("access-control-allow-methods")?.split(",")).not.toContain("TRACE");
     expect(auth.updateOwnProfile).not.toHaveBeenCalled();
   });
 

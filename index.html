@@ -307,6 +307,24 @@
               Prévia de rascunhos deste navegador. Estes produtos não estão
               publicados nem disponíveis para compra.
             </p>
+            <section id="commerceStore" class="mt-commerce" aria-labelledby="commerceStoreTitle">
+              <div class="mt-commerce__head">
+                <div><span class="mt-overline">Compra segura</span><h3 id="commerceStoreTitle">PRODUTOS DISPONÍVEIS.</h3></div>
+                <button id="commerceCartToggle" class="mt-button mt-button--outline" type="button" aria-expanded="false" aria-controls="commerceCart">Carrinho <span id="commerceCartCount">0</span></button>
+              </div>
+              <p id="commerceStatus" class="mt-commerce__status" role="status">Consultando o catálogo comercial…</p>
+              <div id="commerceProducts" class="mt-commerce__products" aria-live="polite"></div>
+              <aside id="commerceCart" class="mt-commerce__cart" aria-labelledby="commerceCartTitle" hidden>
+                <div class="mt-commerce__cart-head"><h3 id="commerceCartTitle">SEU CARRINHO.</h3><button id="commerceCartClose" type="button" aria-label="Fechar carrinho">×</button></div>
+                <div id="commerceCartItems"></div>
+                <div class="mt-commerce__total"><span>Total</span><strong id="commerceCartTotal">R$ 0,00</strong></div>
+                <button id="commerceCheckout" class="mt-button" type="button">Iniciar pedido</button>
+                <p class="mt-commerce__note">O Pix ainda não está disponível nesta etapa. Iniciar o pedido não confirma pagamento nem libera downloads.</p>
+              </aside>
+              <article id="commercePendingOrder" class="mt-commerce__order" hidden>
+                <span class="mt-overline">Pedido criado</span><h3>AGUARDANDO PAGAMENTO.</h3><p>O pedido foi registrado com os valores e versões atuais. A cobrança Pix ainda não foi implementada; nenhum pagamento ou download foi liberado.</p><dl><div><dt>Pedido</dt><dd id="commerceOrderId"></dd></div><div><dt>Total</dt><dd id="commerceOrderTotal"></dd></div><div><dt>Status</dt><dd>Pendente de pagamento</dd></div></dl>
+              </article>
+            </section>
           </section>
         </div>
       </section>
@@ -1154,6 +1172,7 @@
     <script src="intro.js?v=20261005-intro-tag-painted" defer></script>
     <script src="mt-store-drafts.js?v=20261005-loja-slots" defer></script>
     <script src="admin-connected.js?v=20261019-readonly" defer></script>
+    <script src="commerce-ui.js?v=20261022-cart-orders" defer></script>
     <script type="module" src="app.js?v=20261004-grupo7d"></script>
   </body>
 </html>
