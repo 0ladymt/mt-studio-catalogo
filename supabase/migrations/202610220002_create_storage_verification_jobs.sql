@@ -33,6 +33,7 @@ create function public.admin_create_storage_verification_job(
 language plpgsql security definer set search_path = '' as $$
 declare
   actor_role text := public.require_catalog_writer(p_actor_user_id);
+  upload_row public.storage_uploads;
   existing public.storage_verification_jobs;
   result_row public.storage_verification_jobs;
 begin
