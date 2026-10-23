@@ -16,6 +16,12 @@ const environmentSchema = z.object({
   OAUTH_TRANSACTION_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(600),
   SENSITIVE_AUTHORIZATION_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
   PUBLIC_SITE_URL: z.string().url().default("http://127.0.0.1:4173"),
+  PAYMENT_PROVIDER: z.enum(["disabled","mock","mercado_pago"]).optional(),
+  MERCADO_PAGO_ACCESS_TOKEN: z.string().min(20).optional(),
+  MERCADO_PAGO_WEBHOOK_SECRET: z.string().min(16).optional(),
+  MERCADO_PAGO_API_URL: z.string().url().optional(),
+  MERCADO_PAGO_NOTIFICATION_URL: z.string().url().optional(),
+  PIX_EXPIRATION_MINUTES: z.coerce.number().int().min(5).max(1440).optional(),
 });
 
 export type ApiEnvironment = z.infer<typeof environmentSchema>;

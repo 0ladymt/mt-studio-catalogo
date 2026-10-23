@@ -30,6 +30,11 @@ import { unavailableStorageVerificationGateway } from "./services/storage-verifi
 import type { CommerceGateway } from "./types/commerce.js";
 import { CommerceOperationError, unavailableCommerceGateway } from "./services/commerce-supabase.js";
 import { addCartItemSchema, checkoutSchema, commerceIdentifierSchema } from "./commerce/validation.js";
+import type { MercadoPagoGateway, PaymentPersistence } from "./types/payment.js";
+import { PaymentOperationError, unavailablePaymentPersistence } from "./services/payment-supabase.js";
+import { PaymentProviderError, unavailableMercadoPagoGateway } from "./payments/mercado-pago.js";
+import { validateMercadoPagoSignature } from "./payments/webhook-signature.js";
+import { createHash } from "node:crypto";
 
 const OAUTH_TRANSACTION_COOKIE = "mt_oauth_tx";
 const GOOGLE_LINK_TRANSACTION_COOKIE = "mt_google_link_tx";
@@ -46,6 +51,8 @@ export function createApp(
   multipartUploads: MultipartUploadGateway = unavailableMultipartUploadGateway(),
   verificationJobs: StorageVerificationGateway = unavailableStorageVerificationGateway(),
   commerce: CommerceGateway = unavailableCommerceGateway(),
+  payments: PaymentPersistence = unavailablePaymentPersistence(),
+  mercadoPago: MercadoPagoGateway = unavailableMercadoPagoGateway(),
 ) {
   const app = new Hono<{ Variables: AuthVariables & StaffVariables }>();
   const sessions = new SessionManager(gateway, environment);
@@ -85,6 +92,12 @@ export function createApp(
   app.delete("/api/cart/items/:id",protectMutation(environment),authenticate(sessions),async c=>{const id=commerceIdentifierSchema.safeParse(c.req.param("id")),body=zEmptyObject.safeParse(await safeJson(c));if(!id.success||!body.success)return c.json({error:"invalid_cart_item"},400);try{return c.json({cart:await commerce.removeCartItem(c.get("user").id,id.data)});}catch(e){return commerceErrorResponse(c,e);}});
   app.post("/api/orders",protectMutation(environment),authenticate(sessions),async c=>{const input=checkoutSchema.safeParse(await safeJson(c));if(!input.success)return c.json({error:"invalid_checkout"},400);try{return c.json({order:await commerce.checkout(c.get("user").id,input.data.requestId)},201);}catch(e){return commerceErrorResponse(c,e);}});
   app.get("/api/orders/:id",authenticate(sessions),async c=>{const id=commerceIdentifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.json({error:"invalid_order"},400);try{const order=await commerce.getOrder(c.get("user").id,id.data);return order?c.json({order}):c.json({error:"order_not_found"},404);}catch(e){return commerceErrorResponse(c,e);}});
+  const pixRequestSchema=z.object({requestId:commerceIdentifierSchema}).strict();
+  app.post("/api/orders/:id/pix",protectMutation(environment),authenticate(sessions),async c=>{const orderId=commerceIdentifierSchema.safeParse(c.req.param("id")),input=pixRequestSchema.safeParse(await safeJson(c));if(!orderId.success||!input.success)return c.json({error:"invalid_pix_request"},400);const user=c.get("user");if(!user.email)return c.json({error:"verified_email_required"},409);try{const expiresAt=new Date(Date.now()+(environment.PIX_EXPIRATION_MINUTES??30)*60_000).toISOString(),prepared=await payments.prepare(user.id,orderId.data,input.data.requestId,expiresAt),charge=await mercadoPago.createPix({amountCents:Number(prepared.amount_cents),externalReference:prepared.external_reference,description:`Pedido MT STUDIO ${orderId.data}`,payerEmail:user.email,expiresAt,idempotencyKey:input.data.requestId}),saved=await payments.record(prepared.id,charge);return c.json({payment:sanitizePayment(saved)},201);}catch(e){return paymentErrorResponse(c,e);}});
+  app.get("/api/orders/:id/payment",authenticate(sessions),async c=>{const id=commerceIdentifierSchema.safeParse(c.req.param("id"));if(!id.success)return c.json({error:"invalid_order"},400);try{const payment=await payments.getForOrder(c.get("user").id,id.data);return payment?c.json({payment:sanitizePayment(payment)}):c.json({error:"payment_not_found"},404);}catch(e){return paymentErrorResponse(c,e);}});
+  app.post("/api/orders/:id/payment/reconcile",protectMutation(environment),authenticate(sessions),async c=>{const id=commerceIdentifierSchema.safeParse(c.req.param("id")),input=pixRequestSchema.safeParse(await safeJson(c));if(!id.success||!input.success)return c.json({error:"invalid_payment_reconciliation"},400);try{const current=await payments.getForOrder(c.get("user").id,id.data),providerId=String(current?.providerPaymentId??current?.provider_payment_id??"");if(!providerId)return c.json({error:"payment_not_found"},404);const charge=await mercadoPago.getPayment(providerId),result=await payments.reconcile(charge,input.data.requestId);return c.json({reconciliation:result});}catch(e){return paymentErrorResponse(c,e);}});
+  const webhookSchema=z.object({id:z.union([z.string(),z.number()]),type:z.string().optional(),action:z.string().optional(),data:z.object({id:z.union([z.string(),z.number()])}).passthrough()}).passthrough();
+  app.post("/api/webhooks/mercado-pago",async c=>{const raw=await c.req.text();let body:unknown;try{body=JSON.parse(raw||"{}");}catch{return c.json({error:"invalid_webhook"},400);}const parsed=webhookSchema.safeParse(body);if(!parsed.success)return c.json({error:"invalid_webhook"},400);const providerPaymentId=String(parsed.data.data.id),requestId=c.req.header("x-request-id"),signature=c.req.header("x-signature");if(!environment.MERCADO_PAGO_WEBHOOK_SECRET)return c.json({error:"webhook_unavailable"},503);if(!validateMercadoPagoSignature({signature,requestId,dataId:providerPaymentId,secret:environment.MERCADO_PAGO_WEBHOOK_SECRET}))return c.json({error:"invalid_webhook_signature"},401);try{const charge=await mercadoPago.getPayment(providerPaymentId),result=await payments.processWebhook({providerEventId:String(parsed.data.id),providerPaymentId,webhookRequestId:requestId!,payloadSha256:createHash("sha256").update(raw).digest("hex"),charge,requestId:randomUUID()});return c.json({received:true,duplicate:result.duplicate===true});}catch(e){return paymentErrorResponse(c,e);}});
 
   app.post("/api/local-verifier/authorizations",async c=>{
     if(!["development","test"].includes(environment.APP_ENV)||c.req.header("origin")||c.req.header("x-mt-studio-cli")!=="1")return c.json({error:"local_verifier_unavailable"},403);
@@ -811,3 +824,5 @@ function adminErrorResponse(context: Context, error: unknown) {
 }
 
 function commerceErrorResponse(context:Context,error:unknown){const code=error instanceof CommerceOperationError?error.databaseCode:undefined;if(code==="P0002")return context.json({error:"commerce_resource_not_found"},404);if(["23503","23505","23514","55000"].includes(code??""))return context.json({error:"commerce_state_conflict"},409);if(code==="42501")return context.json({error:"commerce_access_denied"},403);return context.json({error:"commerce_unavailable"},503);}
+function sanitizePayment(value:any){return{id:value.id,orderId:value.orderId??value.order_id,status:value.status,amountCents:Number(value.amountCents??value.amount_cents),currency:value.currency,qrCode:value.qrCode??value.qr_code??null,qrCodeBase64:value.qrCodeBase64??value.qr_code_base64??null,ticketUrl:value.ticketUrl??value.ticket_url??null,expiresAt:value.expiresAt??value.expires_at};}
+function paymentErrorResponse(context:Context,error:unknown){const code=error instanceof PaymentOperationError?error.databaseCode:undefined;if(error instanceof PaymentProviderError)return context.json({error:"payment_provider_unavailable"},503);if(code==="P0002")return context.json({error:"payment_not_found"},404);if(["23503","23505","23514","55000"].includes(code??""))return context.json({error:"payment_state_conflict"},409);if(code==="42501")return context.json({error:"payment_access_denied"},403);return context.json({error:"payment_unavailable"},503);}

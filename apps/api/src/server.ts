@@ -10,6 +10,8 @@ import { createVerifierAuthorizationGateway } from "./services/verifier-authoriz
 import { createMultipartUploadGateway } from "./services/multipart-upload-supabase.js";
 import { createStorageVerificationGateway } from "./services/storage-verification-supabase.js";
 import { createCommerceSupabaseGateway } from "./services/commerce-supabase.js";
+import { createPaymentPersistence } from "./services/payment-supabase.js";
+import { createMercadoPagoGateway } from "./payments/mercado-pago.js";
 
 loadPrivateEnvironmentFile();
 const environment = readEnvironment();
@@ -23,6 +25,8 @@ const app = createApp(
   createMultipartUploadGateway(environment),
   createStorageVerificationGateway(environment),
   createCommerceSupabaseGateway(environment),
+  createPaymentPersistence(environment),
+  createMercadoPagoGateway(environment),
 );
 
 serve({

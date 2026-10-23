@@ -319,10 +319,12 @@
                 <div id="commerceCartItems"></div>
                 <div class="mt-commerce__total"><span>Total</span><strong id="commerceCartTotal">R$ 0,00</strong></div>
                 <button id="commerceCheckout" class="mt-button" type="button">Iniciar pedido</button>
-                <p class="mt-commerce__note">O Pix ainda não está disponível nesta etapa. Iniciar o pedido não confirma pagamento nem libera downloads.</p>
+                <p class="mt-commerce__note">O valor e a disponibilidade serão revalidados pelo servidor antes de gerar o Pix. O pedido só será confirmado após o pagamento.</p>
               </aside>
               <article id="commercePendingOrder" class="mt-commerce__order" hidden>
-                <span class="mt-overline">Pedido criado</span><h3>AGUARDANDO PAGAMENTO.</h3><p>O pedido foi registrado com os valores e versões atuais. A cobrança Pix ainda não foi implementada; nenhum pagamento ou download foi liberado.</p><dl><div><dt>Pedido</dt><dd id="commerceOrderId"></dd></div><div><dt>Total</dt><dd id="commerceOrderTotal"></dd></div><div><dt>Status</dt><dd>Pendente de pagamento</dd></div></dl>
+                <span class="mt-overline">Pedido criado</span><h3>AGUARDANDO PAGAMENTO.</h3><p>O pedido foi registrado com os valores e versões atuais. A compra só será confirmada depois da validação do Pix pelo servidor.</p><dl><div><dt>Pedido</dt><dd id="commerceOrderId"></dd></div><div><dt>Total</dt><dd id="commerceOrderTotal"></dd></div><div><dt>Status</dt><dd id="commerceOrderStatus">Pendente de pagamento</dd></div></dl>
+                <button id="commerceCreatePix" class="mt-button" type="button">Gerar Pix</button>
+                <section id="commercePix" class="mt-commerce__pix" aria-labelledby="commercePixTitle" hidden><h4 id="commercePixTitle">PAGUE COM PIX.</h4><img id="commercePixQr" alt="QR Code Pix deste pedido" hidden><label for="commercePixCode">Pix copia e cola</label><textarea id="commercePixCode" readonly rows="4"></textarea><button id="commerceCopyPix" class="mt-button mt-button--outline" type="button">Copiar código Pix</button><p id="commercePixExpiry"></p><p>O pagamento permanece pendente até a confirmação segura do Mercado Pago.</p></section>
               </article>
             </section>
           </section>
