@@ -14,6 +14,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "storage:verify": "npm run build:api && node .build/api/cli/verify-storage-upload.js",
+    "email:process": "npm run build:api && node .build/api/cli/process-email-outbox.js",
     "test": "npm run typecheck && npm run test:api && npm run test:site"
   },
   "dependencies": {
