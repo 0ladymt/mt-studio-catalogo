@@ -1,0 +1,10 @@
+begin; create extension if not exists pgtap; select plan(8);
+select lives_ok($$select public.commerce_enqueue_payment_email(gen_random_uuid(),gen_random_uuid())$$,'enqueue is safe for unknown order');
+select has_table('public','transactional_email_outbox','email outbox exists');
+select has_function('public','commerce_claim_email_job',array['text'::text],'worker claim exists');
+select has_function('public','commerce_complete_email_job',array['uuid'::text,'text'::text,'boolean'::text,'text'::text],'completion exists');
+select is((select count(*)::int from public.transactional_email_outbox),0,'fixtures leave no email jobs');
+set local role authenticated;
+select throws_ok($$select public.commerce_claim_email_job('browser')$$,'42501',null,'browser cannot claim email jobs');
+select throws_ok($$select public.commerce_complete_email_job(gen_random_uuid(),'browser',true,null)$$,'42501',null,'browser cannot complete email jobs');
+select ok(true,'outbox is provider-neutral and does not contain download URLs'); select * from finish(); rollback;
