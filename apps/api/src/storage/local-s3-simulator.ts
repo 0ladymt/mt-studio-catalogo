@@ -33,12 +33,29 @@ export class LocalS3Simulator implements ObjectStorage {
     };
   }
 
+  async createPresignedGet(input: { objectKey: string; displayName: string; expiresAt: Date }) {
+    const expires = Math.floor(input.expiresAt.getTime() / 1000);
+    const signature = this.#signGet(input.objectKey, expires);
+    const url = new URL(`/private/${encodeURIComponent(input.objectKey)}`, this.#origin);
+    url.searchParams.set("expires", String(expires));
+    url.searchParams.set("signature", signature);
+    url.searchParams.set("download", input.displayName);
+    return { url: url.toString(), method: "GET" as const, expiresAt: input.expiresAt.toISOString() };
+  }
+
   async handle(request: Request): Promise<Response> {
-    if (request.method !== "PUT") return new Response(null, { status: 404 });
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/private/")) return new Response(null, { status: 404 });
     const objectKey = decodeURIComponent(url.pathname.slice("/private/".length));
     const expires = Number(url.searchParams.get("expires"));
+    if (request.method === "GET") {
+      const signature = url.searchParams.get("signature") ?? "";
+      if (!Number.isSafeInteger(expires) || expires < Math.floor(Date.now() / 1000) || !this.#validSignature(signature, this.#signGet(objectKey, expires))) return new Response(null, { status: 403 });
+      const object = this.#objects.get(objectKey);
+      if (!object) return new Response(null, { status: 404 });
+      return new Response(object.body.slice(), { status: 200, headers: { "content-type": object.contentType, "content-disposition": `attachment; filename="${(url.searchParams.get("download") ?? "download.zip").replace(/[\r\n"]/g, "_")}"` } });
+    }
+    if (request.method !== "PUT") return new Response(null, { status: 404 });
     const sizeBytes = Number(url.searchParams.get("size"));
     const signature = url.searchParams.get("signature") ?? "";
     const contentType = request.headers.get("content-type") ?? "";
@@ -79,6 +96,10 @@ export class LocalS3Simulator implements ObjectStorage {
 
   #sign(objectKey: string, expires: number, contentType: string, sizeBytes: number): string {
     return createHmac("sha256", this.#secret).update(`${objectKey}\n${expires}\n${contentType}\n${sizeBytes}`).digest("hex");
+  }
+
+  #signGet(objectKey: string, expires: number): string {
+    return createHmac("sha256", this.#secret).update(`GET\n${objectKey}\n${expires}`).digest("hex");
   }
 
   #validSignature(received: string, expected: string): boolean {

@@ -501,6 +501,61 @@
 
   let currentDisplayName = "Cliente";
 
+  const orderStatusLabels = { pending_payment: "Pagamento pendente", paid: "Pago", expired: "Expirado", failed: "Falhou", refunded: "Reembolsado" };
+  const formatMoney = (cents) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+  const formatBytes = (bytes) => new Intl.NumberFormat("pt-BR", { style: "unit", unit: bytes >= 1048576 ? "megabyte" : "kilobyte", maximumFractionDigits: 1 }).format(bytes / (bytes >= 1048576 ? 1048576 : 1024));
+
+  async function requestOrderDownload(orderId, entitlementId, button) {
+    button.disabled = true;
+    const status = document.getElementById("orderHistoryStatus");
+    showStatus(status, "Gerando um acesso privado temporário…", "loading");
+    try {
+      const { response, body } = await api(`/api/orders/${orderId}/downloads/${entitlementId}`, { method: "POST", data: { requestId: crypto.randomUUID() } });
+      if (!response.ok) throw new Error(body.error ?? "download_failed");
+      showStatus(status, "Link privado criado. O download será iniciado.", "success");
+      window.location.assign(body.download.url);
+    } catch (error) {
+      showStatus(status, error.message === "download_not_eligible" ? "Este pedido não está elegível para download." : "Não foi possível gerar o download agora.", "error");
+    } finally { button.disabled = false; }
+  }
+
+  function renderOrderHistory(orders) {
+    const list = document.getElementById("orderHistoryList");
+    const status = document.getElementById("orderHistoryStatus");
+    list.replaceChildren();
+    if (!orders.length) { showStatus(status, "Você ainda não possui pedidos."); return; }
+    showStatus(status, `${orders.length} ${orders.length === 1 ? "pedido encontrado" : "pedidos encontrados"}.`);
+    for (const order of orders) {
+      const card = document.createElement("article"); card.className = "mt-order-history__order";
+      const head = document.createElement("div"); head.className = "mt-order-history__order-head";
+      const title = document.createElement("strong"); title.textContent = `Pedido ${order.id.slice(0, 8).toUpperCase()}`;
+      const state = document.createElement("span"); state.textContent = orderStatusLabels[order.status] || order.status;
+      const total = document.createElement("span"); total.textContent = formatMoney(order.totalCents);
+      head.append(title, state, total); card.append(head);
+      for (const item of order.items || []) {
+        const itemBox = document.createElement("div"); itemBox.className = "mt-order-history__item";
+        const copy = document.createElement("div"); const name = document.createElement("strong"); name.textContent = item.name;
+        const version = document.createElement("span"); version.textContent = `Versão ${item.versionLabel}`; copy.append(name, version); itemBox.append(copy);
+        const files = document.createElement("div"); files.className = "mt-order-history__files";
+        for (const file of item.downloads || []) {
+          const row = document.createElement("div"); row.className = "mt-order-history__file";
+          const label = document.createElement("span"); label.textContent = `${file.displayName} · ${formatBytes(file.sizeBytes)}`;
+          const button = document.createElement("button"); button.type = "button"; button.className = "mt-button mt-button--outline"; button.textContent = file.status === "active" && order.downloadEligible ? "Baixar arquivo" : "Download indisponível"; button.disabled = file.status !== "active" || !order.downloadEligible;
+          button.addEventListener("click", () => requestOrderDownload(order.id, file.entitlementId, button)); row.append(label, button); files.append(row);
+        }
+        if (!(item.downloads || []).length) { const unavailable = document.createElement("span"); unavailable.textContent = order.status === "paid" ? "Entrega em preparação." : "Downloads liberados somente após pagamento confirmado."; files.append(unavailable); }
+        itemBox.append(files); card.append(itemBox);
+      }
+      list.append(card);
+    }
+  }
+
+  async function loadOrderHistory() {
+    const { response, body } = await api("/api/orders");
+    if (!response.ok) { showStatus(document.getElementById("orderHistoryStatus"), "Não foi possível consultar seus pedidos.", "error"); return; }
+    renderOrderHistory(body.orders || []);
+  }
+
   function renderAccountName(name) {
     currentDisplayName = name || "Cliente";
     document.getElementById("accountName").textContent = `${currentDisplayName}.`;
@@ -552,6 +607,7 @@
     document.getElementById("accountEmail").textContent = session.user?.email || "E-mail confirmado";
     const methodsResponse = await api("/api/auth/access-methods");
     if (methodsResponse.response.ok) updateAccessMethods(methodsResponse.body);
+    await loadOrderHistory();
     if (pendingAccountNotice) {
       showStatus(statuses.account, pendingAccountNotice.message, pendingAccountNotice.tone);
       pendingAccountNotice = null;

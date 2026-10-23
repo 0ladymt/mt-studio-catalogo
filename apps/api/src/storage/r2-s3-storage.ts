@@ -26,6 +26,7 @@ const r2EnvironmentSchema = z.object({
   R2_ACCESS_KEY_ID: optionalSecret,
   R2_SECRET_ACCESS_KEY: optionalSecret,
   R2_UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
+  R2_DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
   STORAGE_VERIFY_MAX_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024 * 1024),
   STORAGE_VERIFY_TIMEOUT_SECONDS: z.coerce.number().int().min(30).max(7200).default(1800),
 }).superRefine((value, context) => {
@@ -45,6 +46,7 @@ type R2Configuration = {
   accessKeyId: string;
   secretAccessKey: string;
   uploadUrlTtlSeconds: number;
+  downloadUrlTtlSeconds?: number;
   verifyMaxBytes?: number;
   verifyTimeoutSeconds?: number;
 };
@@ -66,6 +68,7 @@ export function createConfiguredObjectStorage(source: NodeJS.ProcessEnv): Object
     accessKeyId: value.R2_ACCESS_KEY_ID!,
     secretAccessKey: value.R2_SECRET_ACCESS_KEY!,
     uploadUrlTtlSeconds: value.R2_UPLOAD_URL_TTL_SECONDS,
+    downloadUrlTtlSeconds: value.R2_DOWNLOAD_URL_TTL_SECONDS,
     verifyMaxBytes: value.STORAGE_VERIFY_MAX_BYTES,
     verifyTimeoutSeconds: value.STORAGE_VERIFY_TIMEOUT_SECONDS,
   });
@@ -76,11 +79,13 @@ export class R2S3Storage implements ObjectStorage {
   readonly #client: S3Client;
   readonly #bucket: string;
   readonly #uploadUrlTtlSeconds: number;
+  readonly #downloadUrlTtlSeconds: number;
   readonly #limits: { maxBytes: number; timeoutMs: number };
 
   constructor(configuration: R2Configuration, client?: S3Client) {
     this.#bucket = configuration.bucket;
     this.#uploadUrlTtlSeconds = configuration.uploadUrlTtlSeconds;
+    this.#downloadUrlTtlSeconds = configuration.downloadUrlTtlSeconds ?? 300;
     this.#limits = { maxBytes: configuration.verifyMaxBytes ?? 5 * 1024 ** 3, timeoutMs: (configuration.verifyTimeoutSeconds ?? 1800) * 1000 };
     this.#client = client ?? new S3Client({
       endpoint: configuration.endpoint,
@@ -108,6 +113,19 @@ export class R2S3Storage implements ObjectStorage {
       headers: { "content-type": input.contentType },
       expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
     };
+  }
+
+  async createPresignedGet(input: { objectKey: string; displayName: string; expiresAt: Date }) {
+    const requestedTtl = Math.floor((input.expiresAt.getTime() - Date.now()) / 1000);
+    const expiresIn = Math.max(1, Math.min(requestedTtl, this.#downloadUrlTtlSeconds));
+    const safeName = input.displayName.replace(/[\r\n"\\]/g, "_").slice(0, 180) || "download.zip";
+    const command = new GetObjectCommand({
+      Bucket: this.#bucket,
+      Key: input.objectKey,
+      ResponseContentDisposition: `attachment; filename="${safeName}"`,
+      ResponseContentType: "application/zip",
+    });
+    return { url: await getSignedUrl(this.#client, command, { expiresIn }), method: "GET" as const, expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString() };
   }
 
   async beginMultipart(input: { objectKey: string; contentType: string }) {

@@ -139,6 +139,17 @@ describe("Cloudflare R2 S3 adapter", () => {
     expect(JSON.stringify(result)).not.toMatch(/private-test-(key|secret)/);
   });
 
+  it("signs a short private GET for the immutable final key", async () => {
+    const client = new FakeS3Client();
+    const result = await adapter(client).createPresignedGet({ objectKey: finalKey, displayName: "Pack 1.0.zip", expiresAt: new Date(Date.now() + 600_000) });
+    const command = signed.mock.calls[0]![1] as GetObjectCommand;
+    expect(command.input.Key).toBe(finalKey);
+    expect(command.input.ResponseContentDisposition).toBe('attachment; filename="Pack 1.0.zip"');
+    expect(result.method).toBe("GET");
+    expect(Date.parse(result.expiresAt) - Date.now()).toBeLessThanOrEqual(301_000);
+    expect(JSON.stringify(result)).not.toMatch(/private-test-(key|secret)/);
+  });
+
   it("hashes the complete stored bytes, creates an immutable final object and removes staging", async () => {
     const client = new FakeS3Client();
     client.objects.set(toStagingKey(finalKey), body);

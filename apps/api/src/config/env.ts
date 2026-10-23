@@ -22,6 +22,7 @@ const environmentSchema = z.object({
   MERCADO_PAGO_API_URL: z.string().url().optional(),
   MERCADO_PAGO_NOTIFICATION_URL: z.string().url().optional(),
   PIX_EXPIRATION_MINUTES: z.coerce.number().int().min(5).max(1440).optional(),
+  DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).optional(),
 });
 
 export type ApiEnvironment = z.infer<typeof environmentSchema>;

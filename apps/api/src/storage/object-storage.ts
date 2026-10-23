@@ -12,6 +12,9 @@ export function unavailableObjectStorage(): ObjectStorage {
     async createPresignedPut() {
       throw new StorageUnavailableError();
     },
+    async createPresignedGet() {
+      throw new StorageUnavailableError();
+    },
     async inspectObject() {
       throw new StorageUnavailableError();
     },
