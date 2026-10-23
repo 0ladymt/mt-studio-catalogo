@@ -1,6 +1,6 @@
 /* MT Studio account screens. Authentication tokens remain in HttpOnly BFF cookies. */
 (() => {
-  const localApi = `${location.protocol}//${location.hostname}:8787`;
+  const localApi = window.MT_API_BASE || `${location.protocol}//${location.hostname}:8787`;
   const apiBase = ["127.0.0.1", "localhost"].includes(location.hostname) ? localApi : "";
   const authPages = new Set(["cadastro", "confirmar-email", "login", "conta", "recuperar-senha", "redefinir-senha"]);
   let csrfProof = "";

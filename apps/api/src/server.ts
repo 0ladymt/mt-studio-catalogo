@@ -31,10 +31,13 @@ const app = createApp(
   createDeliveryGateway(environment),
 );
 
+const listenPort = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : environment.API_PORT;
+const listenHost = process.env.PORT ? "0.0.0.0" : environment.API_HOST;
+
 serve({
   fetch: app.fetch,
-  hostname: environment.API_HOST,
-  port: environment.API_PORT,
+  hostname: listenHost,
+  port: listenPort,
 });
 
-console.info(`MT Studio API listening on http://${environment.API_HOST}:${environment.API_PORT}`);
+console.info(`MT Studio API listening on http://${listenHost}:${listenPort}`);

@@ -1,5 +1,6 @@
 # Dependencies and generated reports
 node_modules/
+dist/
 coverage/
 .build/
 .local-storage/
