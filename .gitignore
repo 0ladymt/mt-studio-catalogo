@@ -1,0 +1,21 @@
+# Dependencies and generated reports
+node_modules/
+dist/
+coverage/
+.build/
+.local-storage/
+.multipart-benchmark/
+
+# Local environment files. Examples remain tracked.
+.env
+.env.*
+!.env.example
+
+# Supabase local runtime state
+supabase/.branches/
+supabase/.temp/
+
+# Local logs and editor files
+*.log
+.DS_Store
+Thumbs.db

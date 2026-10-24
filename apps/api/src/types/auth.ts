@@ -1,0 +1,62 @@
+export type AuthenticatedUser = {
+  id: string;
+  email?: string;
+  emailConfirmed?: boolean;
+  providers?: string[];
+};
+
+export type AuthSession = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: AuthenticatedUser;
+};
+
+export type OAuthStart = {
+  authorizationUrl: string;
+  pkceStorage: Record<string, string>;
+};
+
+export type LoginResult =
+  | { status: "authenticated"; session: AuthSession }
+  | { status: "invalid_credentials" }
+  | { status: "email_not_confirmed" };
+
+export type Profile = {
+  user_id: string;
+  display_name: string | null;
+  status: "active" | "disabled";
+  created_at: string;
+  updated_at: string;
+};
+
+export interface AuthGateway {
+  verifyAccessToken(token: string): Promise<AuthenticatedUser | null>;
+  refreshSession(refreshToken: string): Promise<AuthSession | null>;
+  revokeSession(accessToken: string, scope?: "global" | "local"): Promise<void>;
+  signUpWithPassword(input: {
+    displayName: string;
+    email: string;
+    password: string;
+  }): Promise<void>;
+  confirmSignup(email: string, token: string): Promise<boolean>;
+  resendSignupConfirmation(email: string): Promise<void>;
+  signInWithPassword(email: string, password: string): Promise<LoginResult>;
+  requestPasswordRecovery(email: string): Promise<void>;
+  resetPasswordWithOtp(email: string, token: string, password: string): Promise<boolean>;
+  beginGoogleOAuth(callbackUrl: string): Promise<OAuthStart>;
+  completeGoogleOAuth(code: string, pkceStorage: Record<string, string>): Promise<AuthSession | null>;
+  confirmCurrentPassword(email: string, password: string, expectedUserId: string): Promise<boolean>;
+  beginGoogleIdentityLink(session: AuthSession, callbackUrl: string): Promise<OAuthStart>;
+  completeGoogleIdentityLink(code: string, pkceStorage: Record<string, string>): Promise<AuthSession | null>;
+  hasPassword(accessToken: string, userId: string): Promise<boolean>;
+  requestPasswordSetup(session: AuthSession, expectedUserId: string): Promise<boolean>;
+  setupPasswordWithOtp(
+    session: AuthSession,
+    expectedUserId: string,
+    nonce: string,
+    password: string,
+  ): Promise<"updated" | "invalid_or_expired">;
+  getOwnProfile(token: string, userId: string): Promise<Profile | null>;
+  updateOwnProfile(token: string, userId: string, displayName: string): Promise<Profile | null>;
+}

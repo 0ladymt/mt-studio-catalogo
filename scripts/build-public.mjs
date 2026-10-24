@@ -1,0 +1,10 @@
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+const root=process.cwd(),dist=path.join(root,"dist");
+await rm(dist,{recursive:true,force:true}); await mkdir(dist,{recursive:true});
+const files=["index.html","style.css","site.js","app.js","auth-ui.js","commerce-ui.js","admin-connected.js","background-composition.js","catalog-viewer.js","catalogo-data.js","catalogo.json","intro.js","mt-store-drafts.js","projetos-data.js","studio3d.js",".nojekyll"];
+for(const file of files) await cp(path.join(root,file),path.join(dist,file));
+for(const dir of ["backgrounds","brand","catalog-previews","models","previews","projetos","vendor"]) await cp(path.join(root,"assets",dir),path.join(dist,"assets",dir),{recursive:true});
+for(const file of ["logo-borboleta.png","mt-borboleta-street.svg","mt-coroa.svg","mt-doodles.svg","mt-manual-borboletas.svg","mt-manual-coroa.svg","mt-manual-drips.svg","mt-pincelada.svg","rafa-joy-foto.jpg","rafa-joy-home.png"]) await cp(path.join(root,"assets",file),path.join(dist,"assets",file));
+const api=process.env.PUBLIC_API_ORIGIN||""; await writeFile(path.join(dist,"mt-public-config.js"),`window.MT_API_BASE=${JSON.stringify(api)};\n`);
+console.log(`Public build written to dist (${files.length} root files, 7 asset directories)`);

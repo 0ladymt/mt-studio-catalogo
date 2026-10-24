@@ -1,0 +1,998 @@
+/* Connected administrative catalog. Authorization remains server-side. */
+(() => {
+  const apiBase = ["127.0.0.1", "localhost"].includes(location.hostname)
+    ? `${location.protocol}//${location.hostname}:8787`
+    : "";
+  const state = document.getElementById("adminAccessState");
+  const content = document.getElementById("adminAuthorizedContent");
+  const summary = document.getElementById("adminConnectedSummary");
+  const categoriesNode = document.getElementById("adminDatabaseCategories");
+  const productsNode = document.getElementById("adminDatabaseProducts");
+  const detailNode = document.getElementById("adminDatabaseDetail");
+  const categoryForm = document.getElementById("adminCategoryForm");
+  const categoryStatus = document.getElementById("adminCategoryStatus");
+  const newCategory = document.getElementById("adminNewCategory");
+  const cancelCategory = document.getElementById("adminCancelCategory");
+  const productForm = document.getElementById("adminProductForm");
+  const productStatus = document.getElementById("adminProductStatus");
+  const newProduct = document.getElementById("adminNewProduct");
+  const cancelProduct = document.getElementById("adminCancelProduct");
+  if (!state || !content || !summary || !categoriesNode || !productsNode || !detailNode || !categoryForm || !categoryStatus || !newCategory || !cancelCategory || !productForm || !productStatus || !newProduct || !cancelProduct) return;
+
+  let run = 0;
+  let categoriesCache = [];
+  let productsCache = [];
+  let canWriteCatalog = false;
+  let canPublishCatalog = false;
+  let activeAccess = null;
+  let connectedCategoryTotal = 0;
+  let connectedProductTotal = 0;
+  const multipartStateKey = "mt-studio-multipart-uploads-v1";
+  const multipartControllers = new Map();
+  const multipartFiles = new Map();
+  const labels = {
+    draft: "Rascunho", published: "Publicado", unpublished: "Despublicado", archived: "Arquivado",
+    active: "Ativo", inactive: "Inativo", retired: "Retirado", scheduled: "Agendado",
+    metadata_only: "Somente metadados", verified: "Verificado", ready: "Pronto", failed: "Falhou",
+  };
+  const blockers = {
+    category_inactive: "Categoria inativa", current_version_missing: "Versão atual não definida",
+    eligible_version_missing: "Versão elegível ausente", active_brl_price_missing: "Preço BRL vigente ausente",
+    active_cover_missing: "Capa ativa ausente", verified_ready_file_missing: "Arquivo verificado e pronto ausente",
+  };
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const label = value => labels[value] || value || "—";
+  const money = cents => {
+    const value = BigInt(cents);
+    const absolute = value < 0n ? -value : value;
+    return `${value < 0n ? "−" : ""}R$ ${(absolute / 100n).toLocaleString("pt-BR")},${String(absolute % 100n).padStart(2, "0")}`;
+  };
+  const size = bytes => Number(bytes).toLocaleString("pt-BR") + " bytes";
+  const readMultipartState = () => { try { const value = JSON.parse(localStorage.getItem(multipartStateKey) || "{}"); return value && typeof value === "object" ? value : {}; } catch { return {}; } };
+  const writeMultipartState = value => localStorage.setItem(multipartStateKey, JSON.stringify(value));
+  const rememberMultipart = (fileId, value) => { const state = readMultipartState(); if (value) state[fileId] = value; else delete state[fileId]; writeMultipartState(state); };
+  async function pruneMultipartState() {
+    const state = readMultipartState(), entries = Object.entries(state); let changed = false;
+    await Promise.all(entries.map(async ([fileId, record]) => { try { await request(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}`); } catch (error) { if (error.status === 404) { delete state[fileId]; changed = true; } } }));
+    if (changed) writeMultipartState(state);
+  }
+  const setState = (kind, title, message) => {
+    state.dataset.state = kind;
+    state.replaceChildren(el("strong", "", title), el("p", "", message));
+    state.hidden = false;
+    content.hidden = true;
+  };
+  async function request(path, options = {}) {
+    const response = await fetch(`${apiBase}${path}`, {
+      credentials: "include",
+      ...options,
+      headers: { Accept: "application/json", ...(options.headers || {}) },
+    });
+    let body = null;
+    try { body = await response.json(); } catch { /* Deliberately hide response internals. */ }
+    if (!response.ok) throw Object.assign(new Error("admin-request-failed"), { status: response.status, body });
+    return body;
+  }
+  async function authorize() {
+    const access = await request("/api/admin/access");
+    if (!access?.authorized || !Array.isArray(access.permissions) || !access.permissions.includes("catalog:read")) {
+      throw Object.assign(new Error("catalog-read-denied"), { status: 403 });
+    }
+    return access;
+  }
+  async function mutateCatalog(path, method, body, permission = "catalog:write") {
+    const access = await authorize();
+    if (!access.permissions.includes(permission)) throw Object.assign(new Error("catalog-permission-denied"), { status: 403 });
+    const csrf = await request("/api/auth/csrf");
+    if (!csrf?.csrfToken) throw Object.assign(new Error("csrf-unavailable"), { status: 503 });
+    return request(path, {
+      method,
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.csrfToken },
+      body: JSON.stringify(body),
+    });
+  }
+  function uploadError(error) {
+    if (error?.name === "AbortError") return "Envio pausado. As partes já confirmadas foram preservadas.";
+    if (error?.status === 401 || error?.status === 403) return "Sua sessão ou permissão não autoriza este envio.";
+    if (error?.body?.error === "multipart_session_unavailable") return "A sessão de envio expirou ou foi cancelada. Cancele este registro e inicie um novo envio; nenhuma parte será apresentada como retomável.";
+    if (error?.status === 409) return "O estado do upload mudou. Atualize a situação antes de continuar.";
+    return "Não foi possível continuar o envio. As partes confirmadas permanecem disponíveis para retomada.";
+  }
+  function setUploadPresentation(panel, status, confirmed, total) {
+    const count = Math.min(confirmed, total), percent = total ? Math.round(count / total * 100) : 0;
+    panel.dataset.state = status;
+    panel.dataset.confirmedParts = String(count); panel.dataset.totalParts = String(total);
+    panel.querySelector(".mt-admin-upload-state").textContent = status;
+    panel.querySelector(".mt-admin-upload-count").textContent = `${count} de ${total} partes confirmadas · ${total - count} pendentes`;
+    panel.querySelector("progress").value = percent;
+    panel.querySelector(".mt-admin-upload-percent").textContent = `${percent}%`;
+    const completed = status === "Envio concluído — aguardando verificação";
+    const startButton = panel.querySelector(".mt-admin-upload-start"), pauseButton = panel.querySelector(".mt-admin-upload-pause"), cancelButton = panel.querySelector(".mt-admin-upload-cancel");
+    if (completed && startButton) startButton.disabled = true;
+    if (completed && pauseButton) pauseButton.disabled = true;
+    if (completed && cancelButton) cancelButton.disabled = true;
+  }
+  async function refreshMultipart(panel, record) {
+    const body = await request(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}`);
+    const session = body.multipart, confirmed = session.parts?.length || 0;
+    setUploadPresentation(panel, session.status === "completed" ? "Envio concluído — aguardando verificação" : record.paused ? "Pausado" : "Aguardando retomada", confirmed, session.totalParts);
+    return session;
+  }
+  async function runMultipart(panel, fileMeta, record, browserFile) {
+    const action = panel.querySelector(".mt-admin-upload-start"), pause = panel.querySelector(".mt-admin-upload-pause");
+    await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}/reconcile`, "POST", {});
+    const session = await refreshMultipart(panel, { ...record, paused:false });
+    if (session.status === "completed") return;
+    if (!browserFile || browserFile.size !== Number(fileMeta.sizeBytes) || browserFile.name !== record.fileName) throw new Error("file_reselection_required");
+    const confirmed = new Set((session.parts || []).map(part => part.partNumber));
+    const pending = Array.from({ length:session.totalParts }, (_, index) => index + 1).filter(number => !confirmed.has(number));
+    const controller = new AbortController(); multipartControllers.set(fileMeta.id, controller); multipartFiles.set(fileMeta.id, browserFile);
+    record.paused = false; rememberMultipart(fileMeta.id, record); action.disabled = true; pause.disabled = false;
+    setUploadPresentation(panel, "Enviando", confirmed.size, session.totalParts);
+    const worker = async () => {
+      while (pending.length && !controller.signal.aborted) {
+        const partNumber = pending.shift(), start = (partNumber - 1) * session.partSizeBytes, end = Math.min(start + session.partSizeBytes, browserFile.size);
+        const signed = await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(session.id)}/part-url`, "POST", { partNumber });
+        const uploaded = await fetch(signed.part.url, { method:"PUT", headers:signed.part.headers, body:browserFile.slice(start, end), signal:controller.signal });
+        if (!uploaded.ok) throw Object.assign(new Error("part-upload-failed"), { status:uploaded.status });
+        await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(session.id)}/parts/${partNumber}/confirm`, "POST", {});
+        confirmed.add(partNumber); setUploadPresentation(panel, "Enviando", confirmed.size, session.totalParts);
+      }
+    };
+    try {
+      const concurrency = browserFile.size < 64 * 1024 * 1024 ? 1 : 3;
+      await Promise.all(Array.from({ length:Math.min(concurrency, pending.length) }, worker));
+      if (controller.signal.aborted) return;
+      const reconciled = await refreshMultipart(panel, record);
+      if ((reconciled.parts || []).length !== reconciled.totalParts) throw Object.assign(new Error("multipart-reconciliation-failed"), { status:409 });
+      await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(session.id)}/complete`, "POST", { requestId:crypto.randomUUID() });
+      record.completed = true; rememberMultipart(fileMeta.id, record);
+      setUploadPresentation(panel, "Envio concluído — aguardando verificação", session.totalParts, session.totalParts);
+      panel.querySelector(".mt-admin-upload-message").textContent = "O staging foi concluído. O arquivo ainda precisa da verificação SHA-256 confiável.";
+      document.dispatchEvent(new CustomEvent("mt-storage-upload-completed", { detail:{ fileId:fileMeta.id } }));
+      pause.disabled = true;
+    } catch (error) {
+      controller.abort();
+      throw error;
+    } finally {
+      if (controller.signal.aborted) setUploadPresentation(panel, "Pausado", confirmed.size, session.totalParts);
+      multipartControllers.delete(fileMeta.id); action.disabled = Boolean(record.completed);
+    }
+  }
+  function renderUploadPanel(fileMeta) {
+    const panel = el("section", "mt-admin-upload"); panel.dataset.fileId = fileMeta.id;
+    const title = el("strong", "", "Upload multipart local");
+    const state = el("span", "mt-admin-upload-state", "Nenhum envio iniciado");
+    const chooser = document.createElement("input"); chooser.type = "file"; chooser.accept = ".zip,application/zip"; chooser.setAttribute("aria-label", `Selecionar ZIP para ${fileMeta.displayName}`);
+    const info = el("span", "mt-admin-upload-file", `ZIP esperado: ${fileMeta.displayName} · ${size(fileMeta.sizeBytes)}`);
+    const progress = document.createElement("progress"); progress.max = 100; progress.value = 0; progress.setAttribute("aria-label", "Progresso do upload");
+    const percent = el("span", "mt-admin-upload-percent", "0%");
+    const count = el("span", "mt-admin-upload-count", "0 partes confirmadas");
+    const controls = el("div", "mt-admin-read-actions");
+    const start = el("button", "mt-admin-upload-start", "Iniciar envio"); start.type = "button";
+    const pause = el("button", "mt-admin-upload-pause", "Pausar"); pause.type = "button"; pause.disabled = true;
+    const cancel = el("button", "mt-admin-upload-cancel", "Cancelar envio"); cancel.type = "button"; cancel.disabled = true;
+    const message = el("p", "mt-admin-upload-message", "O multipart concluído continuará como somente metadados até a verificação integral."); message.setAttribute("role", "status"); message.setAttribute("aria-live", "polite");
+    const bar = el("div", "mt-admin-upload-progress"); bar.append(progress, percent);
+    panel.append(title, state, info, chooser, bar, count, controls, message); controls.append(start, pause, cancel);
+    const saved = readMultipartState()[fileMeta.id];
+    if (saved?.multipartId) {
+      cancel.disabled = false; start.textContent = "Retomar envio";
+      refreshMultipart(panel, { ...saved, paused:true }).catch(() => { rememberMultipart(fileMeta.id, null); setUploadPresentation(panel, "Aguardando novo envio", 0, 0); });
+    }
+    chooser.addEventListener("change", () => { const selected = chooser.files?.[0]; if (selected) { multipartFiles.set(fileMeta.id, selected); info.textContent = `${selected.name} · ${size(selected.size)}`; } });
+    start.addEventListener("click", async () => {
+      start.disabled = true; message.textContent = "Preparando envio seguro…";
+      try {
+        let record = readMultipartState()[fileMeta.id], selected = multipartFiles.get(fileMeta.id) || chooser.files?.[0];
+        if (!selected) throw new Error("file_reselection_required");
+        if (!selected.name.toLowerCase().endsWith(".zip") || selected.size !== Number(fileMeta.sizeBytes)) throw new Error("file_mismatch");
+        if (!record?.multipartId) {
+          const created = await mutateCatalog(`/api/admin/files/${encodeURIComponent(fileMeta.id)}/uploads`, "POST", { requestId:crypto.randomUUID(), mode:"multipart" });
+          const opened = await mutateCatalog(`/api/admin/storage-uploads/${encodeURIComponent(created.upload.id)}/multipart`, "POST", { requestId:crypto.randomUUID(), partSizeBytes:8 * 1024 * 1024 });
+          record = { multipartId:opened.multipart.id, uploadId:created.upload.id, fileName:selected.name, sizeBytes:selected.size, paused:false, completed:false };
+          rememberMultipart(fileMeta.id, record); cancel.disabled = false; start.textContent = "Retomar envio";
+        }
+        if (record.fileName !== selected.name || record.sizeBytes !== selected.size) throw new Error("file_mismatch");
+        await runMultipart(panel, fileMeta, record, selected);
+      } catch (error) {
+        message.textContent = error.message === "file_reselection_required" ? "Selecione novamente o mesmo ZIP para retomar com segurança." : error.message === "file_mismatch" ? "O ZIP selecionado não corresponde ao nome e tamanho registrados para este envio." : uploadError(error);
+      } finally { start.disabled = false; }
+    });
+    pause.addEventListener("click", () => { const controller = multipartControllers.get(fileMeta.id); controller?.abort(); const record = readMultipartState()[fileMeta.id]; if (record) { record.paused = true; rememberMultipart(fileMeta.id, record); } pause.disabled = true; start.disabled = false; setUploadPresentation(panel, "Pausado", Number(panel.dataset.confirmedParts || 0), Number(panel.dataset.totalParts || 0)); message.textContent = "Envio pausado. Reabra ou selecione novamente o mesmo ZIP para continuar."; });
+    cancel.addEventListener("click", () => confirmDetailAction(controls, "Confirmar cancelamento", async () => {
+      multipartControllers.get(fileMeta.id)?.abort(); const record = readMultipartState()[fileMeta.id];
+      if (record?.multipartId) await mutateCatalog(`/api/admin/multipart/${encodeURIComponent(record.multipartId)}/cancel`, "POST", { requestId:crypto.randomUUID() });
+      rememberMultipart(fileMeta.id, null); multipartFiles.delete(fileMeta.id); chooser.value = ""; setUploadPresentation(panel, "Cancelado", 0, 0); message.textContent = "Upload cancelado. Nenhum arquivo final verificado foi removido."; controls.replaceChildren(start, pause, cancel); cancel.disabled = true; start.textContent = "Iniciar envio";
+    }, () => { controls.replaceChildren(start, pause, cancel); message.textContent = "Cancelamento descartado; o upload foi preservado."; }, uploadError));
+    return panel;
+  }
+  function verificationError(error) {
+    if (error?.status === 401 || error?.status === 403) return "Sua sessão ou permissão não autoriza esta verificação.";
+    if (error?.status === 409) return "O upload ainda não está concluído ou seu estado mudou.";
+    return "Não foi possível consultar ou solicitar a verificação agora.";
+  }
+  function renderVerificationPanel(fileMeta, product, version, productTrigger) {
+    const panel = el("section", "mt-admin-verification"); panel.dataset.fileId = fileMeta.id;
+    const title = el("strong", "", "Verificação de integridade");
+    const status = el("span", "mt-admin-verification-state", "Consultando estado…");
+    const description = el("p", "mt-admin-verification-description", `${product.name} · versão ${version.versionLabel} · ${fileMeta.displayName} · ${size(fileMeta.sizeBytes)} · SHA-256 ${fileMeta.checksumSha256}`);
+    const instructions = el("p", "mt-admin-verification-instructions", "A verificação é executada pela ferramenta administrativa local, nunca pelo navegador.");
+    const command = el("code", "mt-admin-verification-command"); command.hidden = true;
+    const controls = el("div", "mt-admin-read-actions");
+    const requestButton = el("button", "mt-admin-verification-request", "Verificar integridade"); requestButton.type = "button"; requestButton.disabled = true;
+    const approveButton = el("button", "mt-admin-delivery-approve", "Aprovar para entrega"); approveButton.type = "button"; approveButton.hidden = true;
+    const refreshButton = el("button", "", "Atualizar estado"); refreshButton.type = "button";
+    const message = el("p", "mt-admin-verification-message", ""); message.setAttribute("role", "status"); message.setAttribute("aria-live", "polite");
+    controls.append(requestButton, approveButton, refreshButton); panel.append(title, status, description, instructions, command, controls, message);
+    let current = null, polling = 0;
+    const present = verification => {
+      current = verification; const job = verification.job;
+      command.hidden = true; requestButton.disabled = true; approveButton.hidden = true;
+      if (verification.fileStorageStatus === "ready") {
+        status.textContent = "Pronto para entrega"; panel.dataset.state = "ready"; instructions.textContent = "Aprovação comercial registrada. Isso não publica o produto nem cria direitos de download.";
+      } else if (verification.fileStorageStatus === "verified" || job?.status === "completed") {
+        status.textContent = "Verificado"; panel.dataset.state = "completed"; instructions.textContent = "SHA-256 integral confirmado pelo verificador confiável. O arquivo ainda não está pronto para entrega.";
+        approveButton.hidden = !canPublishCatalog;
+      } else if (job?.status === "verifying") {
+        status.textContent = "Verificando"; panel.dataset.state = "verifying"; instructions.textContent = "A ferramenta local está lendo integralmente os bytes armazenados.";
+      } else if (job?.status === "failed") {
+        status.textContent = "Falha na verificação"; panel.dataset.state = "failed"; requestButton.disabled = !canWriteCatalog; requestButton.textContent = "Solicitar nova tentativa"; instructions.textContent = "A falha não promoveu o arquivo. Uma nova execução exige autorização explícita.";
+      } else if (job?.status === "pending") {
+        status.textContent = "Verificação solicitada"; panel.dataset.state = "pending"; command.textContent = `npm run storage:verify -- ${verification.upload.id}`; command.hidden = false; instructions.textContent = "Execute o comando abaixo no computador local. A CLI abrirá a autorização autenticada de uso único.";
+      } else if (verification.multipartStatus === "completed" && verification.upload) {
+        status.textContent = "Envio concluído — aguardando verificação"; panel.dataset.state = "awaiting"; requestButton.disabled = !canWriteCatalog; requestButton.textContent = "Verificar integridade";
+      } else {
+        status.textContent = "Aguardando conclusão do envio"; panel.dataset.state = "uploading"; instructions.textContent = "Conclua o staging multipart antes de solicitar a verificação.";
+      }
+      if (["pending", "verifying"].includes(job?.status) && !polling) polling = window.setTimeout(async () => { polling = 0; if (panel.isConnected) await refresh(); }, 2000);
+    };
+    const refresh = async () => { try { const body = await request(`/api/admin/files/${encodeURIComponent(fileMeta.id)}/verification`); present(body.verification); message.textContent = ""; } catch (error) { message.textContent = verificationError(error); } };
+    requestButton.addEventListener("click", () => {
+      if (!current?.upload?.id) return;
+      const original = [...controls.childNodes]; controls.replaceChildren();
+      const confirm = el("button", "mt-admin-verification-confirm", "Confirmar solicitação"); confirm.type = "button";
+      const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+      confirm.addEventListener("click", async () => { confirm.disabled = true; cancel.disabled = true; message.textContent = "Registrando solicitação segura…"; try { const body = await mutateCatalog(`/api/admin/storage-uploads/${encodeURIComponent(current.upload.id)}/verification-jobs`, "POST", { requestId:crypto.randomUUID() }); present({ ...current, job:body.verification.job }); controls.replaceChildren(...original); message.textContent = "Solicitação registrada. Execute a ferramenta local e autorize a operação no navegador."; } catch (error) { controls.replaceChildren(...original); message.textContent = verificationError(error); } });
+      cancel.addEventListener("click", () => { controls.replaceChildren(...original); message.textContent = "Solicitação cancelada; nenhum job foi criado."; requestButton.focus(); });
+      controls.append(confirm, cancel); confirm.focus();
+    });
+    approveButton.addEventListener("click", () => {
+      const original = [...controls.childNodes]; controls.replaceChildren();
+      const warning = el("p", "mt-admin-verification-instructions", "Confirme que este arquivo verificado pode ser usado em entregas futuras. A ação não publica o produto.");
+      const confirm = el("button", "mt-admin-delivery-confirm", "Confirmar aprovação"); confirm.type = "button";
+      const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+      controls.append(warning, confirm, cancel); confirm.focus();
+      confirm.addEventListener("click", async () => { confirm.disabled = true; cancel.disabled = true; message.textContent = "Registrando aprovação comercial…"; try { await mutateCatalog(`/api/admin/files/${encodeURIComponent(fileMeta.id)}/approve-delivery`, "POST", { requestId:crypto.randomUUID() }, "catalog:publish"); await loadDetail(product.id, productTrigger); detailStatus("Arquivo aprovado para entrega. O produto continua sem publicação automática.", "success"); } catch (error) { controls.replaceChildren(...original); message.textContent = error?.status === 409 ? "O arquivo ou a versão mudou e não pode mais ser aprovado." : verificationError(error); } });
+      cancel.addEventListener("click", () => { controls.replaceChildren(...original); message.textContent = "Aprovação cancelada; o arquivo permanece verificado."; approveButton.focus(); });
+    });
+    refreshButton.addEventListener("click", refresh);
+    const refreshAfterUpload = event => {
+      if (event.detail?.fileId !== fileMeta.id || !panel.isConnected) return;
+      document.removeEventListener("mt-storage-upload-completed", refreshAfterUpload);
+      refresh();
+    };
+    document.addEventListener("mt-storage-upload-completed", refreshAfterUpload);
+    refresh();
+    return panel;
+  }
+  function renderSummary(access, categoryTotal, productTotal) {
+    summary.replaceChildren();
+    for (const [value, caption] of [[productTotal, "Produtos no banco"], [categoryTotal, "Categorias"], [label(access.role), "Papel autorizado"]]) {
+      const item = el("div"); item.append(el("strong", "", String(value)), el("span", "", caption)); summary.append(item);
+    }
+  }
+  function categoryPayload(category) {
+    return {
+      name: category.name,
+      slug: category.slug,
+      description: category.description || null,
+      sortOrder: Number(category.sortOrder),
+      status: category.status,
+    };
+  }
+  function renderCategories(items) {
+    categoriesCache = items;
+    categoriesNode.replaceChildren();
+    if (!items.length) return categoriesNode.append(el("p", "mt-admin-read-empty", "Nenhuma categoria cadastrada no banco."));
+    for (const category of items) {
+      const row = el("div", "mt-admin-read-row");
+      const copy = el("div", "mt-admin-read-copy");
+      copy.append(el("strong", "", category.name), el("span", "", `${label(category.status)} · ${category.slug} · ordem ${category.sortOrder}`));
+      row.append(copy);
+      if (canWriteCatalog) {
+        const actions = el("div", "mt-admin-read-actions");
+        const edit = el("button", "", "Editar"); edit.type = "button";
+        edit.addEventListener("click", () => openCategoryForm(category));
+        const toggle = el("button", "", category.status === "active" ? "Desativar" : "Ativar"); toggle.type = "button";
+        toggle.addEventListener("click", () => saveCategory(category, { ...categoryPayload(category), status: category.status === "active" ? "inactive" : "active" }, toggle));
+        actions.append(edit, toggle); row.append(actions);
+      }
+      categoriesNode.append(row);
+    }
+  }
+  function resetCategoryForm(message = "") {
+    categoryForm.reset();
+    categoryForm.elements.sortOrder.value = "0";
+    delete categoryForm.dataset.categoryId;
+    document.getElementById("adminCategoryFormTitle").textContent = "NOVA CATEGORIA.";
+    categoryForm.hidden = true;
+    categoryStatus.textContent = message;
+    newCategory.focus({ preventScroll: true });
+  }
+  function openCategoryForm(category = null) {
+    if (!canWriteCatalog) return;
+    categoryForm.hidden = false;
+    categoryStatus.textContent = "";
+    if (category) {
+      categoryForm.dataset.categoryId = category.id;
+      document.getElementById("adminCategoryFormTitle").textContent = "EDITAR CATEGORIA.";
+      for (const key of ["name", "slug", "sortOrder", "status", "description"]) categoryForm.elements[key].value = category[key] ?? "";
+    } else {
+      categoryForm.reset(); categoryForm.elements.sortOrder.value = "0"; delete categoryForm.dataset.categoryId;
+      document.getElementById("adminCategoryFormTitle").textContent = "NOVA CATEGORIA.";
+    }
+    categoryForm.elements.name.focus({ preventScroll: true });
+  }
+  function categoryError(error) {
+    if (error.status === 400) return "Confira nome, slug, ordem e descrição.";
+    if (error.status === 409) return "Já existe uma categoria com esse slug.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível salvar a categoria. Tente novamente quando o serviço estiver disponível.";
+  }
+  async function refreshCategories() {
+    const categories = await request("/api/admin/categories?limit=100&offset=0");
+    connectedCategoryTotal = categories.total || 0;
+    renderCategories(categories.items || []);
+    populateProductCategories(productForm.hidden ? "" : productForm.elements.categoryId.value);
+    if (activeAccess) renderSummary(activeAccess, connectedCategoryTotal, connectedProductTotal);
+    return categories;
+  }
+  async function saveCategory(current, input, trigger) {
+    if (!canWriteCatalog) return;
+    trigger.disabled = true;
+    categoryStatus.textContent = "Salvando categoria…";
+    try {
+      const categoryId = current?.id || categoryForm.dataset.categoryId;
+      await mutateCatalog(categoryId ? `/api/admin/categories/${encodeURIComponent(categoryId)}` : "/api/admin/categories", categoryId ? "PATCH" : "POST", input);
+      await refreshCategories();
+      resetCategoryForm(categoryId ? "Categoria atualizada com sucesso." : "Categoria criada com sucesso.");
+    } catch (error) {
+      categoryStatus.textContent = categoryError(error);
+      if (error.status === 401 || error.status === 403) {
+        canWriteCatalog = false; newCategory.hidden = true; categoryForm.hidden = true; renderCategories(categoriesCache);
+      }
+    } finally { trigger.disabled = false; }
+  }
+  function renderProducts(items) {
+    productsCache = items;
+    productsNode.replaceChildren();
+    if (!items.length) return productsNode.append(el("p", "mt-admin-read-empty", "Nenhum produto cadastrado no banco."));
+    for (const product of items) {
+      const row = el("div", "mt-admin-product-row");
+      const button = el("button", "mt-admin-product-read");
+      button.type = "button";
+      button.append(el("strong", "", product.name), el("span", "", `${label(product.status)} · ${product.featured ? "destaque · " : ""}${product.slug}`));
+      button.addEventListener("click", () => loadDetail(product.id, button));
+      row.append(button);
+      if (canWriteCatalog && product.status === "draft") {
+        const actions = el("div", "mt-admin-read-actions mt-admin-product-actions");
+        const edit = el("button", "", "Editar"); edit.type = "button";
+        edit.addEventListener("click", () => openProductForm(product));
+        const archive = el("button", "", "Arquivar"); archive.type = "button";
+        archive.addEventListener("click", () => confirmProductArchive(product, actions));
+        actions.append(edit, archive); row.append(actions);
+      }
+      productsNode.append(row);
+    }
+  }
+  function populateProductCategories(selectedId = "") {
+    const select = productForm.elements.categoryId;
+    select.replaceChildren();
+    const active = categoriesCache.filter(category => category.status === "active");
+    if (!active.length) {
+      const option = new Option("Nenhuma categoria ativa disponível", ""); option.disabled = true; option.selected = true; select.add(option);
+    } else {
+      select.add(new Option("Selecione uma categoria", ""));
+      active.forEach(category => select.add(new Option(category.name, category.id)));
+    }
+    if (selectedId && !active.some(category => category.id === selectedId)) {
+      const existing = categoriesCache.find(category => category.id === selectedId);
+      const option = new Option(`${existing?.name || "Categoria atual"} — inativa`, selectedId); option.disabled = true; select.add(option);
+    }
+    select.value = selectedId;
+    newProduct.disabled = !active.length;
+  }
+  function resetProductForm(message = "") {
+    productForm.reset();
+    delete productForm.dataset.productId;
+    document.getElementById("adminProductFormTitle").textContent = "NOVO PRODUTO EM RASCUNHO.";
+    productForm.hidden = true;
+    productStatus.textContent = message;
+    newProduct.focus({ preventScroll: true });
+  }
+  function openProductForm(product = null) {
+    if (!canWriteCatalog) return;
+    productForm.hidden = false;
+    productStatus.textContent = "";
+    populateProductCategories(product?.categoryId || "");
+    if (product) {
+      productForm.dataset.productId = product.id;
+      document.getElementById("adminProductFormTitle").textContent = "EDITAR PRODUTO EM RASCUNHO.";
+      productForm.elements.name.value = product.name;
+      productForm.elements.slug.value = product.slug;
+      productForm.elements.description.value = product.description;
+      productForm.elements.featured.checked = product.featured;
+    } else {
+      productForm.reset(); delete productForm.dataset.productId; populateProductCategories();
+      document.getElementById("adminProductFormTitle").textContent = "NOVO PRODUTO EM RASCUNHO.";
+    }
+    productForm.elements.name.focus({ preventScroll: true });
+  }
+  function productError(error) {
+    if (error.status === 400) return "Confira nome, slug, categoria, descrição e destaque.";
+    if (error.status === 409 && error.body?.error === "admin_state_conflict") return "Use uma categoria ativa. Somente produtos em rascunho podem ser alterados.";
+    if (error.status === 409) return "Já existe um produto com esse slug.";
+    if (error.status === 404) return "O produto não foi encontrado. Atualize o painel.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível salvar o produto. Tente novamente quando o serviço estiver disponível.";
+  }
+  async function refreshProducts() {
+    const products = await request("/api/admin/products?limit=100&offset=0");
+    connectedProductTotal = products.total || 0;
+    renderProducts(products.items || []);
+    if (activeAccess) renderSummary(activeAccess, connectedCategoryTotal, connectedProductTotal);
+    return products;
+  }
+  async function saveProduct(input, trigger) {
+    if (!canWriteCatalog) return;
+    trigger.disabled = true;
+    productStatus.textContent = "Salvando produto…";
+    try {
+      const productId = productForm.dataset.productId;
+      await mutateCatalog(productId ? `/api/admin/products/${encodeURIComponent(productId)}` : "/api/admin/products", productId ? "PATCH" : "POST", input);
+      await refreshProducts();
+      detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", "Selecione um produto para consultar os dados relacionados."));
+      resetProductForm(productId ? "Produto atualizado com sucesso." : "Produto criado como rascunho." );
+    } catch (error) {
+      productStatus.textContent = productError(error);
+      if (error.status === 401 || error.status === 403) {
+        canWriteCatalog = false; newCategory.hidden = true; newProduct.hidden = true; categoryForm.hidden = true; productForm.hidden = true;
+        renderCategories(categoriesCache); renderProducts(productsCache);
+      }
+    } finally { trigger.disabled = false; }
+  }
+  function confirmProductArchive(product, actions) {
+    actions.replaceChildren();
+    const confirm = el("button", "mt-admin-danger", "Confirmar arquivamento"); confirm.type = "button";
+    const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+    confirm.addEventListener("click", async () => {
+      confirm.disabled = true; cancel.disabled = true; productStatus.textContent = "Arquivando rascunho…";
+      try {
+        await mutateCatalog(`/api/admin/products/${encodeURIComponent(product.id)}/archive`, "POST", {});
+        await refreshProducts();
+        detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", "O produto foi arquivado e permanece preservado no histórico comercial."));
+        productStatus.textContent = "Produto arquivado com sucesso.";
+      } catch (error) {
+        productStatus.textContent = productError(error);
+        if (error.status === 401 || error.status === 403) { canWriteCatalog = false; newCategory.hidden = true; newProduct.hidden = true; categoryForm.hidden = true; productForm.hidden = true; renderCategories(categoriesCache); }
+        renderProducts(productsCache);
+      }
+    });
+    cancel.addEventListener("click", () => { renderProducts(productsCache); productStatus.textContent = "Arquivamento cancelado. Nenhum dado foi alterado."; });
+    actions.append(confirm, cancel);
+    confirm.focus({ preventScroll: true });
+    productStatus.textContent = `Confirme o arquivamento de ${product.name}.`;
+  }
+  function section(title, rows, empty) {
+    const block = el("section", "mt-admin-detail-section");
+    block.append(el("h5", "", title));
+    if (!rows.length) block.append(el("p", "", empty));
+    else rows.forEach(row => block.append(row));
+    return block;
+  }
+  function dataRow(primary, secondary) {
+    const row = el("div", "mt-admin-read-row");
+    row.append(el("strong", "", primary), el("span", "", secondary));
+    return row;
+  }
+  const toLocalDateTime = value => {
+    if (!value) return "";
+    const date = new Date(value);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+  const toIsoDateTime = value => value ? new Date(value).toISOString() : null;
+  function parseBrlCents(value) {
+    const normalized = String(value || "").trim().replace(/^R\$\s*/iu, "").replace(/\s/gu, "");
+    if (!/^\d{1,10}(?:,\d{1,2})?$/u.test(normalized)) return null;
+    const [units, fraction = ""] = normalized.split(",");
+    const cents = BigInt(units) * 100n + BigInt(fraction.padEnd(2, "0"));
+    return cents > 0n && cents <= 999999999999n ? Number(cents) : null;
+  }
+  function detailStatus(message = "", kind = "") {
+    const node = document.getElementById("adminCatalogDetailStatus");
+    if (!node) return;
+    node.textContent = message;
+    node.dataset.state = kind;
+  }
+  function versionError(error) {
+    if (error.status === 400) return "Confira o rótulo, a sequência e as datas da versão.";
+    if (error.status === 409) return "A sequência já existe ou esta versão não permite a operação solicitada.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível salvar a versão. Tente novamente quando o serviço estiver disponível.";
+  }
+  function priceError(error) {
+    if (error.status === 400) return "Confira o valor em reais e o período de vigência do preço.";
+    if (error.status === 409) return "O preço ou a versão não permite esta operação.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível atualizar o preço. Tente novamente quando o serviço estiver disponível.";
+  }
+  function mediaError(error) {
+    if (error.status === 400) return "Confira o caminho interno, o texto alternativo e a ordem da mídia.";
+    if (error.status === 409) return "Esta mídia ou produto não permite a operação solicitada.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível atualizar a mídia. Tente novamente quando o serviço estiver disponível.";
+  }
+  function fileError(error) {
+    if (error.status === 400) return "Confira nome, tipo, tamanho, SHA-256 e ordem do arquivo.";
+    if (error.status === 409) return "Esta versão ou arquivo não permite a operação solicitada.";
+    if (error.status === 401 || error.status === 403) return "Sua sessão ou permissão não autoriza esta alteração.";
+    return "Não foi possível atualizar o arquivo. Tente novamente quando o serviço estiver disponível.";
+  }
+  function versionPayload(form) {
+    const values = new FormData(form);
+    return {
+      versionLabel: String(values.get("versionLabel") || "").normalize("NFKC").trim(),
+      releaseSequence: Number(values.get("releaseSequence")),
+      releaseNotes: String(values.get("releaseNotes") || "").normalize("NFKC").replace(/\r\n?/gu, "\n").trim() || null,
+      availableFrom: toIsoDateTime(String(values.get("availableFrom") || "")),
+      availableUntil: toIsoDateTime(String(values.get("availableUntil") || "")),
+    };
+  }
+  function versionForm(product, version, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>${version ? "EDITAR VERSÃO EM RASCUNHO." : "NOVA VERSÃO EM RASCUNHO."}</h6>
+      <label>Rótulo<input name="versionLabel" required maxlength="40"></label>
+      <label>Sequência<input name="releaseSequence" type="number" required min="1" max="2147483647" step="1"></label>
+      <label class="admin-description">Notas da versão<textarea name="releaseNotes" maxlength="5000" rows="4"></textarea></label>
+      <label>Disponível a partir de<input name="availableFrom" type="datetime-local"></label>
+      <label>Disponível até<input name="availableUntil" type="datetime-local"></label>
+      <div class="form-actions"><button class="mt-button" type="submit">Salvar versão</button><button type="button" data-cancel>Cancelar</button></div>`;
+    if (version) {
+      form.elements.versionLabel.value = version.versionLabel;
+      form.elements.releaseSequence.value = String(version.releaseSequence);
+      form.elements.releaseNotes.value = version.releaseNotes || "";
+      form.elements.availableFrom.value = toLocalDateTime(version.availableFrom);
+      form.elements.availableUntil.value = toLocalDateTime(version.availableUntil);
+    }
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Salvando versão…");
+      try {
+        const path = version ? `/api/admin/versions/${encodeURIComponent(version.id)}` : `/api/admin/products/${encodeURIComponent(product.id)}/versions`;
+        await mutateCatalog(path, version ? "PATCH" : "POST", versionPayload(form));
+        await loadDetail(product.id, productTrigger);
+        detailStatus(version ? "Versão atualizada com sucesso." : "Versão criada como rascunho.", "success");
+      } catch (error) { detailStatus(versionError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function priceForm(product, version, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form mt-admin-price-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>NOVO PREÇO AGENDADO.</h6>
+      <label>Valor em reais<input name="amount" required inputmode="decimal" placeholder="149,90" pattern="[0-9]{1,10}(?:,[0-9]{1,2})?"></label>
+      <label>Vigente a partir de<input name="validFrom" type="datetime-local" required></label>
+      <label>Vigente até<input name="validUntil" type="datetime-local"></label>
+      <p class="mt-admin-form-note">O valor será convertido e enviado ao servidor como centavos inteiros.</p>
+      <div class="form-actions"><button class="mt-button" type="submit">Cadastrar preço</button><button type="button" data-cancel>Cancelar</button></div>`;
+    form.elements.validFrom.value = toLocalDateTime(new Date().toISOString());
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const amountCents = parseBrlCents(form.elements.amount.value);
+      if (!amountCents) { detailStatus("Informe um valor válido, como 149,90.", "error"); form.elements.amount.focus(); return; }
+      if (!form.reportValidity()) return;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Cadastrando preço…");
+      try {
+        await mutateCatalog(`/api/admin/versions/${encodeURIComponent(version.id)}/prices`, "POST", {
+          amountCents,
+          validFrom: toIsoDateTime(form.elements.validFrom.value),
+          validUntil: toIsoDateTime(form.elements.validUntil.value),
+        });
+        await loadDetail(product.id, productTrigger);
+        detailStatus("Preço cadastrado no histórico como agendado.", "success");
+      } catch (error) { detailStatus(priceError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function mediaForm(product, media, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form mt-admin-media-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>${media ? "EDITAR MÍDIA." : "REGISTRAR MÍDIA."}</h6>
+      ${media ? "" : '<label class="admin-description">Caminho interno<input name="storageKey" required minlength="10" maxlength="500" autocomplete="off" placeholder="products/produto/media/capa.webp"></label>'}
+      <label class="admin-description">Texto alternativo<input name="altText" required minlength="2" maxlength="240"></label>
+      <label>Ordem<input name="sortOrder" type="number" required min="0" max="100000" step="1"></label>
+      <p class="mt-admin-form-note">Somente metadados são registrados. Nenhuma imagem é enviada por este formulário.</p>
+      <div class="form-actions"><button class="mt-button" type="submit">Salvar mídia</button><button type="button" data-cancel>Cancelar</button></div>`;
+    if (media) {
+      form.elements.altText.value = media.altText;
+      form.elements.sortOrder.value = String(media.sortOrder);
+    } else {
+      form.elements.storageKey.placeholder = `products/${product.id}/media/capa.webp`;
+      form.elements.sortOrder.value = "0";
+    }
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const values = new FormData(form);
+      const input = {
+        altText: String(values.get("altText") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+        sortOrder: Number(values.get("sortOrder")),
+      };
+      if (!media) input.storageKey = String(values.get("storageKey") || "").normalize("NFKC").trim();
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Salvando mídia…");
+      try {
+        await mutateCatalog(media ? `/api/admin/media/${encodeURIComponent(media.id)}` : `/api/admin/products/${encodeURIComponent(product.id)}/media`, media ? "PATCH" : "POST", input);
+        await loadDetail(product.id, productTrigger);
+        detailStatus(media ? "Mídia atualizada com sucesso." : "Metadados da mídia registrados sem upload.", "success");
+      } catch (error) { detailStatus(mediaError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function fileForm(product, version, file, productTrigger, onCancel) {
+    const form = el("form", "mt-admin-detail-form mt-admin-file-form");
+    form.noValidate = true;
+    form.innerHTML = `<h6>${file ? "EDITAR METADADOS DO ARQUIVO." : "REGISTRAR ARQUIVO PRIVADO."}</h6>
+      ${file ? "" : '<label class="admin-description">Chave privada de armazenamento<input name="storageKey" required minlength="10" maxlength="700" autocomplete="off" placeholder="products/produto/versions/1/files/pack.zip"></label>'}
+      <label>Nome apresentado<input name="displayName" required minlength="2" maxlength="240"></label>
+      <label>Tipo MIME<input name="mimeType" required minlength="3" maxlength="150" placeholder="application/zip"></label>
+      <label>Tamanho em bytes<input name="sizeBytes" type="number" required min="1" max="9007199254740991" step="1"></label>
+      <label class="admin-description">Checksum SHA-256<input name="checksumSha256" required minlength="64" maxlength="64" pattern="[0-9a-fA-F]{64}" autocomplete="off"></label>
+      <label>Ordem<input name="sortOrder" type="number" required min="0" max="100000" step="1"></label>
+      <p class="mt-admin-form-note">O registro começa como <strong>Somente metadados</strong>. Verificação e prontidão dependem do futuro armazenamento seguro.</p>
+      <div class="form-actions"><button class="mt-button" type="submit">Salvar arquivo</button><button type="button" data-cancel>Cancelar</button></div>`;
+    if (file) {
+      for (const key of ["displayName", "mimeType", "sizeBytes", "checksumSha256", "sortOrder"]) form.elements[key].value = String(file[key]);
+    } else {
+      form.elements.storageKey.placeholder = `products/${product.id}/versions/${version.id}/files/pack.zip`;
+      form.elements.sortOrder.value = "0";
+    }
+    form.querySelector("[data-cancel]").addEventListener("click", onCancel);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const values = new FormData(form);
+      const input = {
+        displayName: String(values.get("displayName") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+        mimeType: String(values.get("mimeType") || "").trim(),
+        sizeBytes: Number(values.get("sizeBytes")),
+        checksumSha256: String(values.get("checksumSha256") || "").trim().toLowerCase(),
+        sortOrder: Number(values.get("sortOrder")),
+      };
+      if (!file) input.storageKey = String(values.get("storageKey") || "").normalize("NFKC").trim();
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true; detailStatus("Salvando metadados do arquivo…");
+      try {
+        await mutateCatalog(file ? `/api/admin/files/${encodeURIComponent(file.id)}` : `/api/admin/versions/${encodeURIComponent(version.id)}/files`, file ? "PATCH" : "POST", input);
+        await loadDetail(product.id, productTrigger);
+        detailStatus(file ? "Metadados do arquivo atualizados." : "Arquivo registrado como somente metadados; nenhum upload foi realizado.", "success");
+      } catch (error) { detailStatus(fileError(error), "error"); submit.disabled = false; }
+    });
+    return form;
+  }
+  function renderMediaManager(product, items, productTrigger) {
+    const manager = el("section", "mt-admin-detail-section mt-admin-media-manager");
+    const heading = el("div", "mt-admin-detail-heading");
+    heading.append(el("h5", "", "Mídias comerciais"));
+    if (canWriteCatalog && product.status !== "archived") {
+      const add = el("button", "", "Registrar mídia"); add.type = "button";
+      add.addEventListener("click", () => {
+        const old = manager.querySelector(".mt-admin-media-form"); if (old) old.remove();
+        const form = mediaForm(product, null, productTrigger, () => { form.remove(); detailStatus("Cadastro de mídia cancelado."); add.focus(); });
+        heading.after(form); form.elements.storageKey.focus();
+      });
+      heading.append(add);
+    }
+    manager.append(heading);
+    if (!items.length) manager.append(el("p", "mt-admin-read-empty", "Nenhuma mídia cadastrada."));
+    for (const media of items) {
+      const row = el("article", "mt-admin-media-row");
+      const copy = el("div", "mt-admin-read-copy");
+      copy.append(el("strong", "", media.altText), el("span", "", `${media.mediaType === "cover" ? "Capa principal" : "Galeria"} · ${label(media.status)} · ordem ${media.sortOrder}`));
+      row.append(copy);
+      if (canWriteCatalog && media.status === "active") {
+        const actions = el("div", "mt-admin-read-actions");
+        const edit = el("button", "", "Editar mídia"); edit.type = "button";
+        edit.addEventListener("click", () => {
+          const old = row.querySelector(".mt-admin-media-form"); if (old) old.remove();
+          const form = mediaForm(product, media, productTrigger, () => { form.remove(); detailStatus("Edição de mídia cancelada."); edit.focus(); });
+          actions.after(form); form.elements.altText.focus();
+        }); actions.append(edit);
+        if (media.mediaType !== "cover") {
+          const cover = el("button", "", "Definir como capa"); cover.type = "button";
+          cover.addEventListener("click", () => confirmDetailAction(actions, "Confirmar capa", async () => {
+            await mutateCatalog(`/api/admin/media/${encodeURIComponent(media.id)}/cover`, "POST", {});
+            await loadDetail(product.id, productTrigger); detailStatus("Capa principal atualizada; a mídia anterior foi preservada.", "success");
+          }, () => detailStatus("Seleção de capa cancelada."), mediaError)); actions.append(cover);
+        }
+        const deactivate = el("button", "", "Desativar mídia"); deactivate.type = "button";
+        deactivate.addEventListener("click", () => confirmDetailAction(actions, "Confirmar desativação", async () => {
+          await mutateCatalog(`/api/admin/media/${encodeURIComponent(media.id)}/deactivate`, "POST", {});
+          await loadDetail(product.id, productTrigger); detailStatus("Mídia desativada sem exclusão do histórico.", "success");
+        }, () => detailStatus("Desativação da mídia cancelada."), mediaError)); actions.append(deactivate);
+        row.append(actions);
+      }
+      manager.append(row);
+    }
+    return manager;
+  }
+  function renderFileManager(product, entry, productTrigger, card) {
+    const { version, files } = entry;
+    const heading = el("div", "mt-admin-price-heading mt-admin-file-heading");
+    heading.append(el("h6", "", "Arquivos privados"));
+    const mutable = canWriteCatalog && version.status !== "retired" && !version.lockedAt;
+    if (mutable) {
+      const add = el("button", "", "Registrar arquivo"); add.type = "button";
+      add.addEventListener("click", () => {
+        const old = card.querySelector(".mt-admin-file-form"); if (old) old.remove();
+        const form = fileForm(product, version, null, productTrigger, () => { form.remove(); detailStatus("Cadastro de arquivo cancelado."); add.focus(); });
+        heading.after(form); form.elements.storageKey.focus();
+      }); heading.append(add);
+    }
+    card.append(heading);
+    if (!files.length) card.append(el("p", "mt-admin-read-empty", "Nenhum arquivo privado registrado para esta versão."));
+    for (const file of files) {
+      const row = el("div", "mt-admin-file-row");
+      const copy = el("div", "mt-admin-read-copy");
+      copy.append(el("strong", "", file.displayName), el("span", "", `${label(file.storageStatus)} · ${label(file.status)} · ${file.mimeType} · ${size(file.sizeBytes)} · ordem ${file.sortOrder}`), el("code", "mt-admin-checksum", `SHA-256 ${file.checksumSha256}`));
+      row.append(copy);
+      if (mutable && file.status !== "retired") {
+        const actions = el("div", "mt-admin-read-actions");
+        const edit = el("button", "", "Editar arquivo"); edit.type = "button";
+        edit.addEventListener("click", () => {
+          const old = row.querySelector(".mt-admin-file-form"); if (old) old.remove();
+          const form = fileForm(product, version, file, productTrigger, () => { form.remove(); detailStatus("Edição de arquivo cancelada."); edit.focus(); });
+          actions.after(form); form.elements.displayName.focus();
+        }); actions.append(edit);
+        const retire = el("button", "", "Retirar arquivo"); retire.type = "button";
+        retire.addEventListener("click", () => confirmDetailAction(actions, "Confirmar retirada", async () => {
+          await mutateCatalog(`/api/admin/files/${encodeURIComponent(file.id)}/retire`, "POST", {});
+          await loadDetail(product.id, productTrigger); detailStatus("Arquivo retirado e metadados preservados no histórico.", "success");
+        }, () => detailStatus("Retirada do arquivo cancelada."), fileError)); actions.append(retire);
+        row.append(actions);
+      }
+      card.append(row);
+      if (mutable && file.status === "active" && file.storageStatus === "metadata_only") card.append(renderUploadPanel(file));
+      if (file.status === "active" && ["metadata_only", "verified", "ready"].includes(file.storageStatus)) card.append(renderVerificationPanel(file, product, version, productTrigger));
+    }
+  }
+  function renderReadiness(readiness) {
+    const manager = el("section", `mt-admin-detail-section mt-admin-readiness${readiness.ready ? " is-ready" : ""}`);
+    manager.append(el("h5", "", "Prontidão para publicação"));
+    manager.append(el("strong", "mt-admin-readiness__state", readiness.ready ? "Pronto para publicação" : "Configuração incompleta"));
+    if (readiness.ready) manager.append(el("p", "", "Todas as verificações atuais foram atendidas. Esta consulta não publica nem altera o produto."));
+    else {
+      const list = el("ul", "mt-admin-readiness__list");
+      for (const item of readiness.blockers || []) list.append(el("li", "", blockers[item] || item));
+      manager.append(list, el("p", "mt-admin-form-note", "Arquivos em estado somente metadados não contam como prontos para entrega."));
+    }
+    return manager;
+  }
+  function renderVersionManager(product, related, productTrigger) {
+    const manager = el("section", "mt-admin-detail-section mt-admin-version-manager");
+    const heading = el("div", "mt-admin-detail-heading");
+    heading.append(el("h5", "", "Versões e preços"));
+    if (canWriteCatalog && product.status !== "archived") {
+      const add = el("button", "", "Nova versão"); add.type = "button";
+      add.addEventListener("click", () => {
+        const existing = manager.querySelector(".mt-admin-detail-form"); if (existing) existing.remove();
+        const form = versionForm(product, null, productTrigger, () => { form.remove(); detailStatus("Criação de versão cancelada."); add.focus(); });
+        heading.after(form); form.elements.versionLabel.focus();
+      });
+      heading.append(add);
+    }
+    manager.append(heading);
+    if (!related.length) manager.append(el("p", "mt-admin-read-empty", "Nenhuma versão cadastrada."));
+    for (const entry of related) {
+      const version = entry.version;
+      const card = el("article", "mt-admin-version-card");
+      const title = el("div", "mt-admin-version-card__title");
+      title.append(el("strong", "", `Versão ${version.versionLabel}`));
+      const stateText = `${label(version.status)} · sequência ${version.releaseSequence}${version.lockedAt ? " · congelada" : ""}`;
+      title.append(el("span", "", stateText)); card.append(title);
+      if (version.releaseNotes) card.append(el("p", "", version.releaseNotes));
+      const dates = [version.availableFrom ? `Início ${new Date(version.availableFrom).toLocaleString("pt-BR")}` : "Início não definido", version.availableUntil ? `Fim ${new Date(version.availableUntil).toLocaleString("pt-BR")}` : "Sem encerramento"].join(" · ");
+      card.append(el("p", "mt-admin-version-dates", dates));
+      const controls = el("div", "mt-admin-read-actions");
+      if (canWriteCatalog && version.status === "draft" && !version.lockedAt) {
+        const edit = el("button", "", "Editar versão"); edit.type = "button";
+        edit.addEventListener("click", () => {
+          const old = card.querySelector(".mt-admin-detail-form"); if (old) old.remove();
+          const form = versionForm(product, version, productTrigger, () => { form.remove(); detailStatus("Edição de versão cancelada."); edit.focus(); });
+          controls.after(form); form.elements.versionLabel.focus();
+        }); controls.append(edit);
+      }
+      if (canWriteCatalog && version.status !== "retired" && !version.lockedAt && product.currentVersionId !== version.id) {
+        const retire = el("button", "", "Retirar versão"); retire.type = "button";
+        retire.addEventListener("click", () => confirmDetailAction(controls, "Confirmar retirada", async () => {
+          await mutateCatalog(`/api/admin/versions/${encodeURIComponent(version.id)}/retire`, "POST", {});
+          await loadDetail(product.id, productTrigger); detailStatus("Versão retirada e histórico preservado.", "success");
+        }, () => detailStatus("Retirada da versão cancelada."), versionError)); controls.append(retire);
+      }
+      if (controls.children.length) card.append(controls);
+      const priceHeading = el("div", "mt-admin-price-heading"); priceHeading.append(el("h6", "", "Histórico de preços"));
+      if (canWriteCatalog && version.status !== "retired") {
+        const addPrice = el("button", "", "Novo preço"); addPrice.type = "button";
+        addPrice.addEventListener("click", () => {
+          const old = card.querySelector(".mt-admin-price-form"); if (old) old.remove();
+          const form = priceForm(product, version, productTrigger, () => { form.remove(); detailStatus("Cadastro de preço cancelado."); addPrice.focus(); });
+          priceHeading.after(form); form.elements.amount.focus();
+        }); priceHeading.append(addPrice);
+      }
+      card.append(priceHeading);
+      if (!entry.prices.length) card.append(el("p", "mt-admin-read-empty", "Nenhum preço cadastrado."));
+      for (const price of entry.prices) {
+        const priceRow = el("div", "mt-admin-price-row");
+        const copy = el("div", "mt-admin-read-copy");
+        const frozen = price.lockedAt ? " · congelado" : "";
+        copy.append(el("strong", "", money(price.amountCents)), el("span", "", `${label(price.status)}${frozen} · BRL · desde ${new Date(price.validFrom).toLocaleString("pt-BR")}`));
+        priceRow.append(copy);
+        if (canWriteCatalog) {
+          const actions = el("div", "mt-admin-read-actions");
+          if (price.status === "scheduled" && !price.lockedAt) {
+            const activate = el("button", "", "Ativar"); activate.type = "button";
+            activate.addEventListener("click", () => confirmDetailAction(actions, "Confirmar ativação", async () => {
+              await mutateCatalog(`/api/admin/prices/${encodeURIComponent(price.id)}/activate`, "POST", {});
+              await loadDetail(product.id, productTrigger); detailStatus("Preço ativado; o histórico anterior foi preservado.", "success");
+            }, () => detailStatus("Ativação do preço cancelada."), priceError)); actions.append(activate);
+          }
+          if (price.status !== "retired") {
+            const retire = el("button", "", "Retirar"); retire.type = "button";
+            retire.addEventListener("click", () => confirmDetailAction(actions, "Confirmar retirada", async () => {
+              await mutateCatalog(`/api/admin/prices/${encodeURIComponent(price.id)}/retire`, "POST", {});
+              await loadDetail(product.id, productTrigger); detailStatus("Preço retirado e mantido no histórico.", "success");
+            }, () => detailStatus("Retirada do preço cancelada."), priceError)); actions.append(retire);
+          }
+          if (actions.children.length) priceRow.append(actions);
+        }
+        card.append(priceRow);
+      }
+      renderFileManager(product, entry, productTrigger, card);
+      manager.append(card);
+    }
+    manager.append(el("p", "mt-admin-detail-status", ""));
+    manager.lastElementChild.id = "adminCatalogDetailStatus";
+    manager.lastElementChild.setAttribute("role", "status");
+    manager.lastElementChild.setAttribute("aria-live", "polite");
+    return manager;
+  }
+  function confirmDetailAction(container, confirmation, action, cancelAction, errorMessage) {
+    const original = [...container.childNodes];
+    container.replaceChildren();
+    const confirm = el("button", "mt-admin-danger", confirmation); confirm.type = "button";
+    const cancel = el("button", "", "Cancelar"); cancel.type = "button";
+    confirm.addEventListener("click", async () => {
+      confirm.disabled = true; cancel.disabled = true; detailStatus("Salvando alteração…");
+      try { await action(); } catch (error) { detailStatus(errorMessage(error), "error"); container.replaceChildren(...original); }
+    });
+    cancel.addEventListener("click", () => { container.replaceChildren(...original); cancelAction(); });
+    container.append(confirm, cancel); confirm.focus();
+  }
+  async function loadDetail(productId, trigger) {
+    const current = ++run;
+    detailNode.setAttribute("aria-busy", "true");
+    detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", "Atualizando autorização e carregando dados…"));
+    try {
+      await authorize();
+      const [productBody, versionsBody, mediaBody, readinessBody] = await Promise.all([
+        request(`/api/admin/products/${encodeURIComponent(productId)}`),
+        request(`/api/admin/products/${encodeURIComponent(productId)}/versions?limit=100&offset=0`),
+        request(`/api/admin/products/${encodeURIComponent(productId)}/media?limit=100&offset=0`),
+        request(`/api/admin/products/${encodeURIComponent(productId)}/readiness`),
+      ]);
+      if (current !== run) return;
+      const versions = versionsBody.items || [];
+      const related = await Promise.all(versions.map(async version => ({
+        version,
+        prices: (await request(`/api/admin/versions/${encodeURIComponent(version.id)}/prices?limit=100&offset=0`)).items || [],
+        files: (await request(`/api/admin/versions/${encodeURIComponent(version.id)}/files?limit=100&offset=0`)).items || [],
+      })));
+      if (current !== run) return;
+      const product = productBody.product;
+      const readiness = readinessBody.readiness;
+      detailNode.replaceChildren();
+      detailNode.append(el("h4", "", product.name), el("p", "", product.description), dataRow("Estado", label(product.status)), dataRow("Slug", product.slug));
+      detailNode.append(renderReadiness(readiness));
+      detailNode.append(renderMediaManager(product, mediaBody.items || [], trigger));
+      detailNode.append(renderVersionManager(product, related, trigger));
+      trigger.focus({ preventScroll: true });
+    } catch (error) {
+      if (current !== run) return;
+      if (error.status === 401 || error.status === 403) setState("denied", "Acesso administrativo indisponível", "Sua sessão ou permissão não autoriza mais esta consulta.");
+      else detailNode.replaceChildren(el("h4", "", "Não foi possível carregar os detalhes"), el("p", "", "Tente novamente quando o serviço administrativo estiver disponível."));
+    } finally { if (current === run) detailNode.removeAttribute("aria-busy"); }
+  }
+  async function loadPanel() {
+    const current = ++run;
+    setState("loading", "Verificando acesso administrativo…", "Aguarde enquanto confirmamos sua sessão e permissões.");
+    try {
+      const access = await authorize();
+      await pruneMultipartState();
+      activeAccess = access;
+      canWriteCatalog = access.permissions.includes("catalog:write");
+      canPublishCatalog = access.permissions.includes("catalog:publish");
+      newCategory.hidden = !canWriteCatalog;
+      newProduct.hidden = !canWriteCatalog;
+      if (!canWriteCatalog) { categoryForm.hidden = true; productForm.hidden = true; }
+      const [categories, products] = await Promise.all([
+        request("/api/admin/categories?limit=100&offset=0"),
+        request("/api/admin/products?limit=100&offset=0"),
+      ]);
+      connectedCategoryTotal = categories.total || 0;
+      connectedProductTotal = products.total || 0;
+      if (current !== run) return;
+      renderSummary(access, categories.total || 0, products.total || 0);
+      renderCategories(categories.items || []);
+      populateProductCategories();
+      renderProducts(products.items || []);
+      detailNode.replaceChildren(el("h4", "", "Detalhes do produto"), el("p", "", products.items?.length ? "Selecione um produto para consultar os dados relacionados." : "O catálogo comercial ainda está vazio."));
+      state.hidden = true;
+      content.hidden = false;
+    } catch (error) {
+      if (current !== run) return;
+      if (error.status === 401) setState("denied", "Entre para acessar o painel", "É necessária uma sessão autenticada com permissão administrativa.");
+      else if (error.status === 403) setState("denied", "Acesso não autorizado", "Esta conta não possui permissão de leitura do catálogo comercial.");
+      else setState("error", "Serviço administrativo indisponível", "Não foi possível confirmar o acesso agora. Nenhum dado local foi alterado.");
+    }
+  }
+  window.addEventListener("mt:page", event => {
+    if (event.detail === "admin") loadPanel();
+    else { run += 1; }
+  });
+  newCategory.addEventListener("click", () => openCategoryForm());
+  cancelCategory.addEventListener("click", () => resetCategoryForm("Edição cancelada. Nenhum dado foi alterado."));
+  newProduct.addEventListener("click", () => openProductForm());
+  cancelProduct.addEventListener("click", () => resetProductForm("Edição cancelada. Nenhum dado foi alterado."));
+  categoryForm.addEventListener("submit", event => {
+    event.preventDefault();
+    categoryForm.elements.slug.value = String(categoryForm.elements.slug.value || "").normalize("NFKD").replace(/[\u0300-\u036f]/gu, "").toLowerCase().trim().replace(/[^a-z0-9]+/gu, "-").replace(/^-+|-+$/gu, "").replace(/-{2,}/gu, "-");
+    if (!categoryForm.reportValidity()) return;
+    const values = new FormData(categoryForm);
+    const input = {
+      name: String(values.get("name") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+      slug: String(values.get("slug") || "").normalize("NFKD").replace(/[\u0300-\u036f]/gu, "").toLowerCase().trim().replace(/[^a-z0-9]+/gu, "-").replace(/^-+|-+$/gu, "").replace(/-{2,}/gu, "-"),
+      sortOrder: Number(values.get("sortOrder")),
+      status: String(values.get("status")),
+      description: String(values.get("description") || "").normalize("NFKC").trim().replace(/\s+/gu, " ") || null,
+    };
+    saveCategory(null, input, categoryForm.querySelector('button[type="submit"]'));
+  });
+  productForm.addEventListener("submit", event => {
+    event.preventDefault();
+    productForm.elements.slug.value = String(productForm.elements.slug.value || "").normalize("NFKD").replace(/[\u0300-\u036f]/gu, "").toLowerCase().trim().replace(/[^a-z0-9]+/gu, "-").replace(/^-+|-+$/gu, "").replace(/-{2,}/gu, "-");
+    if (!productForm.reportValidity()) return;
+    const values = new FormData(productForm);
+    saveProduct({
+      categoryId: String(values.get("categoryId") || ""),
+      name: String(values.get("name") || "").normalize("NFKC").trim().replace(/\s+/gu, " "),
+      slug: String(values.get("slug") || ""),
+      description: String(values.get("description") || "").normalize("NFKC").replace(/\r\n?/gu, "\n").trim(),
+      featured: values.get("featured") === "on",
+    }, productForm.querySelector('button[type="submit"]'));
+  });
+  if (location.hash === "#admin") loadPanel();
+})();
