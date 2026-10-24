@@ -1,5 +1,5 @@
 (()=>{
- const api=window.MT_API_BASE||`${location.protocol}//${location.hostname}:8787`,root=document.querySelector("#commerceStore");if(!root)return;
+ const api=["127.0.0.1","localhost"].includes(location.hostname)?(window.MT_API_BASE||`${location.protocol}//${location.hostname}:8787`):"",root=document.querySelector("#commerceStore");if(!root)return;
  const productsEl=root.querySelector("#commerceProducts"),statusEl=root.querySelector("#commerceStatus"),cartEl=root.querySelector("#commerceCart"),itemsEl=root.querySelector("#commerceCartItems"),countEl=root.querySelector("#commerceCartCount"),totalEl=root.querySelector("#commerceCartTotal"),checkout=root.querySelector("#commerceCheckout"),orderEl=root.querySelector("#commercePendingOrder");
  const money=cents=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(cents/100);
  let products=[],cart={items:[],totalCents:0},busy=false,currentOrder=null;
