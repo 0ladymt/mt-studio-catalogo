@@ -25,6 +25,13 @@ const environmentSchema = z.object({
   DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).optional(),
   EMAIL_PROVIDER: z.enum(["disabled", "mock", "smtp"]).optional(),
   EMAIL_BATCH_SIZE: z.coerce.number().int().min(1).max(20).optional(),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+  SMTP_FROM_EMAIL: z.string().email().optional(),
+  SMTP_FROM_NAME: z.string().min(1).max(120).optional(),
+  SMTP_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).optional(),
 });
 
 export type ApiEnvironment = z.infer<typeof environmentSchema>;
