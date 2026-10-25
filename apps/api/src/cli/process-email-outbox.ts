@@ -1,0 +1,3 @@
+import{randomUUID}from"node:crypto";import{loadPrivateEnvironmentFile,readEnvironment}from"../config/env.js";import{createEmailDelivery}from"../services/email-supabase.js";
+loadPrivateEnvironmentFile();const env=readEnvironment();const delivery=createEmailDelivery(env);const workerId=`email-worker-${randomUUID()}`;let processed=0;for(let i=0;i<(env.EMAIL_BATCH_SIZE??5);i++){const job=await delivery.claim(workerId);if(!job)break;try{await delivery.send(job);await delivery.complete(job.id,workerId,true);processed++;}catch(error){await delivery.complete(job.id,workerId,false,error instanceof Error?error.message:"delivery_failed");}}
+console.log(`email-outbox processed=${processed}`);

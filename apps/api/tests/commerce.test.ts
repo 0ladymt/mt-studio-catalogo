@@ -1,0 +1,28 @@
+import{describe,expect,it,vi}from"vitest";
+import{createApp}from"../src/app.js";
+import type{ApiEnvironment}from"../src/config/env.js";
+import type{AuthGateway}from"../src/types/auth.js";
+import type{CommerceGateway}from"../src/types/commerce.js";
+
+const userId="11111111-1111-4111-8111-111111111111",productId="22222222-2222-4222-8222-222222222222",itemId="33333333-3333-4333-8333-333333333333",orderId="44444444-4444-4444-8444-444444444444",requestId="55555555-5555-4555-8555-555555555555";
+const env:ApiEnvironment={APP_ENV:"test",API_HOST:"127.0.0.1",API_PORT:8787,SUPABASE_URL:"http://127.0.0.1:54321",SUPABASE_PUBLISHABLE_KEY:"test-key-which-is-long-enough",ALLOWED_ORIGINS:"http://127.0.0.1:4173",SESSION_REFRESH_MAX_AGE:2592000,GOOGLE_OAUTH_CALLBACK_URL:"http://127.0.0.1:8787/api/auth/google/callback",GOOGLE_IDENTITY_LINK_CALLBACK_URL:"http://127.0.0.1:8787/api/auth/google/link/callback",OAUTH_TRANSACTION_TTL_SECONDS:600,SENSITIVE_AUTHORIZATION_TTL_SECONDS:300,PUBLIC_SITE_URL:"http://127.0.0.1:4173"};
+const auth:AuthGateway={verifyAccessToken:vi.fn(async token=>token==="valid"?{id:userId}:null),refreshSession:vi.fn(async()=>null),revokeSession:vi.fn(),signUpWithPassword:vi.fn(),confirmSignup:vi.fn(),resendSignupConfirmation:vi.fn(),signInWithPassword:vi.fn(),requestPasswordRecovery:vi.fn(),resetPasswordWithOtp:vi.fn(),beginGoogleOAuth:vi.fn(),completeGoogleOAuth:vi.fn(),confirmCurrentPassword:vi.fn(),beginGoogleIdentityLink:vi.fn(),completeGoogleIdentityLink:vi.fn(),hasPassword:vi.fn(),requestPasswordSetup:vi.fn(),setupPasswordWithOtp:vi.fn(),getOwnProfile:vi.fn(),updateOwnProfile:vi.fn()} as unknown as AuthGateway;
+const cart={id:"66666666-6666-4666-8666-666666666666",items:[],totalCents:0};
+const order={id:orderId,status:"pending_payment" as const,totalCents:26099,currency:"BRL" as const,expiresAt:"2026-10-22T20:00:00Z",downloadEligible:false as const};
+const gateway=(overrides:Partial<CommerceGateway>={}):CommerceGateway=>({listStoreProducts:vi.fn(async()=>[]),getCart:vi.fn(async()=>cart),addCartItem:vi.fn(async()=>cart),removeCartItem:vi.fn(async()=>cart),checkout:vi.fn(async()=>order),getOrder:vi.fn(async()=>order),...overrides});
+const app=(commerce:CommerceGateway)=>createApp(auth,env,undefined,undefined,undefined,undefined,undefined,undefined,commerce);
+const read={Cookie:"mt_access=valid"},mutate={Origin:env.PUBLIC_SITE_URL,Cookie:"mt_access=valid; mt_csrf=proof","X-CSRF-Token":"proof","Content-Type":"application/json"};
+
+describe("commerce API",()=>{
+ it("lists the public storefront without a session",async()=>{const c=gateway({listStoreProducts:vi.fn(async()=>[{id:productId,slug:"pack",name:"Pack",description:"Teste",versionId:itemId,versionLabel:"1.0",amountCents:26099,currency:"BRL" as const,coverKey:null,coverAlt:null}])});const r=await app(c).request("/api/store/products");expect(r.status).toBe(200);expect((await r.json()).products[0].amountCents).toBe(26099);});
+ it("requires a session for the cart",async()=>expect((await app(gateway()).request("/api/cart")).status).toBe(401));
+ it("derives cart identity from the session",async()=>{const c=gateway();const r=await app(c).request("/api/cart",{headers:read});expect(r.status).toBe(200);expect(c.getCart).toHaveBeenCalledWith(userId);});
+ it("adds only a validated product id",async()=>{const c=gateway();const r=await app(c).request("/api/cart/items",{method:"POST",headers:mutate,body:JSON.stringify({productId})});expect(r.status).toBe(201);expect(c.addCartItem).toHaveBeenCalledWith(userId,productId);});
+ it("rejects client price and version fields",async()=>{const r=await app(gateway()).request("/api/cart/items",{method:"POST",headers:mutate,body:JSON.stringify({productId,price:1,versionId:itemId})});expect(r.status).toBe(400);});
+ it("requires CSRF for cart mutations",async()=>{const r=await app(gateway()).request("/api/cart/items",{method:"POST",headers:{Origin:env.PUBLIC_SITE_URL,Cookie:"mt_access=valid","Content-Type":"application/json"},body:JSON.stringify({productId})});expect(r.status).toBe(403);});
+ it("rejects an unauthorized origin",async()=>{const r=await app(gateway()).request("/api/orders",{method:"POST",headers:{...mutate,Origin:"https://evil.invalid"},body:JSON.stringify({requestId})});expect(r.status).toBe(403);});
+ it("removes only the session owner's item through the gateway",async()=>{const c=gateway();const r=await app(c).request(`/api/cart/items/${itemId}`,{method:"DELETE",headers:mutate,body:"{}"});expect(r.status).toBe(200);expect(c.removeCartItem).toHaveBeenCalledWith(userId,itemId);});
+ it("allows the restricted DELETE preflight for cart removal",async()=>{const r=await app(gateway()).request(`/api/cart/items/${itemId}`,{method:"OPTIONS",headers:{Origin:env.PUBLIC_SITE_URL,"Access-Control-Request-Method":"DELETE","Access-Control-Request-Headers":"content-type,x-csrf-token"}});expect(r.status).toBe(204);expect(r.headers.get("access-control-allow-methods")?.split(",")).toContain("DELETE");expect(r.headers.get("access-control-allow-origin")).toBe(env.PUBLIC_SITE_URL);});
+ it("creates an idempotent pending order without accepting totals",async()=>{const c=gateway();const r=await app(c).request("/api/orders",{method:"POST",headers:mutate,body:JSON.stringify({requestId})});expect(r.status).toBe(201);expect(c.checkout).toHaveBeenCalledWith(userId,requestId);expect((await r.json()).order.downloadEligible).toBe(false);});
+ it("prevents access to an absent or foreign order",async()=>{const c=gateway({getOrder:vi.fn(async()=>null)});const r=await app(c).request(`/api/orders/${orderId}`,{headers:read});expect(r.status).toBe(404);expect(c.getOrder).toHaveBeenCalledWith(userId,orderId);});
+});

@@ -1,0 +1,48 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(23);
+insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
+('00000000-0000-0000-0000-000000000000','b1000000-0000-4000-8000-000000000001','authenticated','authenticated','writer-auth@example.invalid','x',now(),'{}','{}',now(),now()),
+('00000000-0000-0000-0000-000000000000','b1000000-0000-4000-8000-000000000002','authenticated','authenticated','support-auth@example.invalid','x',now(),'{}','{}',now(),now()),
+('00000000-0000-0000-0000-000000000000','b1000000-0000-4000-8000-000000000003','authenticated','authenticated','inactive-auth@example.invalid','x',now(),'{}','{}',now(),now());
+insert into public.staff_members(user_id,role,status) values('b1000000-0000-4000-8000-000000000001','catalog_manager','active'),('b1000000-0000-4000-8000-000000000002','support','active'),('b1000000-0000-4000-8000-000000000003','catalog_manager','disabled');
+insert into public.product_categories(id,slug,name,status) values('b2000000-0000-4000-8000-000000000001','local-auth','Local Auth','active');
+insert into public.products(id,category_id,slug,name,description,status) values('b3000000-0000-4000-8000-000000000001','b2000000-0000-4000-8000-000000000001','local-auth','Local Auth','Teste','draft');
+insert into public.product_versions(id,product_id,version_label,release_sequence,status) values('b4000000-0000-4000-8000-000000000001','b3000000-0000-4000-8000-000000000001','1.0',1,'draft');
+insert into public.product_files(id,product_version_id,display_name,storage_key,mime_type,size_bytes,checksum_sha256,status) values('b5000000-0000-4000-8000-000000000001','b4000000-0000-4000-8000-000000000001','Pack.zip','private/placeholder','application/zip',100,repeat('a',64),'active');
+set local role service_role;
+select public.admin_begin_storage_upload('b1000000-0000-4000-8000-000000000001','b6000000-0000-4000-8000-000000000001','b5000000-0000-4000-8000-000000000001',now()+interval '10 minutes');
+select lives_ok($$select public.create_local_verifier_authorization((select id from public.storage_uploads where product_file_id='b5000000-0000-4000-8000-000000000001'),repeat('a',64),now()+interval '3 minutes')$$,'local CLI can create a pending non-privileged request');
+select is((select status from public.local_verifier_authorizations),'pending','authorization begins pending');
+reset role;set local role authenticated;
+select throws_ok($$select * from public.local_verifier_authorizations$$,'42501',null,'browser roles cannot inspect authorizations');
+select throws_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000001',gen_random_uuid(),gen_random_uuid())$$,'42501',null,'browser roles cannot invoke approval directly');
+reset role;set local role service_role;
+select throws_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000002',gen_random_uuid(),(select id from public.local_verifier_authorizations limit 1))$$,'42501',null,'support cannot approve');
+select throws_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000003',gen_random_uuid(),(select id from public.local_verifier_authorizations limit 1))$$,'42501',null,'inactive staff cannot approve');
+select lives_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000001','b7000000-0000-4000-8000-000000000001',(select id from public.local_verifier_authorizations limit 1))$$,'writer approves explicitly');
+select is((select status from public.local_verifier_authorizations limit 1),'approved','authorization is approved');
+select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorized' and entity_id='b5000000-0000-4000-8000-000000000001'),1,'approval is audited');
+select throws_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations limit 1),repeat('b',64))$$,'42501',null,'wrong in-memory secret is rejected');
+select lives_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations limit 1),repeat('a',64))$$,'matching secret consumes once');
+select is((select status from public.local_verifier_authorizations limit 1),'consumed','authorization is consumed');
+select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorization_consumed' and entity_id='b5000000-0000-4000-8000-000000000001'),1,'consumption is audited');
+select throws_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations limit 1),repeat('a',64))$$,'42501',null,'replay is rejected');
+select lives_ok($$select public.create_local_verifier_authorization((select id from public.storage_uploads limit 1),repeat('c',64),now()+interval '3 minutes')$$,'second authorization created');
+update public.local_verifier_authorizations set expires_at=now()-interval '1 second' where secret_hash=repeat('c',64);
+select lives_ok($$select public.consume_local_verifier_authorization((select id from public.local_verifier_authorizations where secret_hash=repeat('c',64)),repeat('c',64))$$,'expired authorization resolves without granting access');
+select is((select status from public.local_verifier_authorizations where secret_hash=repeat('c',64)),'expired','expired authorization is persisted');
+select lives_ok($$select public.create_local_verifier_authorization((select id from public.storage_uploads limit 1),repeat('d',64),now()+interval '3 minutes')$$,'third authorization created');
+reset role;
+create function pg_temp.reject_verifier_audit() returns trigger language plpgsql as $$begin if new.action='catalog.local_verifier_authorized' then raise exception 'audit unavailable';end if;return new;end$$;
+create trigger reject_verifier_audit before insert on public.admin_audit_log for each row execute function pg_temp.reject_verifier_audit();
+set local role service_role;
+select throws_ok($$select public.approve_local_verifier_authorization('b1000000-0000-4000-8000-000000000001',gen_random_uuid(),(select id from public.local_verifier_authorizations where secret_hash=repeat('d',64)))$$,'P0001',null,'audit failure aborts approval');
+select is((select status from public.local_verifier_authorizations where secret_hash=repeat('d',64)),'pending','audit rollback preserves pending state');
+reset role;
+drop trigger reject_verifier_audit on public.admin_audit_log;
+set local role service_role;
+select lives_ok($$select public.revoke_local_verifier_authorization('b1000000-0000-4000-8000-000000000001','b7000000-0000-4000-8000-000000000002',(select id from public.local_verifier_authorizations where secret_hash=repeat('d',64)))$$,'operator revokes pending authorization');
+select is((select status from public.local_verifier_authorizations where secret_hash=repeat('d',64)),'revoked','revocation is effective');
+select is((select count(*)::integer from public.admin_audit_log where action='catalog.local_verifier_authorization_revoked'),1,'revocation is audited');
+select * from finish();rollback;

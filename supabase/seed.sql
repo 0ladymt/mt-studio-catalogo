@@ -1,0 +1,2 @@
+-- Intentionally empty. Commercial and customer data must never be seeded here.
+-- RLS tests create isolated example.invalid users inside a rolled-back transaction.

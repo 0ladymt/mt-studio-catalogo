@@ -1,0 +1,1814 @@
+{
+  "models": 360,
+  "aspects": [
+    0.42,
+    0.7,
+    1,
+    1.8,
+    2.6
+  ],
+  "rotations_per_aspect": 24,
+  "worst_ndc": 0.86154,
+  "results": [
+    {
+      "id": "feminino_accs_01",
+      "radius": 0.44711893796920776,
+      "max_ndc": 0.72641
+    },
+    {
+      "id": "feminino_accs_02",
+      "radius": 0.4490373134613037,
+      "max_ndc": 0.7335
+    },
+    {
+      "id": "feminino_accs_03",
+      "radius": 0.5291482210159302,
+      "max_ndc": 0.77243
+    },
+    {
+      "id": "feminino_accs_04",
+      "radius": 0.35651952028274536,
+      "max_ndc": 0.78812
+    },
+    {
+      "id": "feminino_accs_05",
+      "radius": 0.2972559630870819,
+      "max_ndc": 0.66806
+    },
+    {
+      "id": "feminino_accs_06",
+      "radius": 0.36150848865509033,
+      "max_ndc": 0.67877
+    },
+    {
+      "id": "feminino_accs_07",
+      "radius": 0.3672931492328644,
+      "max_ndc": 0.66642
+    },
+    {
+      "id": "feminino_accs_08",
+      "radius": 0.3835211396217346,
+      "max_ndc": 0.67065
+    },
+    {
+      "id": "feminino_accs_09",
+      "radius": 0.14507773518562317,
+      "max_ndc": 0.73828
+    },
+    {
+      "id": "feminino_accs_10",
+      "radius": 0.36112773418426514,
+      "max_ndc": 0.67399
+    },
+    {
+      "id": "feminino_accs_11",
+      "radius": 0.3306850790977478,
+      "max_ndc": 0.59724
+    },
+    {
+      "id": "feminino_accs_12",
+      "radius": 0.3312421143054962,
+      "max_ndc": 0.62995
+    },
+    {
+      "id": "feminino_accs_13",
+      "radius": 0.4196002781391144,
+      "max_ndc": 0.74046
+    },
+    {
+      "id": "feminino_accs_14",
+      "radius": 0.4157091975212097,
+      "max_ndc": 0.80165
+    },
+    {
+      "id": "feminino_berd_01",
+      "radius": 0.20443615317344666,
+      "max_ndc": 0.59409
+    },
+    {
+      "id": "feminino_berd_02",
+      "radius": 0.15011188387870789,
+      "max_ndc": 0.71362
+    },
+    {
+      "id": "feminino_berd_03",
+      "radius": 0.1808243840932846,
+      "max_ndc": 0.60061
+    },
+    {
+      "id": "feminino_berd_04",
+      "radius": 0.23223760724067688,
+      "max_ndc": 0.60773
+    },
+    {
+      "id": "feminino_berd_05",
+      "radius": 0.21862849593162537,
+      "max_ndc": 0.63294
+    },
+    {
+      "id": "feminino_berd_06",
+      "radius": 0.23185330629348755,
+      "max_ndc": 0.66957
+    },
+    {
+      "id": "feminino_berd_07",
+      "radius": 0.11776717752218246,
+      "max_ndc": 0.65428
+    },
+    {
+      "id": "feminino_berd_08",
+      "radius": 0.2125357836484909,
+      "max_ndc": 0.59973
+    },
+    {
+      "id": "feminino_berd_09",
+      "radius": 0.21182622015476227,
+      "max_ndc": 0.63014
+    },
+    {
+      "id": "feminino_berd_10",
+      "radius": 0.2037622034549713,
+      "max_ndc": 0.56264
+    },
+    {
+      "id": "feminino_berd_11",
+      "radius": 0.1825542151927948,
+      "max_ndc": 0.57822
+    },
+    {
+      "id": "feminino_berd_12",
+      "radius": 0.22079752385616302,
+      "max_ndc": 0.65294
+    },
+    {
+      "id": "feminino_berd_13",
+      "radius": 0.23433953523635864,
+      "max_ndc": 0.64084
+    },
+    {
+      "id": "feminino_berd_14",
+      "radius": 0.23134838044643402,
+      "max_ndc": 0.57809
+    },
+    {
+      "id": "feminino_berd_15",
+      "radius": 0.222272589802742,
+      "max_ndc": 0.64962
+    },
+    {
+      "id": "feminino_berd_16",
+      "radius": 0.22465313971042633,
+      "max_ndc": 0.67246
+    },
+    {
+      "id": "feminino_berd_17",
+      "radius": 0.2167670875787735,
+      "max_ndc": 0.63505
+    },
+    {
+      "id": "feminino_berd_18",
+      "radius": 0.1710129976272583,
+      "max_ndc": 0.59756
+    },
+    {
+      "id": "feminino_berd_19",
+      "radius": 0.1610690802335739,
+      "max_ndc": 0.65918
+    },
+    {
+      "id": "feminino_berd_20",
+      "radius": 0.21933266520500183,
+      "max_ndc": 0.6354
+    },
+    {
+      "id": "feminino_berd_21",
+      "radius": 0.1825542151927948,
+      "max_ndc": 0.57822
+    },
+    {
+      "id": "feminino_berd_22",
+      "radius": 0.22079752385616302,
+      "max_ndc": 0.65294
+    },
+    {
+      "id": "feminino_berd_23",
+      "radius": 0.3797175884246826,
+      "max_ndc": 0.66684
+    },
+    {
+      "id": "feminino_berd_24",
+      "radius": 0.35307246446609497,
+      "max_ndc": 0.70826
+    },
+    {
+      "id": "feminino_berd_25",
+      "radius": 0.2087014615535736,
+      "max_ndc": 0.59799
+    },
+    {
+      "id": "feminino_berd_26",
+      "radius": 0.2167670875787735,
+      "max_ndc": 0.63505
+    },
+    {
+      "id": "feminino_berd_27",
+      "radius": 0.23134838044643402,
+      "max_ndc": 0.57809
+    },
+    {
+      "id": "feminino_berd_28",
+      "radius": 0.08011506497859955,
+      "max_ndc": 0.83958
+    },
+    {
+      "id": "feminino_berd_29",
+      "radius": 0.21206381916999817,
+      "max_ndc": 0.66368
+    },
+    {
+      "id": "feminino_berd_30",
+      "radius": 0.21793252229690552,
+      "max_ndc": 0.63562
+    },
+    {
+      "id": "feminino_berd_31",
+      "radius": 0.07541083544492722,
+      "max_ndc": 0.81208
+    },
+    {
+      "id": "feminino_berd_32",
+      "radius": 0.1998126357793808,
+      "max_ndc": 0.59146
+    },
+    {
+      "id": "feminino_berd_33",
+      "radius": 0.18001951277256012,
+      "max_ndc": 0.5989
+    },
+    {
+      "id": "feminino_berd_34",
+      "radius": 0.269687294960022,
+      "max_ndc": 0.68088
+    },
+    {
+      "id": "feminino_berd_35",
+      "radius": 0.1704540252685547,
+      "max_ndc": 0.59202
+    },
+    {
+      "id": "feminino_berd_36",
+      "radius": 0.20443615317344666,
+      "max_ndc": 0.59409
+    },
+    {
+      "id": "feminino_berd_37",
+      "radius": 0.2177695333957672,
+      "max_ndc": 0.64607
+    },
+    {
+      "id": "feminino_berd_38",
+      "radius": 0.22618800401687622,
+      "max_ndc": 0.67993
+    },
+    {
+      "id": "feminino_feet_01",
+      "radius": 0.3584183156490326,
+      "max_ndc": 0.67947
+    },
+    {
+      "id": "feminino_feet_02",
+      "radius": 0.26426881551742554,
+      "max_ndc": 0.75307
+    },
+    {
+      "id": "feminino_feet_03",
+      "radius": 0.3057768642902374,
+      "max_ndc": 0.71551
+    },
+    {
+      "id": "feminino_feet_04",
+      "radius": 0.3217981159687042,
+      "max_ndc": 0.66269
+    },
+    {
+      "id": "feminino_feet_05",
+      "radius": 0.28923308849334717,
+      "max_ndc": 0.74286
+    },
+    {
+      "id": "feminino_feet_06",
+      "radius": 0.27027279138565063,
+      "max_ndc": 0.74525
+    },
+    {
+      "id": "feminino_feet_07",
+      "radius": 0.3237648606300354,
+      "max_ndc": 0.72817
+    },
+    {
+      "id": "feminino_feet_08",
+      "radius": 0.37301021814346313,
+      "max_ndc": 0.80968
+    },
+    {
+      "id": "feminino_feet_09",
+      "radius": 0.2508679926395416,
+      "max_ndc": 0.74944
+    },
+    {
+      "id": "feminino_feet_10",
+      "radius": 0.2809596061706543,
+      "max_ndc": 0.74061
+    },
+    {
+      "id": "feminino_feet_11",
+      "radius": 0.265900194644928,
+      "max_ndc": 0.75337
+    },
+    {
+      "id": "feminino_feet_12",
+      "radius": 0.26618659496307373,
+      "max_ndc": 0.75489
+    },
+    {
+      "id": "feminino_feet_13",
+      "radius": 0.2731872498989105,
+      "max_ndc": 0.74027
+    },
+    {
+      "id": "feminino_feet_14",
+      "radius": 0.2639924883842468,
+      "max_ndc": 0.74193
+    },
+    {
+      "id": "feminino_feet_15",
+      "radius": 0.29780253767967224,
+      "max_ndc": 0.69797
+    },
+    {
+      "id": "feminino_feet_16",
+      "radius": 0.29561087489128113,
+      "max_ndc": 0.68332
+    },
+    {
+      "id": "feminino_feet_17",
+      "radius": 0.2717042863368988,
+      "max_ndc": 0.7389
+    },
+    {
+      "id": "feminino_feet_18",
+      "radius": 0.2659110426902771,
+      "max_ndc": 0.76097
+    },
+    {
+      "id": "feminino_feet_19",
+      "radius": 0.26646241545677185,
+      "max_ndc": 0.73641
+    },
+    {
+      "id": "feminino_hand_01",
+      "radius": 0.3594459295272827,
+      "max_ndc": 0.65165
+    },
+    {
+      "id": "feminino_hand_02",
+      "radius": 0.3573993742465973,
+      "max_ndc": 0.69483
+    },
+    {
+      "id": "feminino_hand_03",
+      "radius": 0.5242401361465454,
+      "max_ndc": 0.6439
+    },
+    {
+      "id": "feminino_hand_04",
+      "radius": 0.4954911768436432,
+      "max_ndc": 0.71081
+    },
+    {
+      "id": "feminino_jbib_01",
+      "radius": 0.4194679856300354,
+      "max_ndc": 0.61592
+    },
+    {
+      "id": "feminino_jbib_02",
+      "radius": 0.4599243998527527,
+      "max_ndc": 0.63995
+    },
+    {
+      "id": "feminino_jbib_03",
+      "radius": 0.62984699010849,
+      "max_ndc": 0.72887
+    },
+    {
+      "id": "feminino_jbib_04",
+      "radius": 0.3455975651741028,
+      "max_ndc": 0.71748
+    },
+    {
+      "id": "feminino_jbib_05",
+      "radius": 0.273331880569458,
+      "max_ndc": 0.61784
+    },
+    {
+      "id": "feminino_jbib_06",
+      "radius": 0.5850737690925598,
+      "max_ndc": 0.70764
+    },
+    {
+      "id": "feminino_jbib_07",
+      "radius": 0.6397618055343628,
+      "max_ndc": 0.72375
+    },
+    {
+      "id": "feminino_jbib_08",
+      "radius": 0.5390153527259827,
+      "max_ndc": 0.73568
+    },
+    {
+      "id": "feminino_jbib_09",
+      "radius": 0.51125168800354,
+      "max_ndc": 0.61389
+    },
+    {
+      "id": "feminino_jbib_10",
+      "radius": 0.6407263875007629,
+      "max_ndc": 0.72117
+    },
+    {
+      "id": "feminino_jbib_100",
+      "radius": 0.5953454971313477,
+      "max_ndc": 0.79871
+    },
+    {
+      "id": "feminino_jbib_101",
+      "radius": 0.6971331238746643,
+      "max_ndc": 0.69557
+    },
+    {
+      "id": "feminino_jbib_11",
+      "radius": 0.3506318926811218,
+      "max_ndc": 0.71539
+    },
+    {
+      "id": "feminino_jbib_12",
+      "radius": 0.26798534393310547,
+      "max_ndc": 0.63657
+    },
+    {
+      "id": "feminino_jbib_13",
+      "radius": 0.4705604612827301,
+      "max_ndc": 0.63628
+    },
+    {
+      "id": "feminino_jbib_14",
+      "radius": 0.25506436824798584,
+      "max_ndc": 0.58729
+    },
+    {
+      "id": "feminino_jbib_15",
+      "radius": 0.4251231849193573,
+      "max_ndc": 0.62792
+    },
+    {
+      "id": "feminino_jbib_16",
+      "radius": 0.3715057373046875,
+      "max_ndc": 0.72785
+    },
+    {
+      "id": "feminino_jbib_17",
+      "radius": 0.6297374963760376,
+      "max_ndc": 0.74405
+    },
+    {
+      "id": "feminino_jbib_18",
+      "radius": 0.6328047513961792,
+      "max_ndc": 0.72622
+    },
+    {
+      "id": "feminino_jbib_19",
+      "radius": 0.4790494441986084,
+      "max_ndc": 0.64023
+    },
+    {
+      "id": "feminino_jbib_20",
+      "radius": 0.8074624538421631,
+      "max_ndc": 0.62618
+    },
+    {
+      "id": "feminino_jbib_21",
+      "radius": 0.7020394802093506,
+      "max_ndc": 0.67368
+    },
+    {
+      "id": "feminino_jbib_22",
+      "radius": 0.6281861662864685,
+      "max_ndc": 0.62337
+    },
+    {
+      "id": "feminino_jbib_23",
+      "radius": 0.6566072106361389,
+      "max_ndc": 0.71487
+    },
+    {
+      "id": "feminino_jbib_24",
+      "radius": 0.6472327709197998,
+      "max_ndc": 0.70502
+    },
+    {
+      "id": "feminino_jbib_25",
+      "radius": 0.6478011608123779,
+      "max_ndc": 0.7061
+    },
+    {
+      "id": "feminino_jbib_26",
+      "radius": 0.6499612927436829,
+      "max_ndc": 0.73315
+    },
+    {
+      "id": "feminino_jbib_27",
+      "radius": 0.6392101645469666,
+      "max_ndc": 0.72484
+    },
+    {
+      "id": "feminino_jbib_28",
+      "radius": 0.6990073323249817,
+      "max_ndc": 0.67528
+    },
+    {
+      "id": "feminino_jbib_29",
+      "radius": 0.6593073010444641,
+      "max_ndc": 0.71726
+    },
+    {
+      "id": "feminino_jbib_30",
+      "radius": 0.6475046277046204,
+      "max_ndc": 0.73365
+    },
+    {
+      "id": "feminino_jbib_31",
+      "radius": 0.5691157579421997,
+      "max_ndc": 0.70953
+    },
+    {
+      "id": "feminino_jbib_32",
+      "radius": 0.5698283314704895,
+      "max_ndc": 0.73065
+    },
+    {
+      "id": "feminino_jbib_33",
+      "radius": 0.6509572267532349,
+      "max_ndc": 0.71808
+    },
+    {
+      "id": "feminino_jbib_34",
+      "radius": 0.6682314872741699,
+      "max_ndc": 0.70508
+    },
+    {
+      "id": "feminino_jbib_35",
+      "radius": 0.5996755361557007,
+      "max_ndc": 0.60943
+    },
+    {
+      "id": "feminino_jbib_36",
+      "radius": 0.5684524774551392,
+      "max_ndc": 0.61371
+    },
+    {
+      "id": "feminino_jbib_37",
+      "radius": 0.6892732381820679,
+      "max_ndc": 0.69781
+    },
+    {
+      "id": "feminino_jbib_38",
+      "radius": 0.7054956555366516,
+      "max_ndc": 0.69496
+    },
+    {
+      "id": "feminino_jbib_39",
+      "radius": 0.41884371638298035,
+      "max_ndc": 0.71285
+    },
+    {
+      "id": "feminino_jbib_40",
+      "radius": 0.7054567337036133,
+      "max_ndc": 0.67994
+    },
+    {
+      "id": "feminino_jbib_41",
+      "radius": 0.6482754349708557,
+      "max_ndc": 0.72099
+    },
+    {
+      "id": "feminino_jbib_42",
+      "radius": 0.6692430973052979,
+      "max_ndc": 0.69786
+    },
+    {
+      "id": "feminino_jbib_43",
+      "radius": 0.7696759700775146,
+      "max_ndc": 0.63645
+    },
+    {
+      "id": "feminino_jbib_44",
+      "radius": 0.6428335309028625,
+      "max_ndc": 0.72862
+    },
+    {
+      "id": "feminino_jbib_45",
+      "radius": 0.7084961533546448,
+      "max_ndc": 0.6758
+    },
+    {
+      "id": "feminino_jbib_46",
+      "radius": 0.6649565696716309,
+      "max_ndc": 0.69836
+    },
+    {
+      "id": "feminino_jbib_47",
+      "radius": 0.4754055142402649,
+      "max_ndc": 0.65523
+    },
+    {
+      "id": "feminino_jbib_48",
+      "radius": 0.35167837142944336,
+      "max_ndc": 0.74663
+    },
+    {
+      "id": "feminino_jbib_49",
+      "radius": 0.45046329498291016,
+      "max_ndc": 0.70165
+    },
+    {
+      "id": "feminino_jbib_50",
+      "radius": 0.6426400542259216,
+      "max_ndc": 0.729
+    },
+    {
+      "id": "feminino_jbib_51",
+      "radius": 0.8024868965148926,
+      "max_ndc": 0.61298
+    },
+    {
+      "id": "feminino_jbib_52",
+      "radius": 0.745902955532074,
+      "max_ndc": 0.6254
+    },
+    {
+      "id": "feminino_jbib_53",
+      "radius": 0.6542140245437622,
+      "max_ndc": 0.7104
+    },
+    {
+      "id": "feminino_jbib_54",
+      "radius": 0.4539111852645874,
+      "max_ndc": 0.7139
+    },
+    {
+      "id": "feminino_jbib_55",
+      "radius": 0.4405980706214905,
+      "max_ndc": 0.60136
+    },
+    {
+      "id": "feminino_jbib_56",
+      "radius": 0.7859908938407898,
+      "max_ndc": 0.60578
+    },
+    {
+      "id": "feminino_jbib_57",
+      "radius": 0.3287968933582306,
+      "max_ndc": 0.69697
+    },
+    {
+      "id": "feminino_jbib_58",
+      "radius": 0.4198968708515167,
+      "max_ndc": 0.64509
+    },
+    {
+      "id": "feminino_jbib_59",
+      "radius": 0.2830501198768616,
+      "max_ndc": 0.61642
+    },
+    {
+      "id": "feminino_jbib_60",
+      "radius": 0.4372038245201111,
+      "max_ndc": 0.60433
+    },
+    {
+      "id": "feminino_jbib_61",
+      "radius": 0.3918890357017517,
+      "max_ndc": 0.68213
+    },
+    {
+      "id": "feminino_jbib_62",
+      "radius": 0.3877018690109253,
+      "max_ndc": 0.67696
+    },
+    {
+      "id": "feminino_jbib_63",
+      "radius": 0.7859908938407898,
+      "max_ndc": 0.60578
+    },
+    {
+      "id": "feminino_jbib_64",
+      "radius": 0.6783643960952759,
+      "max_ndc": 0.70664
+    },
+    {
+      "id": "feminino_jbib_65",
+      "radius": 0.6791761517524719,
+      "max_ndc": 0.69477
+    },
+    {
+      "id": "feminino_jbib_66",
+      "radius": 0.5577543377876282,
+      "max_ndc": 0.62345
+    },
+    {
+      "id": "feminino_jbib_67",
+      "radius": 0.7106425166130066,
+      "max_ndc": 0.72115
+    },
+    {
+      "id": "feminino_jbib_68",
+      "radius": 0.4814031422138214,
+      "max_ndc": 0.62366
+    },
+    {
+      "id": "feminino_jbib_69",
+      "radius": 0.6389600038528442,
+      "max_ndc": 0.74751
+    },
+    {
+      "id": "feminino_jbib_70",
+      "radius": 0.6346906423568726,
+      "max_ndc": 0.72488
+    },
+    {
+      "id": "feminino_jbib_71",
+      "radius": 0.6268734335899353,
+      "max_ndc": 0.73096
+    },
+    {
+      "id": "feminino_jbib_72",
+      "radius": 0.5549917221069336,
+      "max_ndc": 0.65689
+    },
+    {
+      "id": "feminino_jbib_73",
+      "radius": 0.38691040873527527,
+      "max_ndc": 0.70856
+    },
+    {
+      "id": "feminino_jbib_74",
+      "radius": 0.5255838632583618,
+      "max_ndc": 0.60456
+    },
+    {
+      "id": "feminino_jbib_75",
+      "radius": 0.504411518573761,
+      "max_ndc": 0.66148
+    },
+    {
+      "id": "feminino_jbib_76",
+      "radius": 0.6452428102493286,
+      "max_ndc": 0.73329
+    },
+    {
+      "id": "feminino_jbib_77",
+      "radius": 0.5559630393981934,
+      "max_ndc": 0.64853
+    },
+    {
+      "id": "feminino_jbib_78",
+      "radius": 0.44179970026016235,
+      "max_ndc": 0.74972
+    },
+    {
+      "id": "feminino_jbib_79",
+      "radius": 0.48093581199645996,
+      "max_ndc": 0.77821
+    },
+    {
+      "id": "feminino_jbib_80",
+      "radius": 0.515188455581665,
+      "max_ndc": 0.78915
+    },
+    {
+      "id": "feminino_jbib_81",
+      "radius": 0.6893203854560852,
+      "max_ndc": 0.71822
+    },
+    {
+      "id": "feminino_jbib_82",
+      "radius": 0.2974375784397125,
+      "max_ndc": 0.68178
+    },
+    {
+      "id": "feminino_jbib_83",
+      "radius": 0.6514927744865417,
+      "max_ndc": 0.73976
+    },
+    {
+      "id": "feminino_jbib_84",
+      "radius": 0.6337132453918457,
+      "max_ndc": 0.72698
+    },
+    {
+      "id": "feminino_jbib_85",
+      "radius": 0.7110458612442017,
+      "max_ndc": 0.65391
+    },
+    {
+      "id": "feminino_jbib_86",
+      "radius": 0.4642435312271118,
+      "max_ndc": 0.77313
+    },
+    {
+      "id": "feminino_jbib_87",
+      "radius": 0.799557626247406,
+      "max_ndc": 0.616
+    },
+    {
+      "id": "feminino_jbib_88",
+      "radius": 0.6844781637191772,
+      "max_ndc": 0.70673
+    },
+    {
+      "id": "feminino_jbib_89",
+      "radius": 0.6958568692207336,
+      "max_ndc": 0.7036
+    },
+    {
+      "id": "feminino_jbib_90",
+      "radius": 0.698133647441864,
+      "max_ndc": 0.67938
+    },
+    {
+      "id": "feminino_jbib_91",
+      "radius": 0.4141997992992401,
+      "max_ndc": 0.68196
+    },
+    {
+      "id": "feminino_jbib_92",
+      "radius": 0.6286658048629761,
+      "max_ndc": 0.61412
+    },
+    {
+      "id": "feminino_jbib_93",
+      "radius": 0.7132247090339661,
+      "max_ndc": 0.67349
+    },
+    {
+      "id": "feminino_jbib_94",
+      "radius": 0.6490840911865234,
+      "max_ndc": 0.72787
+    },
+    {
+      "id": "feminino_jbib_95",
+      "radius": 0.6537083983421326,
+      "max_ndc": 0.71369
+    },
+    {
+      "id": "feminino_jbib_96",
+      "radius": 0.6537509560585022,
+      "max_ndc": 0.71714
+    },
+    {
+      "id": "feminino_jbib_97",
+      "radius": 0.6607128381729126,
+      "max_ndc": 0.70986
+    },
+    {
+      "id": "feminino_jbib_98",
+      "radius": 0.42724552750587463,
+      "max_ndc": 0.71934
+    },
+    {
+      "id": "feminino_jbib_99",
+      "radius": 0.24326007068157196,
+      "max_ndc": 0.61593
+    },
+    {
+      "id": "feminino_lowr_01",
+      "radius": 0.5902900099754333,
+      "max_ndc": 0.82778
+    },
+    {
+      "id": "feminino_lowr_02",
+      "radius": 0.5888174772262573,
+      "max_ndc": 0.82992
+    },
+    {
+      "id": "feminino_lowr_03",
+      "radius": 0.6025404334068298,
+      "max_ndc": 0.80902
+    },
+    {
+      "id": "feminino_lowr_04",
+      "radius": 0.590796709060669,
+      "max_ndc": 0.82851
+    },
+    {
+      "id": "feminino_lowr_05",
+      "radius": 0.5792036652565002,
+      "max_ndc": 0.82069
+    },
+    {
+      "id": "feminino_lowr_06",
+      "radius": 0.6055415272712708,
+      "max_ndc": 0.81062
+    },
+    {
+      "id": "feminino_lowr_07",
+      "radius": 0.5894566178321838,
+      "max_ndc": 0.8294
+    },
+    {
+      "id": "feminino_lowr_08",
+      "radius": 0.5976730585098267,
+      "max_ndc": 0.82965
+    },
+    {
+      "id": "feminino_lowr_09",
+      "radius": 0.5965107083320618,
+      "max_ndc": 0.82647
+    },
+    {
+      "id": "feminino_lowr_10",
+      "radius": 0.6056734323501587,
+      "max_ndc": 0.82178
+    },
+    {
+      "id": "feminino_lowr_11",
+      "radius": 0.6391168832778931,
+      "max_ndc": 0.82241
+    },
+    {
+      "id": "feminino_lowr_12",
+      "radius": 0.5451247692108154,
+      "max_ndc": 0.78041
+    },
+    {
+      "id": "feminino_lowr_13",
+      "radius": 0.5824981927871704,
+      "max_ndc": 0.82843
+    },
+    {
+      "id": "feminino_lowr_14",
+      "radius": 0.5921231508255005,
+      "max_ndc": 0.82675
+    },
+    {
+      "id": "feminino_lowr_15",
+      "radius": 0.6692860722541809,
+      "max_ndc": 0.8231
+    },
+    {
+      "id": "feminino_lowr_16",
+      "radius": 0.6131865978240967,
+      "max_ndc": 0.8043
+    },
+    {
+      "id": "feminino_lowr_17",
+      "radius": 0.5546309947967529,
+      "max_ndc": 0.80818
+    },
+    {
+      "id": "feminino_lowr_18",
+      "radius": 0.6007843017578125,
+      "max_ndc": 0.81282
+    },
+    {
+      "id": "feminino_lowr_19",
+      "radius": 0.5940815806388855,
+      "max_ndc": 0.82278
+    },
+    {
+      "id": "feminino_lowr_20",
+      "radius": 0.5888174772262573,
+      "max_ndc": 0.82992
+    },
+    {
+      "id": "feminino_lowr_21",
+      "radius": 0.6082379817962646,
+      "max_ndc": 0.82037
+    },
+    {
+      "id": "feminino_lowr_22",
+      "radius": 0.5382210612297058,
+      "max_ndc": 0.79512
+    },
+    {
+      "id": "feminino_lowr_23",
+      "radius": 0.8191695809364319,
+      "max_ndc": 0.8326
+    },
+    {
+      "id": "feminino_lowr_24",
+      "radius": 0.6039488315582275,
+      "max_ndc": 0.80713
+    },
+    {
+      "id": "feminino_lowr_25",
+      "radius": 0.5913806557655334,
+      "max_ndc": 0.82586
+    },
+    {
+      "id": "feminino_lowr_26",
+      "radius": 0.5814557075500488,
+      "max_ndc": 0.83
+    },
+    {
+      "id": "feminino_lowr_27",
+      "radius": 0.591464102268219,
+      "max_ndc": 0.82672
+    },
+    {
+      "id": "feminino_lowr_28",
+      "radius": 0.5996232032775879,
+      "max_ndc": 0.81361
+    },
+    {
+      "id": "feminino_lowr_29",
+      "radius": 0.5996232032775879,
+      "max_ndc": 0.81361
+    },
+    {
+      "id": "feminino_lowr_30",
+      "radius": 0.593799352645874,
+      "max_ndc": 0.82286
+    },
+    {
+      "id": "feminino_lowr_31",
+      "radius": 0.5914736986160278,
+      "max_ndc": 0.82551
+    },
+    {
+      "id": "feminino_lowr_32",
+      "radius": 0.5942708253860474,
+      "max_ndc": 0.82215
+    },
+    {
+      "id": "feminino_lowr_33",
+      "radius": 0.5902462005615234,
+      "max_ndc": 0.82814
+    },
+    {
+      "id": "feminino_lowr_34",
+      "radius": 0.5898795127868652,
+      "max_ndc": 0.82828
+    },
+    {
+      "id": "feminino_lowr_35",
+      "radius": 0.5916318297386169,
+      "max_ndc": 0.82537
+    },
+    {
+      "id": "feminino_lowr_36",
+      "radius": 0.6081897020339966,
+      "max_ndc": 0.80209
+    },
+    {
+      "id": "feminino_lowr_37",
+      "radius": 0.6021634936332703,
+      "max_ndc": 0.81831
+    },
+    {
+      "id": "feminino_lowr_38",
+      "radius": 0.593799352645874,
+      "max_ndc": 0.82286
+    },
+    {
+      "id": "feminino_lowr_39",
+      "radius": 0.5966811180114746,
+      "max_ndc": 0.82102
+    },
+    {
+      "id": "feminino_lowr_40",
+      "radius": 0.5919315218925476,
+      "max_ndc": 0.8255
+    },
+    {
+      "id": "feminino_lowr_41",
+      "radius": 0.6058062314987183,
+      "max_ndc": 0.81311
+    },
+    {
+      "id": "feminino_lowr_42",
+      "radius": 0.5963891744613647,
+      "max_ndc": 0.81892
+    },
+    {
+      "id": "feminino_lowr_43",
+      "radius": 0.6043122410774231,
+      "max_ndc": 0.81603
+    },
+    {
+      "id": "feminino_lowr_44",
+      "radius": 0.5921025276184082,
+      "max_ndc": 0.82509
+    },
+    {
+      "id": "feminino_lowr_45",
+      "radius": 0.6013501286506653,
+      "max_ndc": 0.82554
+    },
+    {
+      "id": "feminino_lowr_46",
+      "radius": 0.5918745398521423,
+      "max_ndc": 0.82514
+    },
+    {
+      "id": "feminino_lowr_47",
+      "radius": 0.5918749570846558,
+      "max_ndc": 0.82514
+    },
+    {
+      "id": "feminino_lowr_48",
+      "radius": 0.5893197059631348,
+      "max_ndc": 0.8292
+    },
+    {
+      "id": "feminino_lowr_49",
+      "radius": 0.5932585000991821,
+      "max_ndc": 0.82313
+    },
+    {
+      "id": "feminino_lowr_50",
+      "radius": 0.593638002872467,
+      "max_ndc": 0.82215
+    },
+    {
+      "id": "feminino_lowr_51",
+      "radius": 0.5894308686256409,
+      "max_ndc": 0.82933
+    },
+    {
+      "id": "feminino_task_01",
+      "radius": 0.45866507291793823,
+      "max_ndc": 0.67166
+    },
+    {
+      "id": "feminino_task_02",
+      "radius": 0.18157082796096802,
+      "max_ndc": 0.67109
+    },
+    {
+      "id": "feminino_task_03",
+      "radius": 0.3498714566230774,
+      "max_ndc": 0.66986
+    },
+    {
+      "id": "feminino_task_04",
+      "radius": 0.36093419790267944,
+      "max_ndc": 0.67794
+    },
+    {
+      "id": "feminino_teef_01",
+      "radius": 0.27502182126045227,
+      "max_ndc": 0.73981
+    },
+    {
+      "id": "feminino_teef_02",
+      "radius": 0.31943097710609436,
+      "max_ndc": 0.66959
+    },
+    {
+      "id": "feminino_teef_03",
+      "radius": 0.2166813313961029,
+      "max_ndc": 0.85585
+    },
+    {
+      "id": "feminino_teef_04",
+      "radius": 0.24908441305160522,
+      "max_ndc": 0.70969
+    },
+    {
+      "id": "feminino_teef_05",
+      "radius": 0.1358964741230011,
+      "max_ndc": 0.81033
+    },
+    {
+      "id": "feminino_teef_06",
+      "radius": 0.3668895959854126,
+      "max_ndc": 0.85935
+    },
+    {
+      "id": "feminino_teef_07",
+      "radius": 0.24256175756454468,
+      "max_ndc": 0.62596
+    },
+    {
+      "id": "feminino_teef_08",
+      "radius": 0.0843404158949852,
+      "max_ndc": 0.76334
+    },
+    {
+      "id": "feminino_teef_09",
+      "radius": 0.17130593955516815,
+      "max_ndc": 0.73855
+    },
+    {
+      "id": "feminino_teef_10",
+      "radius": 0.20978523790836334,
+      "max_ndc": 0.64387
+    },
+    {
+      "id": "feminino_teef_11",
+      "radius": 0.21983051300048828,
+      "max_ndc": 0.67349
+    },
+    {
+      "id": "feminino_teef_12",
+      "radius": 0.20936572551727295,
+      "max_ndc": 0.5857
+    },
+    {
+      "id": "masculino_accs_01",
+      "radius": 0.3989076316356659,
+      "max_ndc": 0.69341
+    },
+    {
+      "id": "masculino_accs_02",
+      "radius": 0.3148579001426697,
+      "max_ndc": 0.65111
+    },
+    {
+      "id": "masculino_accs_03",
+      "radius": 0.39005476236343384,
+      "max_ndc": 0.65442
+    },
+    {
+      "id": "masculino_accs_04",
+      "radius": 0.4289935529232025,
+      "max_ndc": 0.74684
+    },
+    {
+      "id": "masculino_accs_05",
+      "radius": 0.32799801230430603,
+      "max_ndc": 0.6082
+    },
+    {
+      "id": "masculino_accs_06",
+      "radius": 0.3619202673435211,
+      "max_ndc": 0.63882
+    },
+    {
+      "id": "masculino_accs_07",
+      "radius": 0.4295543134212494,
+      "max_ndc": 0.71441
+    },
+    {
+      "id": "masculino_accs_08",
+      "radius": 0.37602415680885315,
+      "max_ndc": 0.66265
+    },
+    {
+      "id": "masculino_accs_09",
+      "radius": 0.40115225315093994,
+      "max_ndc": 0.67556
+    },
+    {
+      "id": "masculino_accs_10",
+      "radius": 0.4277779161930084,
+      "max_ndc": 0.78767
+    },
+    {
+      "id": "masculino_berd_01",
+      "radius": 0.20443615317344666,
+      "max_ndc": 0.59409
+    },
+    {
+      "id": "masculino_berd_02",
+      "radius": 0.15011188387870789,
+      "max_ndc": 0.71362
+    },
+    {
+      "id": "masculino_berd_03",
+      "radius": 0.1808243840932846,
+      "max_ndc": 0.60061
+    },
+    {
+      "id": "masculino_berd_04",
+      "radius": 0.23223760724067688,
+      "max_ndc": 0.60773
+    },
+    {
+      "id": "masculino_berd_05",
+      "radius": 0.11776717752218246,
+      "max_ndc": 0.65428
+    },
+    {
+      "id": "masculino_berd_06",
+      "radius": 0.23524056375026703,
+      "max_ndc": 0.6551
+    },
+    {
+      "id": "masculino_berd_07",
+      "radius": 0.2125357836484909,
+      "max_ndc": 0.59973
+    },
+    {
+      "id": "masculino_berd_08",
+      "radius": 0.21182622015476227,
+      "max_ndc": 0.63014
+    },
+    {
+      "id": "masculino_berd_09",
+      "radius": 0.1825542151927948,
+      "max_ndc": 0.57822
+    },
+    {
+      "id": "masculino_berd_10",
+      "radius": 0.2216622531414032,
+      "max_ndc": 0.64889
+    },
+    {
+      "id": "masculino_berd_11",
+      "radius": 0.2037622034549713,
+      "max_ndc": 0.56264
+    },
+    {
+      "id": "masculino_berd_12",
+      "radius": 0.2350679636001587,
+      "max_ndc": 0.63768
+    },
+    {
+      "id": "masculino_berd_13",
+      "radius": 0.23857228457927704,
+      "max_ndc": 0.58249
+    },
+    {
+      "id": "masculino_berd_14",
+      "radius": 0.2167670875787735,
+      "max_ndc": 0.63505
+    },
+    {
+      "id": "masculino_berd_15",
+      "radius": 0.1710129976272583,
+      "max_ndc": 0.59756
+    },
+    {
+      "id": "masculino_berd_16",
+      "radius": 0.1610690802335739,
+      "max_ndc": 0.65918
+    },
+    {
+      "id": "masculino_berd_17",
+      "radius": 0.3759405016899109,
+      "max_ndc": 0.66253
+    },
+    {
+      "id": "masculino_berd_18",
+      "radius": 0.3577049970626831,
+      "max_ndc": 0.71709
+    },
+    {
+      "id": "masculino_berd_19",
+      "radius": 0.2086758017539978,
+      "max_ndc": 0.58063
+    },
+    {
+      "id": "masculino_berd_20",
+      "radius": 0.08011506497859955,
+      "max_ndc": 0.83958
+    },
+    {
+      "id": "masculino_berd_21",
+      "radius": 0.17002597451210022,
+      "max_ndc": 0.59215
+    },
+    {
+      "id": "masculino_feet_01",
+      "radius": 0.26866769790649414,
+      "max_ndc": 0.76205
+    },
+    {
+      "id": "masculino_feet_02",
+      "radius": 0.2895624339580536,
+      "max_ndc": 0.71601
+    },
+    {
+      "id": "masculino_feet_03",
+      "radius": 0.299915611743927,
+      "max_ndc": 0.71678
+    },
+    {
+      "id": "masculino_feet_04",
+      "radius": 0.31080225110054016,
+      "max_ndc": 0.70816
+    },
+    {
+      "id": "masculino_feet_05",
+      "radius": 0.38306018710136414,
+      "max_ndc": 0.81255
+    },
+    {
+      "id": "masculino_feet_06",
+      "radius": 0.2785281836986542,
+      "max_ndc": 0.73567
+    },
+    {
+      "id": "masculino_feet_07",
+      "radius": 0.27708327770233154,
+      "max_ndc": 0.73343
+    },
+    {
+      "id": "masculino_feet_08",
+      "radius": 0.30390048027038574,
+      "max_ndc": 0.69293
+    },
+    {
+      "id": "masculino_feet_09",
+      "radius": 0.27619752287864685,
+      "max_ndc": 0.75596
+    },
+    {
+      "id": "masculino_feet_10",
+      "radius": 0.2778667211532593,
+      "max_ndc": 0.73132
+    },
+    {
+      "id": "masculino_feet_11",
+      "radius": 0.2797186076641083,
+      "max_ndc": 0.74408
+    },
+    {
+      "id": "masculino_hand_01",
+      "radius": 0.5326453447341919,
+      "max_ndc": 0.63372
+    },
+    {
+      "id": "masculino_hand_02",
+      "radius": 0.4954911768436432,
+      "max_ndc": 0.71081
+    },
+    {
+      "id": "masculino_hand_03",
+      "radius": 0.381642609834671,
+      "max_ndc": 0.60393
+    },
+    {
+      "id": "masculino_jbib_01",
+      "radius": 0.4908128082752228,
+      "max_ndc": 0.62377
+    },
+    {
+      "id": "masculino_jbib_02",
+      "radius": 0.4913022518157959,
+      "max_ndc": 0.62315
+    },
+    {
+      "id": "masculino_jbib_03",
+      "radius": 0.39477527141571045,
+      "max_ndc": 0.72916
+    },
+    {
+      "id": "masculino_jbib_04",
+      "radius": 0.4967477023601532,
+      "max_ndc": 0.63494
+    },
+    {
+      "id": "masculino_jbib_05",
+      "radius": 0.6816312670707703,
+      "max_ndc": 0.68178
+    },
+    {
+      "id": "masculino_jbib_06",
+      "radius": 0.3851551115512848,
+      "max_ndc": 0.7051
+    },
+    {
+      "id": "masculino_jbib_07",
+      "radius": 0.6880379915237427,
+      "max_ndc": 0.67692
+    },
+    {
+      "id": "masculino_jbib_08",
+      "radius": 0.501995325088501,
+      "max_ndc": 0.67352
+    },
+    {
+      "id": "masculino_jbib_09",
+      "radius": 0.669155478477478,
+      "max_ndc": 0.68532
+    },
+    {
+      "id": "masculino_jbib_10",
+      "radius": 0.6843197345733643,
+      "max_ndc": 0.68813
+    },
+    {
+      "id": "masculino_jbib_11",
+      "radius": 0.5944114923477173,
+      "max_ndc": 0.65672
+    },
+    {
+      "id": "masculino_jbib_12",
+      "radius": 0.8062247037887573,
+      "max_ndc": 0.62397
+    },
+    {
+      "id": "masculino_jbib_13",
+      "radius": 0.6389095187187195,
+      "max_ndc": 0.71745
+    },
+    {
+      "id": "masculino_jbib_14",
+      "radius": 0.6485838890075684,
+      "max_ndc": 0.72408
+    },
+    {
+      "id": "masculino_jbib_15",
+      "radius": 0.632725715637207,
+      "max_ndc": 0.72969
+    },
+    {
+      "id": "masculino_jbib_16",
+      "radius": 0.6724801063537598,
+      "max_ndc": 0.70902
+    },
+    {
+      "id": "masculino_jbib_17",
+      "radius": 0.6538873910903931,
+      "max_ndc": 0.72483
+    },
+    {
+      "id": "masculino_jbib_18",
+      "radius": 0.6379555463790894,
+      "max_ndc": 0.72461
+    },
+    {
+      "id": "masculino_jbib_19",
+      "radius": 0.6743451952934265,
+      "max_ndc": 0.70548
+    },
+    {
+      "id": "masculino_jbib_20",
+      "radius": 0.6673362255096436,
+      "max_ndc": 0.7061
+    },
+    {
+      "id": "masculino_jbib_21",
+      "radius": 0.5828391313552856,
+      "max_ndc": 0.63178
+    },
+    {
+      "id": "masculino_jbib_22",
+      "radius": 0.629802405834198,
+      "max_ndc": 0.61264
+    },
+    {
+      "id": "masculino_jbib_23",
+      "radius": 0.6142708659172058,
+      "max_ndc": 0.60884
+    },
+    {
+      "id": "masculino_jbib_24",
+      "radius": 0.68814617395401,
+      "max_ndc": 0.68637
+    },
+    {
+      "id": "masculino_jbib_25",
+      "radius": 0.7718124389648438,
+      "max_ndc": 0.63431
+    },
+    {
+      "id": "masculino_jbib_26",
+      "radius": 0.6555315852165222,
+      "max_ndc": 0.70719
+    },
+    {
+      "id": "masculino_jbib_27",
+      "radius": 0.7141256332397461,
+      "max_ndc": 0.67022
+    },
+    {
+      "id": "masculino_jbib_28",
+      "radius": 0.6787724494934082,
+      "max_ndc": 0.7039
+    },
+    {
+      "id": "masculino_jbib_29",
+      "radius": 0.5557078719139099,
+      "max_ndc": 0.62145
+    },
+    {
+      "id": "masculino_jbib_30",
+      "radius": 0.7129791378974915,
+      "max_ndc": 0.72581
+    },
+    {
+      "id": "masculino_jbib_31",
+      "radius": 0.5664788484573364,
+      "max_ndc": 0.63298
+    },
+    {
+      "id": "masculino_jbib_32",
+      "radius": 0.49813467264175415,
+      "max_ndc": 0.76911
+    },
+    {
+      "id": "masculino_jbib_33",
+      "radius": 0.658663272857666,
+      "max_ndc": 0.70809
+    },
+    {
+      "id": "masculino_jbib_34",
+      "radius": 0.6521034240722656,
+      "max_ndc": 0.73166
+    },
+    {
+      "id": "masculino_jbib_35",
+      "radius": 0.6299019455909729,
+      "max_ndc": 0.72945
+    },
+    {
+      "id": "masculino_lowr_01",
+      "radius": 0.6013815999031067,
+      "max_ndc": 0.82018
+    },
+    {
+      "id": "masculino_lowr_02",
+      "radius": 0.6023441553115845,
+      "max_ndc": 0.81083
+    },
+    {
+      "id": "masculino_lowr_03",
+      "radius": 0.6011682748794556,
+      "max_ndc": 0.81254
+    },
+    {
+      "id": "masculino_lowr_04",
+      "radius": 0.5875857472419739,
+      "max_ndc": 0.82216
+    },
+    {
+      "id": "masculino_lowr_05",
+      "radius": 0.6157559156417847,
+      "max_ndc": 0.78712
+    },
+    {
+      "id": "masculino_lowr_06",
+      "radius": 0.5884675979614258,
+      "max_ndc": 0.82165
+    },
+    {
+      "id": "masculino_lowr_07",
+      "radius": 0.5980905890464783,
+      "max_ndc": 0.81775
+    },
+    {
+      "id": "masculino_lowr_08",
+      "radius": 0.5872036218643188,
+      "max_ndc": 0.82288
+    },
+    {
+      "id": "masculino_lowr_09",
+      "radius": 0.5854317545890808,
+      "max_ndc": 0.82476
+    },
+    {
+      "id": "masculino_lowr_10",
+      "radius": 0.5964810848236084,
+      "max_ndc": 0.80893
+    },
+    {
+      "id": "masculino_lowr_11",
+      "radius": 0.5810074210166931,
+      "max_ndc": 0.82484
+    },
+    {
+      "id": "masculino_lowr_12",
+      "radius": 0.582648754119873,
+      "max_ndc": 0.83043
+    },
+    {
+      "id": "masculino_lowr_13",
+      "radius": 0.5904455184936523,
+      "max_ndc": 0.79324
+    },
+    {
+      "id": "masculino_lowr_14",
+      "radius": 0.5993748307228088,
+      "max_ndc": 0.80555
+    },
+    {
+      "id": "masculino_lowr_15",
+      "radius": 0.6234549283981323,
+      "max_ndc": 0.81418
+    },
+    {
+      "id": "masculino_lowr_16",
+      "radius": 0.6183226704597473,
+      "max_ndc": 0.79321
+    },
+    {
+      "id": "masculino_lowr_17",
+      "radius": 0.5973563194274902,
+      "max_ndc": 0.81616
+    },
+    {
+      "id": "masculino_lowr_18",
+      "radius": 0.5937334299087524,
+      "max_ndc": 0.81242
+    },
+    {
+      "id": "masculino_lowr_19",
+      "radius": 0.5882485508918762,
+      "max_ndc": 0.82109
+    },
+    {
+      "id": "masculino_lowr_20",
+      "radius": 0.5973563194274902,
+      "max_ndc": 0.81616
+    },
+    {
+      "id": "masculino_lowr_21",
+      "radius": 0.534535825252533,
+      "max_ndc": 0.77943
+    },
+    {
+      "id": "masculino_lowr_22",
+      "radius": 0.5834696292877197,
+      "max_ndc": 0.82827
+    },
+    {
+      "id": "masculino_lowr_23",
+      "radius": 0.5858514308929443,
+      "max_ndc": 0.82439
+    },
+    {
+      "id": "masculino_lowr_24",
+      "radius": 0.5872036218643188,
+      "max_ndc": 0.82288
+    },
+    {
+      "id": "masculino_task_01",
+      "radius": 0.3699795603752136,
+      "max_ndc": 0.65656
+    },
+    {
+      "id": "masculino_task_02",
+      "radius": 0.158139169216156,
+      "max_ndc": 0.78712
+    },
+    {
+      "id": "masculino_task_03",
+      "radius": 0.15484677255153656,
+      "max_ndc": 0.70026
+    },
+    {
+      "id": "masculino_task_04",
+      "radius": 0.36103013157844543,
+      "max_ndc": 0.64816
+    },
+    {
+      "id": "masculino_teef_01",
+      "radius": 0.23421776294708252,
+      "max_ndc": 0.85726
+    },
+    {
+      "id": "masculino_teef_02",
+      "radius": 0.05742529034614563,
+      "max_ndc": 0.74205
+    },
+    {
+      "id": "masculino_teef_03",
+      "radius": 0.3079972267150879,
+      "max_ndc": 0.68828
+    },
+    {
+      "id": "masculino_teef_04",
+      "radius": 0.23613084852695465,
+      "max_ndc": 0.59099
+    },
+    {
+      "id": "masculino_teef_05",
+      "radius": 0.13692334294319153,
+      "max_ndc": 0.8003
+    },
+    {
+      "id": "masculino_teef_06",
+      "radius": 0.3590888977050781,
+      "max_ndc": 0.86154
+    },
+    {
+      "id": "masculino_teef_07",
+      "radius": 0.08359099179506302,
+      "max_ndc": 0.76927
+    },
+    {
+      "id": "masculino_teef_08",
+      "radius": 0.15712814033031464,
+      "max_ndc": 0.78521
+    },
+    {
+      "id": "masculino_teef_09",
+      "radius": 0.22278332710266113,
+      "max_ndc": 0.68498
+    }
+  ]
+}
