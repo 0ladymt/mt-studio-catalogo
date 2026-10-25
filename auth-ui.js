@@ -18,6 +18,37 @@
     passwordSetup: document.getElementById("passwordSetupForm"),
     profileName: document.getElementById("profileNameForm"),
   };
+
+  function installPasswordToggles() {
+    const eye = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.4"/></svg>';
+    const eyeOff = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 4 16 16M9.9 7.3A10.7 10.7 0 0 1 12 7c6.1 0 9.5 5 9.5 5a16 16 0 0 1-3.1 3.2M6.2 8.3C3.8 9.6 2.5 12 2.5 12s3.4 5 9.5 5c1 0 1.9-.1 2.7-.4"/><path d="M9.7 9.7a3.2 3.2 0 0 0 4.6 4.6"/></svg>';
+    document.querySelectorAll('input[type="password"]').forEach((input) => {
+      if (!input.id || input.dataset.toggleReady) return;
+      const wrapper = document.createElement("div");
+      wrapper.className = "mt-password-field";
+      input.parentNode.insertBefore(wrapper, input);
+      wrapper.append(input);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "mt-password-toggle";
+      button.setAttribute("aria-controls", input.id);
+      button.setAttribute("aria-label", "Mostrar senha");
+      button.setAttribute("aria-pressed", "false");
+      button.innerHTML = eye;
+      button.addEventListener("click", () => {
+        const visible = input.type === "text";
+        input.type = visible ? "password" : "text";
+        button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
+        button.setAttribute("aria-pressed", String(!visible));
+        button.innerHTML = visible ? eye : eyeOff;
+        input.focus();
+      });
+      wrapper.append(button);
+      input.dataset.toggleReady = "true";
+    });
+  }
+
+  installPasswordToggles();
   const statuses = {
     signup: document.getElementById("signupStatus"),
     confirmation: document.getElementById("confirmationStatus"),
@@ -248,10 +279,16 @@
       const { response, body } = await api("/api/auth/confirm-email", { method: "POST", data: payload });
       if (!response.ok) throw new Error(body.error ?? "confirmation_failed");
       sessionStorage.removeItem("mt_pending_email");
-      forms.login.elements.email.value = payload.email.trim().toLowerCase();
       form.reset();
-      window.mtOpenPage("login");
-      showStatus(statuses.login, "E-mail confirmado. Agora você já pode entrar.", "success");
+      if (body.authenticated) {
+        await readSession(true);
+        window.mtOpenPage("conta");
+        showStatus(statuses.account, "E-mail confirmado. Sua conta está autenticada.", "success");
+      } else {
+        forms.login.elements.email.value = payload.email.trim().toLowerCase();
+        window.mtOpenPage("login");
+        showStatus(statuses.login, "E-mail confirmado. Agora você já pode entrar.", "success");
+      }
     } catch (error) {
       showStatus(statuses.confirmation, errorMessage(error.message, "a confirmação"), "error");
     } finally { setBusy(form, false); }

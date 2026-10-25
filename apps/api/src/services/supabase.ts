@@ -78,6 +78,18 @@ export function createSupabaseAuthGateway(environment: ApiEnvironment): AuthGate
       return true;
     },
 
+    async confirmSignupSession(email, token) {
+      const client = clientFor("");
+      const { data, error } = await client.auth.verifyOtp({ email, token, type: "signup" });
+      if (error || !data.user || !data.session) return null;
+      return {
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+        expiresIn: data.session.expires_in,
+        user: userSummary(data.user),
+      };
+    },
+
     async resendSignupConfirmation(email) {
       const client = clientFor("");
       const { error } = await client.auth.resend({ type: "signup", email });

@@ -446,6 +446,12 @@ export function createApp(
       return context.json({ error: "too_many_requests" }, 429);
     }
     try {
+      if (gateway.confirmSignupSession) {
+        const session = await gateway.confirmSignupSession(input.data.email, input.data.token);
+        if (!session) return context.json({ error: "confirmation_invalid_or_expired" }, 400);
+        sessions.issue(context, session);
+        return context.json({ status: "email_confirmed", authenticated: true, user: session.user });
+      }
       const confirmed = await gateway.confirmSignup(input.data.email, input.data.token);
       if (!confirmed) return context.json({ error: "confirmation_invalid_or_expired" }, 400);
       return context.json({ status: "email_confirmed" });

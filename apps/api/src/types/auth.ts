@@ -40,6 +40,7 @@ export interface AuthGateway {
     password: string;
   }): Promise<void>;
   confirmSignup(email: string, token: string): Promise<boolean>;
+  confirmSignupSession?(email: string, token: string): Promise<AuthSession | null>;
   resendSignupConfirmation(email: string): Promise<void>;
   signInWithPassword(email: string, password: string): Promise<LoginResult>;
   requestPasswordRecovery(email: string): Promise<void>;

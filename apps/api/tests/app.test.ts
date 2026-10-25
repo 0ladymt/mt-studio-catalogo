@@ -606,6 +606,32 @@ describe("MT Studio API foundation", () => {
     await expect(reused.json()).resolves.toEqual({ error: "confirmation_invalid_or_expired" });
   });
 
+  it("issues HttpOnly session cookies and authenticates after a valid signup confirmation", async () => {
+    const auth = gateway({
+      confirmSignupSession: vi.fn(async () => ({
+        accessToken: "confirmed-access",
+        refreshToken: "confirmed-refresh",
+        expiresIn: 3600,
+        user: { id: profile.user_id, email: "user@example.invalid", emailConfirmed: true },
+      })),
+    });
+    const app = createApp(auth, environment);
+    const csrfResponse = await app.request("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json() as { csrfToken: string };
+    const response = await app.request("/api/auth/confirm-email", {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:4173", Cookie: `mt_csrf=${csrfToken}`, "X-CSRF-Token": csrfToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "user@example.invalid", token: "123456" }),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ status: "email_confirmed", authenticated: true, user: { id: profile.user_id } });
+    const cookies = response.headers.get("set-cookie") ?? "";
+    expect(cookies).toContain("mt_access=confirmed-access");
+    expect(cookies).toContain("HttpOnly");
+    expect(cookies).toContain("mt_refresh=confirmed-refresh");
+    expect(auth.confirmSignup).not.toHaveBeenCalled();
+  });
+
   it("uses a non-enumerating response when resending verification", async () => {
     const auth = gateway();
     const app = createApp(auth, environment);

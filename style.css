@@ -3260,17 +3260,22 @@ body:has(#content > .page.active) > footer.mt-footer {
 body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 
 /* Authentication — isolated from the six approved public pages. */
+body:has(#content > :is(#page-cadastro,#page-confirmar-email,#page-login,#page-conta,#page-recuperar-senha,#page-redefinir-senha).active) {
+  background:#101010;
+  background-image:none;
+}
+body:has(#content > :is(#page-cadastro,#page-confirmar-email,#page-login,#page-conta,#page-recuperar-senha,#page-redefinir-senha).active) > .mt-background-art,
+body:has(#content > :is(#page-cadastro,#page-confirmar-email,#page-login,#page-conta,#page-recuperar-senha,#page-redefinir-senha).active) .mt-wall-marks {
+  display:none;
+}
 .nav-tab--account { color:#ead9f2; }
 .mt-auth-page { min-height:calc(100vh - 100px); }
 .mt-auth-shell {
   display:grid; grid-template-columns:minmax(0,.88fr) minmax(420px,.72fr);
   align-items:center; gap:clamp(56px,8vw,130px); padding-block:clamp(64px,8vw,118px);
 }
-.mt-auth-intro { position:relative; max-width:610px; }
-.mt-auth-intro::after {
-  content:""; display:block; width:min(260px,55%); height:20px; margin-top:34px;
-  background:url("assets/brand/brush.svg") center/contain no-repeat; opacity:.28;
-}
+.mt-auth-intro { max-width:610px; }
+.mt-auth-intro > .mt-overline::before { content:none; }
 .mt-auth-intro h2 { font-size:clamp(4.2rem,7.2vw,7.2rem); letter-spacing:-.025em; }
 .mt-auth-intro > p { max-width:500px; margin:24px 0 12px; font-size:.94rem; line-height:1.85; }
 .mt-auth-intro > small { color:#857f89; font-size:.7rem; letter-spacing:.04em; }
@@ -3292,6 +3297,12 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
 .mt-auth-card input:disabled,.mt-auth-card button:disabled { opacity:.62; cursor:wait; }
 .mt-auth-hint { margin:-10px 0 20px; color:#8d8791; font-size:.68rem; line-height:1.6; }
 .mt-password-checklist { margin:-8px 0 22px; color:#c3bcc7; font-size:.84rem; line-height:1.45; }
+.mt-password-field { position:relative; display:flex; align-items:center; margin-bottom:20px; }
+.mt-password-field input { width:100%; margin-bottom:0; padding-right:3.25rem; }
+.mt-password-toggle { position:absolute; top:50%; right:12px; transform:translateY(-50%); display:grid; place-items:center; width:2.35rem; height:2.35rem; padding:0; border:0; border-radius:4px; background:transparent; color:#cfc5d3; cursor:pointer; z-index:1; line-height:0; }
+.mt-password-toggle:hover,.mt-password-toggle:focus-visible { color:#fff; background:rgba(164,50,220,.16); }
+.mt-password-toggle:focus-visible { outline:2px solid #a432dc; outline-offset:2px; }
+.mt-password-toggle svg { width:1.2rem; height:1.2rem; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
 .mt-password-checklist > .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .mt-password-checklist__title { margin:0 0 10px; color:#ddd7e0; font-size:.84rem; font-weight:700; }
 .mt-password-checklist__list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 18px; margin:0; padding:0; list-style:none; }
@@ -3387,7 +3398,6 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-auth-page { min-height:auto; }
   .mt-auth-shell { grid-template-columns:minmax(0,1fr) minmax(330px,.85fr); gap:36px; padding-block:64px 80px; }
   .mt-auth-intro h2 { font-size:clamp(3.8rem,9vw,5rem); }
-  .mt-auth-intro::after { width:180px; }
   .mt-auth-card { padding:28px; }
   .mt-account-panel { grid-template-columns:1fr 1fr; }
   .mt-account-panel > div { border-bottom:1px solid #332e36; }
@@ -3401,7 +3411,6 @@ body:has(#content > .page.active) > footer.mt-footer::before { content:none; }
   .mt-auth-shell { grid-template-columns:1fr; gap:34px; width:calc(100% - 36px); padding-block:48px 64px; }
   .mt-auth-intro h2 { font-size:clamp(3.7rem,18vw,5.1rem); }
   .mt-auth-intro > p { margin-top:18px; font-size:.86rem; }
-  .mt-auth-intro::after { width:150px; margin-top:24px; }
   .mt-auth-card { padding:24px 20px; }
   .mt-auth-card__head { margin-bottom:24px; }
   .mt-auth-inline { align-items:flex-start; flex-direction:column; gap:4px; }
